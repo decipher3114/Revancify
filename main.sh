@@ -261,6 +261,7 @@ checkpatched()
             then
                 rm ./"$appname"Revanced-"$appver"*
             else
+	    	    install_app 'mountapp'
                 mountapk
             fi
         else
@@ -284,15 +285,7 @@ sucheck()
 {
     if su -c exit > /dev/null 2>&1
     then
-        variant=root
-        su -c "mkdir -p /data/adb/revanced"
-        echo -e "#!/system/bin/sh\nwhile [ \"\$(getprop sys.boot_completed | tr -d '\\\r')\" != \"1\" ]; do sleep 1; done\n\nbase_path=\"/data/adb/revanced/"$pkgname".apk\"\nstock_path=\$( pm path $pkgname | grep base | sed 's/package://g' )\n\nchcon u:object_r:apk_data_file:s0 \$base_path\nmount -o bind \$base_path \$stock_path" > ./mount_revanced_$pkgname.sh
-        su -c 'mv mount_revanced* /data/adb/service.d/ && chmod +x /data/adb/service.d/mount*'
-        if ! PKGNAME=$pkgname su -c 'dumpsys package $PKGNAME | grep path' > /dev/null 2>&1
-        then 
-            termux-open "https://play.google.com/store/apps/details?id="$pkgname
-            mainmenu
-        fi
+        variant=root        
     else
         variant=nonroot
     fi
@@ -335,6 +328,44 @@ app_dl()
         wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.25.223212-223212002/microg.apk" -O "Vanced-MicroG.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
     fi
     tput rc; tput ed
+}
+
+install_app()
+{
+    intro
+    uninstall_app "$@"
+    if [ -z "$1" ]
+    then
+        echo "Installing $appname-$appver.apk..."
+    else
+        "${header[@]}" --no-shadow --infobox "Installing $appname-$appver.apk..." 10 35
+    fi
+    sudo pm install --user 0 -i com.android.vending -r -d "$appname"-"$appver".apk > /dev/null 2>&1
+	
+}
+
+uninstall_app()
+{
+    installedList=$(sudo pm list packages)
+
+    if [ -z "$1" ]
+    then
+        echo "Checking installed updates for $appname..."
+    else
+        "${header[@]}" --no-shadow --infobox "Checking installed updates for $appname..." 10 35
+    fi    
+
+    if [[ "$installedList" == *"$pkgname"* ]]
+    then
+        if [ -z "$1" ]
+        then
+            echo "Uninstalling updates for $appname..."
+        else
+            "${header[@]}" --no-shadow --infobox "Uninstalling updates for $appname..." 10 35
+        fi 
+        
+    	sudo pm uninstall "$pkgname" > /dev/null 2>&1
+	fi	
 }
 
 setargs()
@@ -475,19 +506,28 @@ buildapp()
         python3 ./python-utils/fetch-patches.py
     fi
     if [ "$pkgname" = "com.google.android.youtube" ] || [ "$pkgname" = "com.google.android.apps.youtube.music" ]
-    then
-        sucheck
-        if [ "$variant" = "root" ]
-        then
-            appver=$(su -c dumpsys package $pkgname | grep versionName | cut -d= -f 2 | sed -n '1p')
-            checkmicrogpatch
-        elif [ "$variant" = "nonroot" ]
-        then
-            versionselector
-            dlmicrog
-        fi
+    then        
+    	sucheck
+        versionselector
         checkpatched
         fetchapk
+		
+        if [ "$variant" = "root" ]
+        then
+            install_app
+            su -c "mkdir -p /data/adb/revanced"
+            echo -e "#!/system/bin/sh\nwhile [ \"\$(getprop sys.boot_completed | tr -d '\\\r')\" != \"1\" ]; do sleep 1; done\n\nbase_path=\"/data/adb/revanced/"$pkgname".apk\"\nstock_path=\$( pm path $pkgname | grep base | sed 's/package://g' )\n\nchcon u:object_r:apk_data_file:s0 \$base_path\nmount -o bind \$base_path \$stock_path" > ./mount_revanced_$pkgname.sh
+            su -c 'mv mount_revanced* /data/adb/service.d/ && chmod +x /data/adb/service.d/mount*'
+            if ! PKGNAME=$pkgname su -c 'dumpsys package $PKGNAME | grep path' > /dev/null 2>&1
+            then 
+                termux-open "https://play.google.com/store/apps/details?id="$pkgname
+                mainmenu
+            fi			
+                checkmicrogpatch
+        elif [ "$variant" = "nonroot" ]
+        then
+            dlmicrog
+        fi        
         patchapp
         if [ "$variant" = "root" ]
         then
