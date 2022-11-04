@@ -31,20 +31,6 @@ internet()
     fi
 }
 
-intro()
-{
-    clear
-    tput civis
-    tput cs 4 $(tput lines)
-    leave1=$(($(($(tput cols) - 34)) / 2))
-    tput cm 1 $leave1
-    echo "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█"
-    tput cm 2 $leave1
-    echo "█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░"
-    tput cm 5 0
-    tput sc
-}
-
 leavecols=$(($(($(tput cols) - 38)) / 2))
 fullpageheight=$(($(tput lines) - 4 ))
 header=(dialog --begin 0 "$leavecols" --keep-window --no-lines --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38 --and-widget)
@@ -417,13 +403,12 @@ patchapp()
     then
         python3 ./python-utils/sync-patches.py
     fi
-    intro
     setargs
-    echo "Patching $appname..."
-    java -jar ./revanced-cli*.jar -b ./revanced-patches*.jar -m ./revanced-integrations*.apk -c $apkargs $includepatches --keystore ./revanced.keystore $riplibs --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog
+    java -jar ./revanced-cli*.jar -b ./revanced-patches*.jar -m ./revanced-integrations*.apk -c $apkargs $includepatches --keystore ./revanced.keystore $riplibs --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --programbox "Patching $appname-$appver.apk"
     sleep 2
     if ! grep -q "Finished" .patchlog
     then
+        echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appname-$appver.apk" >> ./.patchlog
         cp ./.patchlog /storage/emulated/0/Revancify/patchlog.txt
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 40
         mainmenu
