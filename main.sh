@@ -404,7 +404,7 @@ patchapp()
         python3 ./python-utils/sync-patches.py
     fi
     setargs
-    java -jar ./revanced-cli*.jar -b ./revanced-patches*.jar -m ./revanced-integrations*.apk -c $apkargs $includepatches --keystore ./revanced.keystore $riplibs --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
+    java -jar ./revanced-cli*.jar -b ./revanced-patches*.jar -m ./revanced-integrations*.apk -c $apkargs $includepatches --keystore ./revanced.keystore $riplibs --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --ok-label "Continue" --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
     sleep 2
     if ! grep -q "Finished" .patchlog
     then
