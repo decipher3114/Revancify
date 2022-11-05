@@ -41,17 +41,21 @@ resourcemenu()
 
     mapfile -t revanced_latest < <(python3 ./python-utils/revanced-latest.py)
     
-    patches_latest="${revanced_latest[0]}"
-    patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
-    cli_latest="${revanced_latest[2]}"
-    cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[3]}")"
+
+    cli_latest="${revanced_latest[0]}"
+    cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
+    patches_latest="${revanced_latest[2]}"
+    patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[3]}")"
     integrations_latest="${revanced_latest[4]}"
     integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[5]}")"
 
-    ls ./revanced-patches* > /dev/null 2>&1 && patches_available=$(basename revanced-patches* .jar | cut -d '-' -f 3) || patches_available="Not-found"
-    ls ./revanced-cli* > /dev/null 2>&1 && cli_available=$(basename revanced-cli* .jar | cut -d '-' -f 3) || cli_available="Not-found"
-    ls ./revanced-integrations* > /dev/null 2>&1 && integrations_available=$(basename revanced-integrations* .apk | cut -d '-' -f 3) || integrations_available="Not-found"
-    readarray -t resourcefilelines < <(echo -e "Resource Latest Downloaded\nPatches v$patches_latest $patches_available\nCLI v$cli_latest $cli_available\nIntegrations v$integrations_latest $integrations_available" | column -t -s ' ')
+
+    ls ./revanced-cli* > /dev/null 2>&1 && cli_available=$(basename revanced-cli* .jar | cut -d '-' -f 3) || cli_available="Not found"
+    ls ./revanced-patches* > /dev/null 2>&1 && patches_available=$(basename revanced-patches* .jar | cut -d '-' -f 3) || patches_available="Not found"
+    ls ./revanced-integrations* > /dev/null 2>&1 && integrations_available=$(basename revanced-integrations* .apk | cut -d '-' -f 3) || integrations_available="Not found"
+
+    readarray -t resourcefilelines < <(echo -e "Resource_Latest_Downloaded\nCLI_v${cli_latest}_${cli_available}\nPatches_v${patches_latest}_${patches_available}\nIntegrations_v${integrations_latest}_${integrations_available}" | column -t -s '_')
+
     if "${header[@]}" --begin 4 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" "$fullpageheight" -1
     then
         if [ "v$patches_latest" = "$patches_available" ] &&\
@@ -103,10 +107,10 @@ changesource()
         availableapps=($(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json))
         rm revanced-* > /dev/null 2>&1
         mapfile -t revanced_latest < <(python3 ./python-utils/revanced-latest.py)
-        patches_latest="${revanced_latest[0]}"
-        patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
-        cli_latest="${revanced_latest[2]}"
-        cli_size="$(numfmt --to=iec --format="%0.1f"  "${revanced_latest[3]}")"
+        cli_latest="${revanced_latest[0]}"
+        cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
+        patches_latest="${revanced_latest[2]}"
+        patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[3]}")"
         integrations_latest="${revanced_latest[4]}"
         integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[5]}")"
         getresources
