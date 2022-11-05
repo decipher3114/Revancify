@@ -20,6 +20,6 @@ async def fetch():
         for jsonresponse in await asyncio.gather(*jsonresponses):
             json = jsonresponse.json()
             print(json['tag_name'].replace("v", ""))
-            print(math.fsum(asset['size'] for asset in json['assets']))
+            print(int(math.fsum(asset['size'] for asset in json['assets'])))
 
 asyncio.run(fetch())
