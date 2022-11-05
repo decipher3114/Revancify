@@ -58,12 +58,7 @@ resourcemenu()
 
     if "${header[@]}" --begin 4 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" "$fullpageheight" -1
     then
-        if [ "v$patches_latest" = "$patches_available" ] &&\
-        [ "v$cli_latest" = "$cli_available" ] &&\
-        [ "v$integrations_latest" = "$integrations_available" ] &&\
-        [ "${revanced_latest[3]}" = "$( ls ./revanced-cli* > /dev/null 2>&1 && du -b revanced-cli* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-        [ "${revanced_latest[1]}" = "$( ls ./revanced-patches* > /dev/null 2>&1 && (sum=0 && while read -r num; do sum=$((sum + num)); done < <(du -b revanced-patches* patches.json | cut -d $'\t' -f 1) && echo "$sum") || echo "None" )" ] &&\
-        [ "${revanced_latest[5]}" = "$( ls ./revanced-patches* > /dev/null 2>&1 && du -b revanced-integrations* | cut -d $'\t' -f 1 || echo "None" )" ]
+        if [ "v$patches_latest" = "$patches_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${revanced_latest[1]}" = "$( ls ./revanced-cli* > /dev/null 2>&1 && du -b revanced-cli* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[3]}" = "$( ls ./revanced-patches* > /dev/null 2>&1 && (sum=0 && while read -r num; do sum=$((sum + num)); done < <(du -b revanced-patches* patches.json | cut -d $'\t' -f 1) && echo "$sum") || echo "None" )" ] && [ "${revanced_latest[5]}" = "$( ls ./revanced-patches* > /dev/null 2>&1 && du -b revanced-integrations* | cut -d $'\t' -f 1 || echo "None" )" ]
         then
             "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
             mainmenu

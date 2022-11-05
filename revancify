@@ -14,7 +14,7 @@ fi
 
 checkdependencies()
 {
-    if [ -e ~/../usr/bin/java ] && [ -e ~/../usr/bin/python ] && [ -e ~/../usr/bin/wget ] && [ -e ~/../usr/bin/dialog ] && [ -e ~/../usr/bin/tput ] && [ -e ~/../usr/bin/jq ] && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules"
+    if [ -e ~/../usr/bin/java ] && [ -e ~/../usr/bin/python ] && [ -e ~/../usr/bin/wget ] && [ -e ~/../usr/bin/dialog ] && [ -e ~/../usr/bin/tput ] && [ -e ~/../usr/bin/jq ] && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && grep -q httpx <<< "$modules"
     then
         return 0
     else
@@ -31,7 +31,7 @@ installdependencies()
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
     pip install --upgrade pip &&
     pip install wheel &&
-    pip install requests bs4 &&
+    pip install requests bs4 httpx &&
     cp dialog-config.txt /data/data/com.termux/files/home/.dialogrc
     sed -i '/allow-external-apps/s/# //' /data/data/com.termux/files/home/.termux/termux.properties &&
     echo "Dependencies installed successfully."
