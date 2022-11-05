@@ -1,0 +1,84 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+if [ "$(getprop ro.product.cpu.abi | cut -d "-" -f 1)" = "armeabi" ]
+then
+    echo "Device with CPU architecture \"armeabi-v7a\" are not supported for patching."
+    echo "You may get build errors."
+    read -N 1 -s -r -p $'Press ENTER to CONTINUE or SPACE to EXIT...\n' key
+    if [ "$key" = " " ]
+    then
+        echo "Script terminated"
+        exit
+    fi
+fi
+
+checkdependencies()
+{
+    if [ -e ~/../usr/bin/java ] && [ -e ~/../usr/bin/python ] && [ -e ~/../usr/bin/wget ] && [ -e ~/../usr/bin/dialog ] && [ -e ~/../usr/bin/tput ] && [ -e ~/../usr/bin/jq ] && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules"
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+installdependencies()
+{
+    echo "Installing dependencies..."
+    sleep 0.5s
+    git pull
+    pkg update -y &&
+    pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
+    pip install --upgrade pip &&
+    pip install wheel &&
+    pip install requests bs4 &&
+    cp dialog-config.txt /data/data/com.termux/files/home/.dialogrc
+    sed -i '/allow-external-apps/s/# //' /data/data/com.termux/files/home/.termux/termux.properties &&
+    echo "Dependencies installed successfully."
+}
+
+checkrevancify()
+{
+    if cd /data/data/com.termux/files/home/storage/Revancify > /dev/null 2>&1 
+    then
+        return 0
+    else
+        echo "Revancify is not installed"
+        exit
+    fi
+}
+
+if ping -c 1 google.com > /dev/null 2>&1
+then
+    checkrevancify
+    if checkdependencies
+    then
+        tput civis
+        rm -rf ./*cache
+        git checkout . > /dev/null 2>&1
+        git config --global pull.rebase true
+        git pull
+        ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
+        cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
+        bash main.sh
+    else
+        cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
+        installdependencies &&
+        tput civis &&
+        bash main.sh
+        cd ~
+    fi
+else
+    checkrevancify
+    if checkdependencies
+    then
+        tput civis &&
+        rm -rf ./*cache
+        tput civis &&
+        bash main.sh
+        cd ~
+    else
+        cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
+        echo "Dependencies not installed. Run again with internet connection."
+    fi
+fi
