@@ -162,7 +162,7 @@ selectpatches()
     patchselectionheight=$(($(tput lines) - 5))
     declare -a patchesinfo
     readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname))[] | "\(.patchname)\n\(.status)\n\(.description)"' saved-patches.json)
-    choices=($("${header[@]}" --begin 4 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 10 "${patchesinfo[@]}" 2>&1 >/dev/tty))
+    choices=($("${header[@]}" --begin 4 0 --title '| Patch Selection Menu |' --scrollbar --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 10 "${patchesinfo[@]}" 2>&1 >/dev/tty))
     selectpatchstatus=$?
     patchsaver
 }
@@ -310,6 +310,22 @@ sucheck()
     fi
 }
 
+fetchapk()
+{
+    checkpatched
+    if ls ./"$appname"-"$appver"* > /dev/null 2>&1
+    then
+        if [ "$([ -f ."$appname"size ] && cat ."$appname"size || echo "0" )" != "$([ -f "$appname"-"$appver".apk ] && du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1 || echo "None")" ]
+        then
+            app_dl
+        fi
+    else
+        rm ./"$appname"-"$appver".apk > /dev/null 2>&1
+        app_dl
+    fi
+    apkargs="-a $appname-$appver.apk -o ${appname}Revanced-$appver.apk"
+}
+
 app_dl()
 {
     internet
@@ -382,22 +398,6 @@ versionselector()
         mainmenu
         return 0
     fi
-}
-
-fetchapk()
-{
-    checkpatched
-    if ls ./"$appname"-"$appver"* > /dev/null 2>&1
-    then
-        if [ "$([ -f ."$appname"size ] && cat ."$appname"size || echo "0" )" != "$([ -f "$appname"-"$appver".apk ] && du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1 || echo "None")" ]
-        then
-            app_dl
-        fi
-    else
-        rm ./"$appname"-"$appver".apk > /dev/null 2>&1
-        app_dl
-    fi
-    apkargs="-a $appname-$appver.apk -o ${appname}Revanced-$appver.apk"
 }
 
 
