@@ -12,7 +12,7 @@ for source in sourcesjson:
     if source['sourceStatus'] == "on":
         sourcemaintainer = source['sourceMaintainer']
 
-components = [ "patches", "cli", "integrations" ]
+components = ["cli", "patches", "integrations"]
 for component in components:
     json = get(f"https://api.github.com/repos/{sourcemaintainer}/revanced-{component}/releases/latest").json()
     print(json['tag_name'].replace("v", ""))
