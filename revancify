@@ -32,7 +32,7 @@ installdependencies()
     pip install --upgrade pip &&
     pip install wheel &&
     pip install requests bs4 httpx &&
-    cp dialog-config.txt /data/data/com.termux/files/home/.dialogrc
+    ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
     sed -i '/allow-external-apps/s/# //' /data/data/com.termux/files/home/.termux/termux.properties &&
     echo "Dependencies installed successfully."
 }
