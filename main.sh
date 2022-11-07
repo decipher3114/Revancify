@@ -79,16 +79,16 @@ resourcemenu()
     fi
 }
 
-getresources() 
+getresources()
 {
     [ "${revanced_latest[1]}" != "$( ls ./revanced-cli* > /dev/null 2>&1 && du -b revanced-cli* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-cli/releases/download/v"$cli_latest"/revanced-cli-"$cli_latest"-all.jar -O revanced-cli-v"$cli_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 64-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
+    wget -q -c https://github.com/"$source"/revanced-cli/releases/download/v"$cli_latest"/revanced-cli-"$cli_latest"-all.jar -O revanced-cli-v"$cli_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
     rm patches.json > /dev/null 2>&1
     wget -q -c https://github.com/"$source"/revanced-patches/releases/download/v"$patches_latest"/patches.json -O patches.json --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
     [ "${revanced_latest[3]}" != "$( ls ./revanced-patches* > /dev/null 2>&1 && (sum=0 && while read -r num; do sum=$((sum + num)); done < <(du -b revanced-patches* patches.json | cut -d $'\t' -f 1) && echo "$sum") || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-patches/releases/download/v"$patches_latest"/revanced-patches-"$patches_latest".jar -O revanced-patches-v"$patches_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 64-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
+    wget -q -c https://github.com/"$source"/revanced-patches/releases/download/v"$patches_latest"/revanced-patches-"$patches_latest".jar -O revanced-patches-v"$patches_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
     [ "${revanced_latest[5]}" != "$( ls ./revanced-integrations* > /dev/null 2>&1 && du -b revanced-integrations* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-integrations/releases/download/v"$integrations_latest"/app-release-unsigned.apk -O revanced-integrations-v"$integrations_latest".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 64-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
+    wget -q -c https://github.com/"$source"/revanced-integrations/releases/download/v"$integrations_latest"/app-release-unsigned.apk -O revanced-integrations-v"$integrations_latest".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
     python3 ./python-utils/sync-patches.py
 }
 
@@ -338,7 +338,7 @@ app_dl()
         mainmenu
         return 0
     fi
-    wget -q -c "${fetchlinkresponse[0]}" -O "$appname"-"$appver".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 64-65 | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." 12 40
+    wget -q -c "${fetchlinkresponse[0]}" -O "$appname"-"$appver".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." 12 40
     tput civis
     sleep 0.5s
     if [ "$(cat ."$appname"size)" != "$(du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1)" ]
@@ -355,7 +355,7 @@ dlmicrog()
     if "${header[@]}" --begin 4 0 --title '| MicroG Prompt |' --no-items --defaultno --keep-window --no-shadow --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YTMusic won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" "$fullpageheight" -1
     then
         internet
-        wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.25.224113-224113002/microg.apk" -O "VancedMicroG-0.2.25.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 64-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : 0.2.25\nSize    : 10.5M\n\nDownloading..." 10 30 && tput civis
+        wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.25.224113-224113002/microg.apk" -O "VancedMicroG-0.2.25.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : 0.2.25\nSize    : 10.5M\n\nDownloading..." 10 30 && tput civis
         [[ -f VancedMicroG-0.2.25.apk ]] && mv VancedMicroG-0.2.25.apk /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-0.2.25.apk
     fi
     mainmenu

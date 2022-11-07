@@ -16,7 +16,7 @@ for source in sourcesjson:
 
 async def fetch():
     async with AsyncClient() as client:
-        jsonresponses = [client.get(f"https://api.github.com/repos/{sourcemaintainer}/revanced-{component}/releases/latest") for component in ["cli", "patches", "integrations"]]
+        jsonresponses = [client.get(f"https://api.github.com/repos/{sourcemaintainer}/revanced-{component}/releases/latest", headers={'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" }) for component in ["cli", "patches", "integrations"]]
         for jsonresponse in await asyncio.gather(*jsonresponses):
             json = jsonresponse.json()
             print(json['tag_name'].replace("v", ""))
