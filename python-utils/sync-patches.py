@@ -12,14 +12,15 @@ with open('sources.json', 'r') as sourcesfile:
 for source in sourcesjson:
     if source['sourceStatus'] == "on":
         patchesrepo = source['sourceMaintainer']
+        filename = f'{patchesrepo}-patches.json'
 
 def openjson():
     global localjson
     try:
-        with open("saved-patches.json", "r") as patches_file:
+        with open(f'{patchesrepo}-patches.json', "r") as patches_file:
             localjson = load(patches_file)
     except Exception as e:
-        with open("saved-patches.json", "w") as patches_file:
+        with open(f'{patchesrepo}-patches.json', "w") as patches_file:
             empty_json = [{"patchname": None, "appname": None, "status": None}]
             dump(empty_json, patches_file, indent=4)
         openjson()
@@ -57,5 +58,5 @@ obsoletepatches = [ index for index, patchname in enumerate(saved_patches) if pa
 for index in sorted(obsoletepatches, reverse=True):
     del localjson[index]
 
-with open("saved-patches.json", "w") as patchesfile:
+with open(f'{patchesrepo}-patches.json', "w") as patchesfile:
     dump(localjson, patchesfile, indent=4)
