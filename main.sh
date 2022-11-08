@@ -155,7 +155,7 @@ selectpatches()
         resourcemenu
         return 0
     fi
-    if ! ls ./saved-patches* > /dev/null 2>&1
+    if ! ls ./{$source}-patches* > /dev/null 2>&1
     then
         python3 ./python-utils/sync-patches.py
     fi
@@ -402,7 +402,7 @@ versionselector()
 
 patchapp()
 {
-    if ! ls ./saved-patches* > /dev/null 2>&1
+    if ! ls ./$source-patches* > /dev/null 2>&1
     then
         python3 ./python-utils/sync-patches.py
     fi
