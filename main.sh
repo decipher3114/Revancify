@@ -155,13 +155,13 @@ selectpatches()
         resourcemenu
         return 0
     fi
-    if ! ls ./saved-patches* > /dev/null 2>&1
+    if ! ls ./{$source}-patches* > /dev/null 2>&1
     then
         python3 ./python-utils/sync-patches.py
     fi
     patchselectionheight=$(($(tput lines) - 5))
     declare -a patchesinfo
-    readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname))[] | "\(.patchname)\n\(.status)\n\(.description)"' saved-patches.json)
+    readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname))[] | "\(.patchname)\n\(.status)\n\(.description)"' "$source-patches.json")
     choices=($("${header[@]}" --begin 4 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 10 "${patchesinfo[@]}" 2>&1 >/dev/tty))
     selectpatchstatus=$?
     patchsaver
@@ -172,17 +172,17 @@ patchsaver()
     if [ $selectpatchstatus -eq 0 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' saved-patches.json | jq 'map(select(IN(.patchname; $ARGS.positional[])).status = "on")' --args "${choices[@]}" > "$tmp" && mv "$tmp" ./saved-patches.json
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' "$source-patches.json" | jq 'map(select(IN(.patchname; $ARGS.positional[])).status = "on")' --args "${choices[@]}" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         mainmenu
     elif [ $selectpatchstatus -eq 2 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' saved-patches.json > "$tmp" && mv "$tmp" ./saved-patches.json
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         selectpatches
     elif [ $selectpatchstatus -eq 3 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "on")' saved-patches.json > "$tmp" && mv "$tmp" ./saved-patches.json
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         selectpatches
     fi
 }
@@ -362,7 +362,7 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname and .status == "on"))[].patchname' saved-patches.json | sed "s/^/-i /g"))
+    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
     if [ "$source" = "inotia00" ] && [ "$appname" = "YouTube" ]
     then
         if [ "$arch" = "arm64" ]
@@ -402,7 +402,7 @@ versionselector()
 
 patchapp()
 {
-    if ! ls ./saved-patches* > /dev/null 2>&1
+    if ! ls ./$source-patches* > /dev/null 2>&1
     then
         python3 ./python-utils/sync-patches.py
     fi
@@ -421,7 +421,7 @@ patchapp()
 
 checkmicrogpatch()
 {
-    microgstatus=$(jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))))[].status' saved-patches.json)
+    microgstatus=$(jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))))[].status' "$source-patches.json")
     if [ "$microgstatus" = "on" ] && [ "$variant" = "root" ]
     then
         if "${header[@]}" --begin 4 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --no-shadow --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appname app crash.\n\n\nDo you want to exclude it or continue?" "$fullpageheight" -1
@@ -429,7 +429,7 @@ checkmicrogpatch()
             return 0
         else
             tmp=$(mktemp)
-            jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))).status = "off")' saved-patches.json > "$tmp" && mv "$tmp" ./saved-patches.json
+            jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))).status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
             return 0
         fi
     elif [ "$microgstatus" = "off" ] && [ "$variant" = "nonroot" ]
@@ -439,7 +439,7 @@ checkmicrogpatch()
             return 0
         else
             tmp=$(mktemp)
-            jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))).status = "on")' saved-patches.json > "$tmp" && mv "$tmp" ./saved-patches.json
+            jq -r --arg pkgname $pkgname 'map(select(.appname == $pkgname and (.patchname | test(".*microg.*"))).status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
             return 0
         fi
     fi
