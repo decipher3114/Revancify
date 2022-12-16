@@ -50,10 +50,7 @@ for index, patchname in enumerate(patches):
             newkey['patchname'] = patchname
             newkey['appname'] = None
             newkey['description'] = None
-            if remotejson[index]['excluded'] == True:
-                newkey['status'] = "off"
-            elif remotejson[index]['excluded'] == False:
-                newkey['status'] = "on"
+            newkey['status'] = "off"
 
         localjson.append(newkey)
     else:
