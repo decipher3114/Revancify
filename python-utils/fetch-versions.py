@@ -18,7 +18,7 @@ try:
         with open("patches.json", "r") as patches:
             remotejson = load(patches)
         for json in remotejson:
-            if json['name'] == 'general-ads':
+            if json['name'] == 'hide-create-button':
                 supportedvers = (((json['compatiblePackages'])[0])['versions'])
         for a in fetchurl("https://www.apkmirror.com/uploads/?appcategory=youtube").find_all(text = compile(".*variants")):
             appver = ((a.parent).parent).parent.find(["a"], class_="fontBlack").string
