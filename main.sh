@@ -362,17 +362,7 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
-    if [ "$source" = "inotia00" ] && [ "$appname" = "YouTube" ]
-    then
-        if [ "$arch" = "arm64" ]
-        then
-            riplibs="--rip-lib armeabi-v7a --rip-lib x86_64 --rip-lib x86"
-        elif [ "$arch" = "armeabi" ]
-        then
-            riplibs="--rip-lib arm64-v8a --rip-lib x86_64 --rip-lib x86"
-        fi
-    fi
+    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname and .status == "off"))[].patchname' "$source-patches.json" | sed "s/^/-e /g"))
     if [ "$optionscompatible" = true ] && ls ./options* > /dev/null 2>&1
     then
         optionsarg="--options options.toml"
@@ -407,7 +397,7 @@ patchapp()
         python3 ./python-utils/sync-patches.py
     fi
     setargs
-    java -jar ./revanced-cli-*.jar -b ./revanced-patches-*.jar -m ./revanced-integrations-*.apk -c $apkargs $includepatches --keystore ./revanced.keystore $riplibs --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
+    java -jar ./revanced-cli-*.jar -b ./revanced-patches-*.jar -m ./revanced-integrations-*.apk -c $apkargs $excludepatches --keystore ./revanced.keystore --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
     tput civis
     sleep 2
     if ! grep -q "Finished" .patchlog
