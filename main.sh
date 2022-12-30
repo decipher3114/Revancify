@@ -354,7 +354,7 @@ dlmicrog()
     if "${header[@]}" --begin 4 0 --title '| MicroG Prompt |' --no-items --defaultno --keep-window --no-shadow --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YTMusic won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" "$fullpageheight" -1
     then
         internet
-        wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.25.224113-224113002/microg.apk" -O "VancedMicroG-0.2.25.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : 0.2.25\nSize    : 10.5M\n\nDownloading..." 10 30 && tput civis
+        wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.26.224913/microg.apk" -O "VancedMicroG-0.2.26.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : 0.2.25\nSize    : 10.5M\n\nDownloading..." 10 30 && tput civis
         [[ -f VancedMicroG-0.2.25.apk ]] && mv VancedMicroG-0.2.25.apk /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-0.2.25.apk
     fi
     mainmenu
