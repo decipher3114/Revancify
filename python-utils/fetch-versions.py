@@ -30,7 +30,7 @@ try:
         with open("patches.json", "r") as patches:
             remotejson = load(patches)
         for json in remotejson:
-            if json['name'] == 'compact-header':
+            if json['name'] == 'background-play':
                 supportedvers = (((json['compatiblePackages'])[0])['versions'])
         for a in fetchurl("https://www.apkmirror.com/uploads/?appcategory=youtube-music").find_all(text = compile(".*variants")):
             appver = ((a.parent).parent).parent.find(["a"], class_="fontBlack").string
