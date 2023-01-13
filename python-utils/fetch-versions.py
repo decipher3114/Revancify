@@ -50,5 +50,9 @@ try:
         for a in fetchurl("https://www.apkmirror.com/uploads/?appcategory=tik-tok").find_all(text = compile(".*variants")):
             appver = ((a.parent).parent).parent.find(["a"], class_="fontBlack")
             print(appver.string.replace("TikTok ", ""))
+    elif arg[1] == "Twitch":
+        for a in fetchurl("https://www.apkmirror.com/uploads/?appcategory=twitch").find_all(text = compile(".*variants")):
+            appver = ((a.parent).parent).parent.find(["a"], class_="fontBlack").string
+            print(appver.replace("Twitch: Live Game Streaming ", "").replace("_BETA", " [Beta]"))
 except Exception as e:
     print("error")

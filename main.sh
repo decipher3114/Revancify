@@ -13,7 +13,7 @@ setup()
     mkdir -p /storage/emulated/0/Revancify
     if ! ls ./sources* > /dev/null 2>&1 || [ "$(jq '.[0] | has("sourceMaintainer")' sources.json)" = false ] > /dev/null 2>&1
     then
-        echo '[{"sourceMaintainer" : "revanced", "sourceStatus" : "on", "availableApps": ["YouTube", "YTMusic", "Twitter", "Reddit", "TikTok"], "optionsCompatible" : true},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off", "availableApps": ["YouTube", "YTMusic"], "optionsCompatible" : true}]' | jq '.' > sources.json
+        echo '[{"sourceMaintainer" : "revanced", "sourceStatus" : "on", "availableApps": ["YouTube", "YTMusic", "Twitter", "Reddit", "TikTok", "Twitch"], "optionsCompatible" : true},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off", "availableApps": ["YouTube", "YTMusic"], "optionsCompatible" : true}]' | jq '.' > sources.json
     else
         tmp=$(mktemp)
         jq '.[1].optionsCompatible = true' sources.json > "$tmp" && mv "$tmp" sources.json
@@ -39,15 +39,25 @@ resourcemenu()
 {
     internet
 
-    mapfile -t revanced_latest < <(python3 ./python-utils/revanced-latest.py)
+    python3 ./python-utils/revanced-latest.py && readarray -t revanced_latest < ./.revancedlatest
     
+    if [ "${revanced_latest[0]}" = "error" ]
+    then
+        "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
+        mainmenu
+        return 0
+    fi
 
     cli_latest="${revanced_latest[0]}"
-    cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
-    patches_latest="${revanced_latest[2]}"
-    patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[3]}")"
-    integrations_latest="${revanced_latest[4]}"
-    integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[5]}")"
+    cli_url="${revanced_latest[1]}"
+    cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[2]}")"
+    patches_latest="${revanced_latest[3]}"
+    json_url="${revanced_latest[4]}"
+    patches_url="${revanced_latest[6]}"
+    patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[7]}")"
+    integrations_latest="${revanced_latest[8]}"
+    integrations_url="${revanced_latest[9]}"
+    integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[10]}")"
 
 
     ls ./revanced-cli-* > /dev/null 2>&1 && cli_available=$(basename revanced-cli-* .jar | cut -d '-' -f 3) || cli_available="Not found"
@@ -58,12 +68,7 @@ resourcemenu()
 
     if "${header[@]}" --begin 4 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" "$fullpageheight" -1
     then
-        if [ "v$patches_latest" = "$patches_available" ] &&\
-        [ "v$cli_latest" = "$cli_available" ] &&\
-        [ "v$integrations_latest" = "$integrations_available" ] &&\
-        [ "${revanced_latest[1]}" = "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-        [ "${revanced_latest[3]}" = "$( ls ./revanced-patches-* > /dev/null 2>&1 && (sum=0 && while read -r num; do sum=$((sum + num)); done < <(du -b revanced-patches-* patches.json | cut -d $'\t' -f 1) && echo "$sum") || echo "None" )" ] &&\
-        [ "${revanced_latest[5]}" = "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ]
+        if [ "v$patches_latest" = "$patches_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${revanced_latest[2]}" = "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ]
         then
             "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
             mainmenu
@@ -81,15 +86,26 @@ resourcemenu()
 
 getresources()
 {
-    [ "${revanced_latest[1]}" != "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-cli/releases/download/v"$cli_latest"/revanced-cli-"$cli_latest"-all.jar -O revanced-cli-v"$cli_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
+    [ "${revanced_latest[2]}" != "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$cli_url" -O revanced-cli-v"$cli_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
+
+    [ "${revanced_latest[2]}" != "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    
+    [ "${revanced_latest[7]}" != "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$patches_url" -O revanced-patches-v"$patches_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
+
     rm patches.json > /dev/null 2>&1
-    wget -q -c https://github.com/"$source"/revanced-patches/releases/download/v"$patches_latest"/patches.json -O patches.json --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-    [ "${revanced_latest[3]}" != "$( ls ./revanced-patches-* > /dev/null 2>&1 && (sum=0 && while read -r num; do sum=$((sum + num)); done < <(du -b revanced-patches-* patches.json | cut -d $'\t' -f 1) && echo "$sum") || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-patches/releases/download/v"$patches_latest"/revanced-patches-"$patches_latest".jar -O revanced-patches-v"$patches_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
-    [ "${revanced_latest[5]}" != "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c https://github.com/"$source"/revanced-integrations/releases/download/v"$integrations_latest"/app-release-unsigned.apk -O revanced-integrations-v"$integrations_latest".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
-    python3 ./python-utils/sync-patches.py
+
+    wget -q -c "$json_url" -O patches.json --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+
+    [ "${revanced_latest[7]}" != "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+
+    [ "${revanced_latest[10]}" != "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$integrations_url" -O revanced-integrations-v"$integrations_latest".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
+
+    [ "${revanced_latest[10]}" != "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+
+    python3 ./python-utils/sync-patches.py > /dev/null 2>&1
 }
 
 
@@ -99,20 +115,32 @@ changesource()
     source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
     allsources=($(jq -r '.[] | "\(.sourceMaintainer) \(.sourceStatus)"' sources.json))
     selectedsource=$("${header[@]}" --begin 4 0 --title '| Source Selection Menu |' --keep-window --no-items --no-shadow --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" "$fullpageheight" -1 10 "${allsources[@]}" 2>&1> /dev/tty)
-    tmp=$(mktemp)
-    jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg selectedsource "$selectedsource" 'map(select(.sourceMaintainer == $selectedsource).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
     if [ "$source" != "$selectedsource" ]
     then
+        tmp=$(mktemp)
+        jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg selectedsource "$selectedsource" 'map(select(.sourceMaintainer == $selectedsource).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
+        python3 ./python-utils/revanced-latest.py && readarray -t revanced_latest < ./.revancedlatest
+        if [ "${revanced_latest[0]}" = "error" ]
+        then
+            "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
+            tmp=$(mktemp)
+            jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg source "$source" 'map(select(.sourceMaintainer == $source).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
+            mainmenu
+            return 0
+        fi
         source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
         availableapps=($(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json))
         rm revanced-* > /dev/null 2>&1
-        mapfile -t revanced_latest < <(python3 ./python-utils/revanced-latest.py)
         cli_latest="${revanced_latest[0]}"
-        cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[1]}")"
-        patches_latest="${revanced_latest[2]}"
-        patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[3]}")"
-        integrations_latest="${revanced_latest[4]}"
-        integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[5]}")"
+        cli_url="${revanced_latest[1]}"
+        cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[2]}")"
+        patches_latest="${revanced_latest[3]}"
+        json_url="${revanced_latest[4]}"
+        patches_url="${revanced_latest[6]}"
+        patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[7]}")"
+        integrations_latest="${revanced_latest[8]}"
+        integrations_url="${revanced_latest[9]}"
+        integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[10]}")"
         getresources
     fi
     mainmenu
@@ -140,6 +168,9 @@ selectapp()
         elif [ "$appname" = "TikTok" ]
         then
             pkgname=com.ss.android.ugc.trill
+        elif [ "$appname" = "Twitch" ]
+        then
+            pkgname=tv.twitch.android.app
         fi
     elif [ $exitstatus -ne 0 ]
     then
@@ -262,7 +293,14 @@ nonrootinstall()
 
 checkresources()
 {
-    if ls ./revanced-patches-* > /dev/null 2>&1 && ls ./revanced-cli-* > /dev/null 2>&1 && ls ./revanced-integrations-* > /dev/null 2>&1 && ls ./patches* > /dev/null 2>&1
+    if ls ./.revancedlatest > /dev/null 2>&1
+    then
+        readarray -t revanced_latest < ./.revancedlatest
+    else
+        resourcemenu
+    fi
+
+    if [ "${revanced_latest[2]}" = "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ]
     then
         return 0
     else
@@ -319,7 +357,7 @@ fetchapk()
             app_dl
         fi
     else
-        rm ./"$appname"-"$appver".apk > /dev/null 2>&1
+        rm ./"$appname"*.apk > /dev/null 2>&1
         app_dl
     fi
     apkargs="-a $appname-$appver.apk -o ${appname}Revanced-$appver.apk"

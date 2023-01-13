@@ -55,6 +55,13 @@ try:
         apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
 
 
+    elif argv[1] == "Twitch":
+
+        appurl = f'https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-{argv[2].replace(".","-")}-release/'
+
+        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
+
+    
     print(33, flush=True)
 
     apppage2= f"https://apkmirror.com{fetchurl(apppage1).find(['a'], { 'class' : compile('accent_bg btn btn-flat downloadButton')})['href']}"
