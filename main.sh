@@ -392,8 +392,9 @@ dlmicrog()
     if "${header[@]}" --begin 4 0 --title '| MicroG Prompt |' --no-items --defaultno --keep-window --no-shadow --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YTMusic won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" "$fullpageheight" -1
     then
         internet
-        wget -q -c "https://github.com/inotia00/VancedMicroG/releases/download/v0.2.26.224913/microg.apk" -O "VancedMicroG-0.2.26.apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : 0.2.26\nSize    : 10.5M\n\nDownloading..." 10 30 && tput civis
-        [[ -f VancedMicroG-0.2.26.apk ]] && mv VancedMicroG-0.2.26.apk /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-0.2.26.apk
+        microgheaders=$(wget -qO- "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest")
+        wget -q -c "$(echo $microgheaders | jq -r '.assets[].browser_download_url')" -O "VancedMicroG-$(echo $microgheaders | jq -r '.tag_name')" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : $(echo $microgheaders | jq -r '.tag_name')\nSize    : $(echo $microgheaders | jq -r '.assets[].size' | numfmt --to=iec --format="%0.1f")\n\nDownloading..." 10 30 && tput civis
+        ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-$(echo $microgheaders | jq -r '.tag_name')
     fi
     mainmenu
 }
