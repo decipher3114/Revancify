@@ -29,7 +29,6 @@ installdependencies()
     git pull
     pkg update -y &&
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
-    pip install --upgrade pip &&
     pip install wheel &&
     pip install requests bs4 &&
     ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
