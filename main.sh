@@ -39,26 +39,26 @@ resourcemenu()
 {
     internet
 
-    python3 python-utils/revanced-latest.py && readarray -t revanced_latest < .revancedlatest
+    python3 python-utils/revanced-latest.py && readarray -t source_latest < .${source}latest
     
-    if [ "${revanced_latest[0]}" = "error" ]
+    if [ "${source_latest[0]}" = "error" ]
     then
         "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
         mainmenu
         return 0
     fi
 
-    cli_latest="${revanced_latest[0]}"
-    cli_url="${revanced_latest[1]}"
-    cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[2]}")"
-    patches_latest="${revanced_latest[3]}"
-    json_url="${revanced_latest[4]}"
-    json_size="${revanced_latest[5]}"
-    patches_url="${revanced_latest[6]}"
-    patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[7]}")"
-    integrations_latest="${revanced_latest[8]}"
-    integrations_url="${revanced_latest[9]}"
-    integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[10]}")"
+    cli_latest="${source_latest[0]}"
+    cli_url="${source_latest[1]}"
+    cli_size="$(numfmt --to=iec --format="%0.1f" "${source_latest[2]}")"
+    patches_latest="${source_latest[3]}"
+    json_url="${source_latest[4]}"
+    json_size="${source_latest[5]}"
+    patches_url="${source_latest[6]}"
+    patches_size="$(numfmt --to=iec --format="%0.1f" "${source_latest[7]}")"
+    integrations_latest="${source_latest[8]}"
+    integrations_url="${source_latest[9]}"
+    integrations_size="$(numfmt --to=iec --format="%0.1f" "${source_latest[10]}")"
 
 
     ls ${source}-cli-*.jar > /dev/null 2>&1 && cli_available=$(basename ${source}-cli-*.jar .jar | cut -d '-' -f 3) || cli_available="Not found"
@@ -70,7 +70,7 @@ resourcemenu()
 
     if "${header[@]}" --begin 4 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" "$fullpageheight" -1
     then
-        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${revanced_latest[2]}" = "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ]
+        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[7]}" = "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[10]}" = "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ]
         then
             "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
             mainmenu
@@ -89,22 +89,22 @@ resourcemenu()
 getresources()
 {
     useragent=""$useragent""
-    [ "${revanced_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
     wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
 
-    [ "${revanced_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
     
-    [ "${revanced_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
     wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
 
     wget -q -c "$json_url" -O ${source}-patches-v"$patches_latest".json --user-agent="$useragent"
 
-    [ "${revanced_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
-    [ "${revanced_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] &&\
     wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
 
-    [ "${revanced_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
     python3 python-utils/sync-patches.py > /dev/null 2>&1
 }
@@ -274,14 +274,14 @@ nonrootinstall()
 
 checkresources()
 {
-    if ls .revancedlatest > /dev/null 2>&1
+    if ls .${source}latest > /dev/null 2>&1
     then
-        readarray -t revanced_latest < .revancedlatest
+        readarray -t source_latest < .${source}latest
     else
         resourcemenu
     fi
 
-    if [ "${revanced_latest[2]}" = "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && ls ${source}-patches.json > /dev/null 2>&1
+    if [ "${source_latest[2]}" = "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[7]}" = "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[10]}" = "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && ls ${source}-patches.json > /dev/null 2>&1
     then
         return 0
     else

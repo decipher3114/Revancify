@@ -12,7 +12,8 @@ with open('sources.json', 'r') as sourcesfile:
 for source in sourcesjson:
     if source['sourceStatus'] == "on":
         sourcemaintainer = source['sourceMaintainer']
-with open('.revancedlatest', 'w') as mainfile:
+
+with open(f'.{sourcemaintainer}latest', 'w') as mainfile:
     try:
         data = []
         for component in ["cli", "patches", "integrations"]:
