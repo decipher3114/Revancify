@@ -38,7 +38,7 @@ obsoletepatches = []
 for index, patchname in enumerate(patches):
     if patchname not in saved_patches:
         newkey = {}
-        try:
+        if remotejson[index]['compatiblePackages'] != []:
             newkey['patchname'] = patchname
             newkey['appname'] = remotejson[index]['compatiblePackages'][0]['name']
             newkey['description'] = remotejson[index]['description']
@@ -46,18 +46,24 @@ for index, patchname in enumerate(patches):
                 newkey['status'] = "off"
             elif remotejson[index]['excluded'] == False:
                 newkey['status'] = "on"
-        except:
-            pass
+        else:
+            newkey['patchname'] = patchname 
+            newkey['appname'] = "generic"
+            newkey['description'] = remotejson[index]['description']
+            newkey['status'] = "off"
 
         localjson.append(newkey)
     else:
-        try:
+        if remotejson[index]['compatiblePackages'] != []:
             patchindex = saved_patches.index(patchname)
             localjson[patchindex]['patchname'] = remotejson[index]['name']
             localjson[patchindex]['description'] = remotejson[index]['description']
             localjson[patchindex]['appname'] = remotejson[index]['compatiblePackages'][0]['name']
-        except:
-            pass
+        else:
+            patchindex = saved_patches.index(patchname)
+            localjson[patchindex]['patchname'] = remotejson[index]['name']
+            localjson[patchindex]['description'] = remotejson[index]['description']
+            localjson[patchindex]['appname'] = "generic"
 
 obsoletepatches = [ index for index, patchname in enumerate(saved_patches) if patchname not in patches]
 
