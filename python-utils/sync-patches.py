@@ -3,6 +3,7 @@ Sync saved-patches from patches
 """
 
 from json import load, dump
+import glob
 
 localjson = None
 
@@ -27,7 +28,7 @@ def openjson():
 
 openjson()
 
-with open("patches.json", "r") as patches:
+with open(glob.glob('*patches-*json')[0], "r") as patches:
     remotejson = load(patches)
 
 patches = [key['name'] for key in remotejson]

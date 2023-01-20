@@ -7,6 +7,7 @@ from re import compile
 from sys import argv as arg
 from json import load
 from requests import get
+import glob
 
 versionlist=[]
 
@@ -15,7 +16,7 @@ def fetchurl(url):
 
 try:
     if arg[1] == "YouTube":
-        with open("patches.json", "r") as patches:
+        with open(glob.glob('*patches-*json')[0], "r") as patches:
             remotejson = load(patches)
         for json in remotejson:
             if json['name'] == 'hide-create-button':
@@ -27,7 +28,7 @@ try:
             else:
                 print(appver.replace("YouTube ", "").replace(" beta", " [Beta]"))
     elif arg[1] == "YTMusic":
-        with open("patches.json", "r") as patches:
+        with open(glob.glob('*patches-*json')[0], "r") as patches:
             remotejson = load(patches)
         for json in remotejson:
             if json['name'] == 'background-play':

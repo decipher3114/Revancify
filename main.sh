@@ -5,7 +5,7 @@ terminatescript(){
 }
 trap terminatescript SIGINT
 
-# For update change this sentence here ...
+# For update change this sentence here...
 
 setup()
 {
@@ -53,6 +53,7 @@ resourcemenu()
     cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[2]}")"
     patches_latest="${revanced_latest[3]}"
     json_url="${revanced_latest[4]}"
+    json_size="${revanced_latest[5]}"
     patches_url="${revanced_latest[6]}"
     patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[7]}")"
     integrations_latest="${revanced_latest[8]}"
@@ -60,22 +61,23 @@ resourcemenu()
     integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[10]}")"
 
 
-    ls ./revanced-cli-* > /dev/null 2>&1 && cli_available=$(basename revanced-cli-* .jar | cut -d '-' -f 3) || cli_available="Not found"
-    ls ./revanced-patches-* > /dev/null 2>&1 && patches_available=$(basename revanced-patches-* .jar | cut -d '-' -f 3) || patches_available="Not found"
-    ls ./revanced-integrations-* > /dev/null 2>&1 && integrations_available=$(basename revanced-integrations-* .apk | cut -d '-' -f 3) || integrations_available="Not found"
+    ls ./${source}-cli-*.jar > /dev/null 2>&1 && cli_available=$(basename ${source}-cli-*.jar .jar | cut -d '-' -f 3) || cli_available="Not found"
+    ls ./${source}-patches-*.jar > /dev/null 2>&1 && patches_available=$(basename ${source}-patches-*.jar .jar | cut -d '-' -f 3) || patches_available="Not found"
+    ls ./${source}-patches-*.json > /dev/null 2>&1 && json_available=$(basename ${source}-patches-*.json .json | cut -d '-' -f 3) || json_available="Not found"
+    ls ./${source}-integrations-*.apk > /dev/null 2>&1 && integrations_available=$(basename ${source}-integrations-*.apk .apk | cut -d '-' -f 3) || integrations_available="Not found"
 
     readarray -t resourcefilelines < <(echo -e "Resource_Latest_Downloaded\nCLI_v${cli_latest}_${cli_available}\nPatches_v${patches_latest}_${patches_available}\nIntegrations_v${integrations_latest}_${integrations_available}" | column -t -s '_')
 
     if "${header[@]}" --begin 4 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" "$fullpageheight" -1
     then
-        if [ "v$patches_latest" = "$patches_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${revanced_latest[2]}" = "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ]
+        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${revanced_latest[2]}" = "$( ls ./${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ]
         then
             "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
             mainmenu
         else
-            [ "v$patches_latest" != "$patches_available" ] && rm revanced-patches-* > /dev/null 2>&1
-            [ "v$cli_latest" != "$cli_available" ] && rm revanced-cli-* > /dev/null 2>&1
-            [ "v$integrations_latest" != "$integrations_available" ] && rm revanced-integrations-* > /dev/null 2>&1
+            [ "v$patches_latest" != "$patches_available" ] && rm ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.json
+            [ "v$cli_latest" != "$cli_available" ] && rm ${source}-cli-*.jar > /dev/null 2>&1
+            [ "v$integrations_latest" != "$integrations_available" ] && rm ${source}-integrations-*.apk > /dev/null 2>&1
             getresources
             mainmenu
         fi
@@ -86,24 +88,23 @@ resourcemenu()
 
 getresources()
 {
-    [ "${revanced_latest[2]}" != "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c "$cli_url" -O revanced-cli-v"$cli_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
+    useragent=""$useragent""
+    [ "${revanced_latest[2]}" != "$( ls ./${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." 12 40 && tput civis
 
-    [ "${revanced_latest[2]}" != "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${revanced_latest[2]}" != "$( ls ./${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
     
-    [ "${revanced_latest[7]}" != "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c "$patches_url" -O revanced-patches-v"$patches_latest".jar --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
+    [ "${revanced_latest[7]}" != "$( ls ./${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." 12 40 && tput civis
 
-    rm patches.json > /dev/null 2>&1
+    wget -q -c "$json_url" -O ${source}-patches-v"$patches_latest".json --user-agent="$useragent"
 
-    wget -q -c "$json_url" -O patches.json --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+    [ "${revanced_latest[7]}" != "$( ls ./${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
-    [ "${revanced_latest[7]}" != "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${revanced_latest[10]}" != "$( ls ./${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
 
-    [ "${revanced_latest[10]}" != "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ] &&\
-    wget -q -c "$integrations_url" -O revanced-integrations-v"$integrations_latest".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." 12 40 && tput civis
-
-    [ "${revanced_latest[10]}" != "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "${revanced_latest[10]}" != "$( ls ./${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
     python3 ./python-utils/sync-patches.py > /dev/null 2>&1
 }
@@ -119,29 +120,9 @@ changesource()
     then
         tmp=$(mktemp)
         jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg selectedsource "$selectedsource" 'map(select(.sourceMaintainer == $selectedsource).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
-        python3 ./python-utils/revanced-latest.py && readarray -t revanced_latest < ./.revancedlatest
-        if [ "${revanced_latest[0]}" = "error" ]
-        then
-            "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
-            tmp=$(mktemp)
-            jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg source "$source" 'map(select(.sourceMaintainer == $source).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
-            mainmenu
-            return 0
-        fi
         source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
         availableapps=($(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json))
-        rm revanced-* > /dev/null 2>&1
-        cli_latest="${revanced_latest[0]}"
-        cli_url="${revanced_latest[1]}"
-        cli_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[2]}")"
-        patches_latest="${revanced_latest[3]}"
-        json_url="${revanced_latest[4]}"
-        patches_url="${revanced_latest[6]}"
-        patches_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[7]}")"
-        integrations_latest="${revanced_latest[8]}"
-        integrations_url="${revanced_latest[9]}"
-        integrations_size="$(numfmt --to=iec --format="%0.1f" "${revanced_latest[10]}")"
-        getresources
+        resourcemenu
     fi
     mainmenu
 }
@@ -180,13 +161,13 @@ selectapp()
 
 selectpatches()
 {
-    if ! ls ./patches* > /dev/null 2>&1
+    if ! ls ./${source}-patches-*.json > /dev/null 2>&1
     then
         "${header[@]}" --msgbox "No Json file found !!\nPlease update resources to edit patches." 12 40
         resourcemenu
         return 0
     fi
-    if ! ls ./{$source}-patches* > /dev/null 2>&1
+    if ! ls ./{$source}-patches.json > /dev/null 2>&1
     then
         python3 ./python-utils/sync-patches.py
     fi
@@ -222,7 +203,7 @@ patchsaver()
 patchoptions()
 {
     checkresources
-    java -jar ./revanced-cli-*.jar -b ./revanced-patches-*.jar -m ./revanced-integrations-*.apk -c -a ./noinput.apk -o nooutput.apk > /dev/null 2>&1
+    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk.apk -c -a ./noinput.apk -o nooutput.apk > /dev/null 2>&1
     tput cnorm
     tmp=$(mktemp)
     "${header[@]}" --begin 4 0 --ok-label "Save" --cancel-label "Exit" --keep-window --no-shadow --title '| Options File Editor |' --editbox options.toml "$fullpageheight" -1 2> "$tmp" && mv "$tmp" ./options.toml
@@ -300,7 +281,7 @@ checkresources()
         resourcemenu
     fi
 
-    if [ "${revanced_latest[2]}" = "$( ls ./revanced-cli-* > /dev/null 2>&1 && du -b revanced-cli-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./revanced-patches-* > /dev/null 2>&1 && du -b revanced-patches-* | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./revanced-integrations-* > /dev/null 2>&1 && du -b revanced-integrations-* | cut -d $'\t' -f 1 || echo "None" )" ]
+    if [ "${revanced_latest[2]}" = "$( ls ./${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[7]}" = "$( ls ./${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${revanced_latest[10]}" = "$( ls ./${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && ls ./${source}-patches.json > /dev/null 2>&1
     then
         return 0
     else
@@ -436,7 +417,7 @@ patchapp()
         python3 ./python-utils/sync-patches.py
     fi
     setargs
-    java -jar ./revanced-cli-*.jar -b ./revanced-patches-*.jar -m ./revanced-integrations-*.apk -c $apkargs $includepatches --keystore ./revanced.keystore --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
+    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk.apk -c $apkargs $includepatches --keystore ./revanced.keystore --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
     tput civis
     sleep 2
     if ! grep -q "Finished" .patchlog
