@@ -203,7 +203,7 @@ patchsaver()
 patchoptions()
 {
     checkresources
-    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk.apk -c -a ./noinput.apk -o nooutput.apk > /dev/null 2>&1
+    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk -c -a ./noinput.apk -o nooutput.apk > /dev/null 2>&1
     tput cnorm
     tmp=$(mktemp)
     "${header[@]}" --begin 4 0 --ok-label "Save" --cancel-label "Exit" --keep-window --no-shadow --title '| Options File Editor |' --editbox options.toml "$fullpageheight" -1 2> "$tmp" && mv "$tmp" ./options.toml
@@ -417,7 +417,7 @@ patchapp()
         python3 ./python-utils/sync-patches.py
     fi
     setargs
-    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk.apk -c $apkargs $includepatches --keystore ./revanced.keystore --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
+    java -jar ./${source}-cli-*.jar -b ./${source}-patches-*.jar -m ./${source}-integrations-*.apk -c $apkargs $includepatches --keystore ./revanced.keystore --custom-aapt2-binary ./binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee ./.patchlog | "${header[@]}" --begin 4 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" "$fullpageheight" -1
     tput civis
     sleep 2
     if ! grep -q "Finished" .patchlog
