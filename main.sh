@@ -192,7 +192,7 @@ selectpatches()
     fi
     patchselectionheight=$(($(tput lines) - 5))
     declare -a patchesinfo
-    readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname))[] | "\(.patchname)\n\(.status)\n\(.description)"' "$source-patches.json")
+    readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic"))[] | "\(.patchname)\n\(.status)\n\(.description)"' "$source-patches.json")
     choices=($("${header[@]}" --begin 4 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 10 "${patchesinfo[@]}" 2>&1 >/dev/tty))
     selectpatchstatus=$?
     patchsaver
@@ -203,17 +203,17 @@ patchsaver()
     if [ $selectpatchstatus -eq 0 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' "$source-patches.json" | jq 'map(select(IN(.patchname; $ARGS.positional[])).status = "on")' --args "${choices[@]}" > "$tmp" && mv "$tmp" ./"$source-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic").status = "off")' "$source-patches.json" | jq 'map(select(IN(.patchname; $ARGS.positional[])).status = "on")' --args "${choices[@]}" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         mainmenu
     elif [ $selectpatchstatus -eq 2 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic").status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         selectpatches
     elif [ $selectpatchstatus -eq 3 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname).status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic").status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" ./"$source-patches.json"
         selectpatches
     fi
 }
@@ -401,7 +401,7 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
+    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic" and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
     if [ "$optionscompatible" = true ] && ls ./options* > /dev/null 2>&1
     then
         optionsarg="--options options.toml"
