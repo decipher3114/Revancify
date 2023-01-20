@@ -382,7 +382,7 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select(.appname == $pkgname or .appname == "generic" and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
+    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" 'map(select((.appname == $pkgname or .appname == "generic") and .status == "on"))[].patchname' "$source-patches.json" | sed "s/^/-i /g"))
     if [ "$optionscompatible" = true ] && ls options* > /dev/null 2>&1
     then
         optionsarg="--options options.toml"
