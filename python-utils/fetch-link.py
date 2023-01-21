@@ -14,65 +14,63 @@ def fetchurl(url):
 
 try:
 
+    version = argv[2].replace(".","-")
+
     if argv[1] == "YouTube":
 
-        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube/youtube-{argv[2].replace(".","-")}-release/'
-
-        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
+        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube/youtube-{version}-release/'
 
 
-    elif argv[1] == "YTMusic":
 
-        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube-music/youtube-music-{argv[2].replace(".","-")}-release/'
+    elif argv[1] == "YouTube-Music":
 
-        if argv[3] == "arm64":
+        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube-music/youtube-music-{version}-release/'
 
-            apppage1 = f"https://www.apkmirror.com{fetchurl(appurl).find(['div'], text='arm64-v8a').parent.find(['a'], class_='accent_color')['href']}"
-        
-        elif argv[3] == "armeabi":
-
-            apppage1 = f"https://www.apkmirror.com{fetchurl(appurl).find(['div'], text='armeabi-v7a').parent.find(['a'], class_='accent_color')['href']}"
 
 
     elif argv[1] == "Twitter":
 
-        appurl = f'https://www.apkmirror.com/apk/twitter-inc/twitter/twitter-{argv[2].replace(".","-")}-release/'
-
-        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
+        appurl = f'https://www.apkmirror.com/apk/twitter-inc/twitter/twitter-{version}-release/'
 
 
     elif argv[1] == "Reddit":
 
-        appurl = f'https://www.apkmirror.com/apk/reddditinc/reddit/reddit-{argv[2].replace(".","-")}-release/'
-
-        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
+        appurl = f'https://www.apkmirror.com/apk/reddditinc/reddit/reddit-{version}-release/'
 
 
     elif argv[1] == "TikTok":
 
-        appurl = f'https://www.apkmirror.com/apk/tiktok-pte-ltd/tik-tok/tik-tok-{argv[2].replace(".","-")}-release/'
+        appurl = f'https://www.apkmirror.com/apk/tiktok-pte-ltd/tik-tok/tik-tok-{version}-release/'
 
-        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
 
 
     elif argv[1] == "Twitch":
 
-        appurl = f'https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-{argv[2].replace(".","-")}-release/'
+        appurl = f'https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-{version}-release/'
 
-        apppage1= f"https://apkmirror.com{fetchurl(appurl).find(['span'], text='APK').parent.find(['a'], class_='accent_color')['href']}"
 
-    
+
+    data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], text=compile(f'{argv[3]}|universal'))
+
+    for element in data:
+        if element.parent.find(['span']).string == "APK":
+            appurl2 = f"https://apkmirror.com{element.parent.find(['a'], class_='accent_color')['href']}"
+            break
+
     print(33, flush=True)
 
-    apppage2= f"https://apkmirror.com{fetchurl(apppage1).find(['a'], { 'class' : compile('accent_bg btn btn-flat downloadButton')})['href']}"
+    appurl3= f"https://apkmirror.com{fetchurl(appurl2).find(['a'], { 'class' : compile('accent_bg btn btn-flat downloadButton')})['href']}"
 
     print(66, flush=True)
-    appdllink = f"https://apkmirror.com{fetchurl(apppage2).find(rel='nofollow')['href']}"
+    appdllink = f"https://apkmirror.com{fetchurl(appurl3).find(rel='nofollow')['href']}"
     print(100, flush=True)
 
     stderr.write(f'{appdllink}\n')
     stderr.write(get(appdllink, stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}).headers['Content-length'])
 
+except NameError:
+    stderr.write("noapk")
+    exit()
 
-except Exception as e:
+except:
     stderr.write("error")

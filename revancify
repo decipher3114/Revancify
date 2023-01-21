@@ -54,17 +54,19 @@ then
     then
         tput civis
         rm -rf ./*cache
+        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
         git checkout . > /dev/null 2>&1
         git config --global pull.rebase true
-        git pull
+        git pull > /dev/null 2>&1
         ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
-        bash main.sh
+        bash main.sh $1
     else
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
         installdependencies &&
         tput civis &&
-        bash main.sh
+        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
+        bash main.sh $1
         cd ~
     fi
 else
@@ -74,7 +76,8 @@ else
         tput civis &&
         rm -rf ./*cache
         tput civis &&
-        bash main.sh
+        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
+        bash main.sh $1
         cd ~
     else
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify

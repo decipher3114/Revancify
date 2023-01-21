@@ -3,15 +3,12 @@ Fetch latest version from the github of the corresponding source repository.
 """
 
 from requests import get
+from sys import argv as arg
 import math
 from json import load
 
-with open('sources.json', 'r') as sourcesfile:
-    sourcesjson = load(sourcesfile)
 
-for source in sourcesjson:
-    if source['sourceStatus'] == "on":
-        sourcemaintainer = source['sourceMaintainer']
+sourcemaintainer = arg[1]
 
 with open(f'.{sourcemaintainer}latest', 'w') as mainfile:
     try:
