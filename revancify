@@ -40,6 +40,7 @@ checkrevancify()
 {
     if cd /data/data/com.termux/files/home/storage/Revancify > /dev/null 2>&1 
     then
+        startup=(dialog  --keep-window --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42)
         return 0
     else
         echo "Revancify is not installed"
@@ -53,8 +54,8 @@ then
     if checkdependencies
     then
         tput civis
+        "${startup[@]}"
         rm -rf ./*cache
-        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
         git checkout . > /dev/null 2>&1
         git config --global pull.rebase true
         git pull > /dev/null 2>&1
@@ -65,7 +66,7 @@ then
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
         installdependencies &&
         tput civis &&
-        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
+        "${startup[@]}"
         bash main.sh $1
         cd ~
     fi
@@ -76,7 +77,7 @@ else
         tput civis &&
         rm -rf ./*cache
         tput civis &&
-        dialog  --keep-window --no-shadow --infobox "█▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n█▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░" 4 38
+        "${startup[@]}"
         bash main.sh $1
         cd ~
     else

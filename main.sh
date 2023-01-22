@@ -69,9 +69,13 @@ resourcemenu()
 
     readarray -t resourcefilelines < <(echo -e "Resource_Latest_Downloaded\nCLI_v${cli_latest}_${cli_available}\nPatches_v${patches_latest}_${patches_available}\nIntegrations_v${integrations_latest}_${integrations_available}" | column -t -s '_')
 
+    cli_available_size=$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )
+    patches_available_size=$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )
+    integrations_available_size=$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )
+
     if "${header[@]}" --begin 2 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" -1 -1
     then
-        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[7]}" = "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && [ "${source_latest[10]}" = "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ]
+        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$cli_available_size" ] && [ "${source_latest[7]}" = "$patches_available_size" ] && [ "${source_latest[10]}" = "$integrations_available_size" ]
         then
             "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
             mainmenu
@@ -90,19 +94,19 @@ resourcemenu()
 getresources()
 {
     useragent=""$useragent""
-    [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[2]}" != "$cli_available_size" ] &&\
     wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
     
-    [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[7]}" != "$patches_available_size" ] &&\
     wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." -1 -1 && tput civis
 
     wget -q -c "$json_url" -O ${source}-patches-v"$patches_latest".json --user-agent="$useragent"
 
     [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
-    [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] &&\
+    [ "${source_latest[10]}" != "$integrations_available_size" ] &&\
     wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
