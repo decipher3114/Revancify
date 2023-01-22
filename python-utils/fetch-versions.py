@@ -7,16 +7,9 @@ from re import compile
 from sys import argv as arg
 from json import load
 from requests import get
+import re
 
 versionlist=[]
-
-def version(name):
-    for string in name.split():
-        if string[0].isdigit():
-            return string
-            break
-
-version("Some 10.rele.0 hi")
 
 def fetchurl(url):
     return BeautifulSoup(get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).content, 'html.parser')
@@ -39,7 +32,7 @@ try:
             beta=" [BETA]"
 
 
-        appver = version(appver)
+        appver = re.search('(?<=\s)\d.*?(?=\s|\Z)', appver).group()
         
         support=""
         if appver in supportedvers:
