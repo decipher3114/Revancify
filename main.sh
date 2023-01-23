@@ -12,16 +12,17 @@ setup()
     arch=$(getprop ro.product.cpu.abi)
     mkdir -p /storage/emulated/0/Revancify
 
-    sourceString='[{"sourceMaintainer" : "revanced", "sourceStatus" : "on", "availableApps": ["YouTube", "YouTube-Music", "Twitter", "Reddit", "TikTok", "Twitch"], "optionsCompatible" : true},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off", "availableApps": ["YouTube", "YouTube-Music"], "optionsCompatible" : true}]'
+    sourceString='[{"sourceMaintainer" : "revanced", "sourceStatus" : "on", "availableApps": ["YouTube", "YouTube-Music", "Twitter", "Reddit", "Tik-Tok", "Twitch"], "optionsCompatible" : true},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off", "availableApps": ["YouTube", "YouTube-Music"], "optionsCompatible" : true}]'
     if ! ls sources* > /dev/null 2>&1
     then
         echo $sourceString | jq '.' > sources.json
     else
-        source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
         sed -i 's/YTMusic/YouTube-Music/g' sources.json
-        optionscompatible=$(jq -r 'map(select(.sourceStatus == "on"))[].optionsCompatible' sources.json)
-        readarray -t availableapps < <(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json)
+        sed -i 's/TikTok/Tik-Tok/g' sources.json
     fi
+    source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
+    optionscompatible=$(jq -r 'map(select(.sourceStatus == "on"))[].optionsCompatible' sources.json)
+    readarray -t availableapps < <(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json)
 }
 
 internet()
@@ -151,7 +152,7 @@ selectapp()
         elif [ "$appname" = "Reddit" ]
         then
             pkgname=com.reddit.frontpage
-        elif [ "$appname" = "TikTok" ]
+        elif [ "$appname" = "Tik-Tok" ]
         then
             pkgname=com.ss.android.ugc.trill
         elif [ "$appname" = "Twitch" ]
