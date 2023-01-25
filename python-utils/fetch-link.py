@@ -9,48 +9,17 @@ from bs4 import BeautifulSoup
 
 
 def fetchurl(url):
-    return BeautifulSoup(Session().get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}).content, 'html.parser')
+    return BeautifulSoup(Session().get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).content, 'html.parser')
 
 
 try:
 
     version = argv[2].replace(".","-")
 
-    if argv[1] == "YouTube":
-
-        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube/youtube-{version}-release/'
+    appurl=f'https://www.apkmirror.com/apk/{argv[3]}/{argv[1]}/{argv[1]}-{version}-release/'
 
 
-
-    elif argv[1] == "YouTube-Music":
-
-        appurl = f'https://www.apkmirror.com/apk/google-inc/youtube-music/youtube-music-{version}-release/'
-
-
-
-    elif argv[1] == "Twitter":
-
-        appurl = f'https://www.apkmirror.com/apk/twitter-inc/twitter/twitter-{version}-release/'
-
-
-    elif argv[1] == "Reddit":
-
-        appurl = f'https://www.apkmirror.com/apk/reddditinc/reddit/reddit-{version}-release/'
-
-
-    elif argv[1] == "TikTok":
-
-        appurl = f'https://www.apkmirror.com/apk/tiktok-pte-ltd/tik-tok/tik-tok-{version}-release/'
-
-
-
-    elif argv[1] == "Twitch":
-
-        appurl = f'https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-{version}-release/'
-
-
-
-    data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], text=compile(f'{argv[3]}|universal'))
+    data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], text=compile(f'{argv[4]}|universal|noarch'))
 
     for element in data:
         if element.parent.find(['span']).string == "APK":
@@ -66,7 +35,7 @@ try:
     print(100, flush=True)
 
     stderr.write(f'{appdllink}\n')
-    stderr.write(get(appdllink, stream=True, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}).headers['Content-length'])
+    stderr.write(get(appdllink, stream=True, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).headers['Content-length'])
 
 except NameError:
     stderr.write("noapk")

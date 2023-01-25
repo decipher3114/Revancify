@@ -12,7 +12,7 @@ setup()
     arch=$(getprop ro.product.cpu.abi)
     mkdir -p /storage/emulated/0/Revancify
 
-    sourceString='[{"sourceMaintainer" : "revanced", "sourceStatus" : "on", "availableApps": ["YouTube", "YouTube-Music", "Twitter", "Reddit", "Tik-Tok", "Twitch"], "optionsCompatible" : true},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off", "availableApps": ["YouTube", "YouTube-Music"], "optionsCompatible" : true}]'
+    sourceString='[{"sourceMaintainer" : "revanced", "sourceStatus" : "on"},{"sourceMaintainer" : "inotia00", "sourceStatus" : "off"}]'
     if ! ls sources* > /dev/null 2>&1
     then
         echo $sourceString | jq '.' > sources.json
@@ -21,8 +21,7 @@ setup()
         sed -i 's/TikTok/Tik-Tok/g' sources.json
     fi
     source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
-    optionscompatible=$(jq -r 'map(select(.sourceStatus == "on"))[].optionsCompatible' sources.json)
-    readarray -t availableapps < <(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json)
+    readarray -t availableapps < <(jq -r 'map(select(.appName != null))[].appName' ${source}-patches.json)
 }
 
 internet()
@@ -96,19 +95,19 @@ getresources()
 {
     useragent=""$useragent""
     [ "${source_latest[2]}" != "$cli_available_size" ] &&\
-    wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 tail -n +13 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
     
     [ "${source_latest[7]}" != "$patches_available_size" ] &&\
-    wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 tail -n +13 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." -1 -1 && tput civis
 
     wget -q -c "$json_url" -O ${source}-patches-v"$patches_latest".json --user-agent="$useragent"
 
     [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
     [ "${source_latest[10]}" != "$integrations_available_size" ] &&\
-    wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 tail -n +13 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
@@ -128,37 +127,34 @@ changesource()
         jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg selectedsource "$selectedsource" 'map(select(.sourceMaintainer == $selectedsource).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
         source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
         optionscompatible=$(jq -r 'map(select(.sourceStatus == "on"))[].optionsCompatible' sources.json)
-        availableapps=($(jq -r 'map(select(.sourceStatus == "on"))[].availableApps[]' sources.json))
+        readarray -t availableapps < <(jq -r 'map(select(.appName != null))[].appName' ${source}-patches.json)
         checkresources
     fi
     mainmenu
 }
 
+checkjson()
+{
+    if ! ls ${source}-patches-*.json > /dev/null 2>&1
+    then
+        "${header[@]}" --msgbox "No Json file found !!\nPlease download resources." 12 40
+        resourcemenu
+        return 0
+    fi
+    if ! ls {$source}-patches.json > /dev/null 2>&1
+    then
+        python3 python-utils/sync-patches.py "$source"
+    fi
+}
+
 selectapp()
 {
+    checkjson
     appname=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --no-items --keep-window --no-shadow --ok-label "Select" --menu "Use arrow keys to navigate" -1 -1 15 "${availableapps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
-        if [ "$appname" = "YouTube" ]
-        then
-            pkgname=com.google.android.youtube
-        elif [ "$appname" = "YouTube-Music" ]
-        then
-            pkgname=com.google.android.apps.youtube.music
-        elif [ "$appname" = "Twitter" ]
-        then
-            pkgname=com.twitter.android
-        elif [ "$appname" = "Reddit" ]
-        then
-            pkgname=com.reddit.frontpage
-        elif [ "$appname" = "Tik-Tok" ]
-        then
-            pkgname=com.ss.android.ugc.trill
-        elif [ "$appname" = "Twitch" ]
-        then
-            pkgname=tv.twitch.android.app
-        fi
+        pkgname=$(jq -r --arg appname "$appname" '.[] | select(.appName == $appname).pkgName' ${source}-patches.json)
     elif [ $exitstatus -ne 0 ]
     then
         mainmenu
@@ -168,18 +164,9 @@ selectapp()
 
 selectpatches()
 {
-    if ! ls ${source}-patches-*.json > /dev/null 2>&1
-    then
-        "${header[@]}" --msgbox "No Json file found !!\nPlease update resources to edit patches." 12 40
-        resourcemenu
-        return 0
-    fi
-    if ! ls {$source}-patches.json > /dev/null 2>&1
-    then
-        python3 python-utils/sync-patches.py "$source"
-    fi
+    checkjson
     patchselectionheight=$(($(tput lines) - 3))
-    if ! readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.appName == $pkgname or .appName == "generic"))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
+    if ! readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname or .pkgName == "generic"))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
     then
         python3 python-utils/sync-patches.py "$source"
     fi
@@ -193,17 +180,17 @@ patchsaver()
     if [ $selectpatchstatus -eq 0 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appName == $pkgname).patches[].status = "off")' "${source}-patches.json" | jq '(.[].patches[] | select(IN(.name; $ARGS.positional[])) | .status ) |= "on"' --args "${choices[@]}" > "$tmp" && mv "$tmp" "${source}-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname).patches[].status = "off")' "${source}-patches.json" | jq '(.[].patches[] | select(IN(.name; $ARGS.positional[])) | .status ) |= "on"' --args "${choices[@]}" > "$tmp" && mv "$tmp" "${source}-patches.json"
         mainmenu
     elif [ $selectpatchstatus -eq 2 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appName == $pkgname).patches[].status = "off")' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname).patches[].status = "off")' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
         selectpatches
     elif [ $selectpatchstatus -eq 3 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgname "$pkgname" 'map(select(.appName == $pkgname).patches[].status = "on")' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
+        jq --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname).patches[].status = "on")' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
         selectpatches
     fi
 }
@@ -361,7 +348,7 @@ fetchapk()
 app_dl()
 {
     internet
-    readarray -t fetchlinkresponse < <( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$arch" 2>&3 | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
+    readarray -t fetchlinkresponse < <( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$organisation" "$arch" 2>&3 | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
     tput civis
     echo "${fetchlinkresponse[1]}" > ."$appname"size
     if [ "${fetchlinkresponse[0]}" = "error" ]
@@ -375,7 +362,7 @@ app_dl()
         mainmenu
         return 0
     fi
-    wget -q -c "${fetchlinkresponse[0]}" -O "$appname"-"$appver".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 tail -n +13 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." -1 -1
+    wget -q -c "${fetchlinkresponse[0]}" -O "$appname"-"$appver".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." -1 -1
     tput civis
     sleep 0.5s
     if [ "$(cat ."$appname"size)" != "$(du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1)" ]
@@ -392,7 +379,7 @@ dlmicrog()
     then
         internet
         microgheaders=$(wget -qO- "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest")
-        wget -q -c "$(echo $microgheaders | jq -r '.assets[].browser_download_url')" -O "VancedMicroG-$(echo $microgheaders | jq -r '.tag_name').apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 tail -n +13 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : $(echo $microgheaders | jq -r '.tag_name')\nSize    : $(echo $microgheaders | jq -r '.assets[].size' | numfmt --to=iec --format="%0.1f")\n\nDownloading..." -1 -1 && tput civis
+        wget -q -c "$(echo $microgheaders | jq -r '.assets[].browser_download_url')" -O "VancedMicroG-$(echo $microgheaders | jq -r '.tag_name').apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "App     : Vanced MicroG\nVersion : $(echo $microgheaders | jq -r '.tag_name')\nSize    : $(echo $microgheaders | jq -r '.assets[].size' | numfmt --to=iec --format="%0.1f")\n\nDownloading..." -1 -1 && tput civis
         ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-$(echo $microgheaders | jq -r '.tag_name').apk
     fi
     mainmenu
@@ -400,7 +387,7 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.appName == $pkgname or .appName == "generic") | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
+    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
     if [ "$optionscompatible" = true ] && ls options* > /dev/null 2>&1
     then
         optionsarg="--options options.toml"
@@ -411,7 +398,9 @@ versionselector()
 {
     checkresources
     internet
-    readarray -t appverlist < <(python3 python-utils/fetch-versions.py "$appname" "$pkgname" "$source") 
+    readarray -t appverlist < <(python3 python-utils/fetch-versions.py "$appname" "$source")
+    organisation="${appverlist[-1]}"
+    unset appverlist[-1]
     if [ "${appverlist[0]}" = "error" ]
     then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
@@ -449,7 +438,7 @@ patchapp()
 
 checkmicrogpatch()
 {
-    microgstatus=$(jq -r --arg pkgname $pkgname '.[] | select(.appName == $pkgname) | .patches[] | select(.name |  test(".*microg.*")).status' "${source}-patches.json")
+    microgstatus=$(jq -r --arg pkgname $pkgname '.[] | select(.pkgName == $pkgname) | .patches[] | select(.name |  test(".*microg.*")).status' "${source}-patches.json")
     if [ "$microgstatus" = "on" ] && [ "$variant" = "root" ]
     then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --no-shadow --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appname app crash.\n\n\nDo you want to exclude it or continue?" -1 -1
@@ -457,7 +446,7 @@ checkmicrogpatch()
             return 0
         else
             tmp=$(mktemp)
-            jq -r --arg pkgname $pkgname '(.[] | select(.appName == $pkgname) | .patches[] | select(.name | test(".*microg.*")) | .status) |= "off"' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
+            jq -r --arg pkgname $pkgname '(.[] | select(.pkgName == $pkgname) | .patches[] | select(.name | test(".*microg.*")) | .status) |= "off"' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
             return 0
         fi
     elif [ "$microgstatus" = "off" ] && [ "$variant" = "nonroot" ]
@@ -467,7 +456,7 @@ checkmicrogpatch()
             return 0
         else
             tmp=$(mktemp)
-            jq -r --arg pkgname $pkgname '(.[] | select(.appName == $pkgname) | .patches[] | select(.name | test(".*microg.*")) | .status) |= "on"' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
+            jq -r --arg pkgname $pkgname '(.[] | select(.pkgName == $pkgname) | .patches[] | select(.name | test(".*microg.*")) | .status) |= "on"' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
             return 0
         fi
     fi
@@ -512,14 +501,8 @@ setup
 header=(dialog --backtitle "Revancify  |  [Arch: $arch, SU: $variant]")
 mainmenu()
 {
-    if [ "$optionscompatible" = true ]
-    then
-        optionseditor=(5 "Edit Patch Options")
-    else
-        unset optionseditor
-    fi
     [ "$variant" = "root" ] && misc=(6 "Uninstall Revanced app") || misc=(6 "Download Vanced Microg")
-    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --no-shadow --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Check Resources" "${optionseditor[@]}" "${misc[@]}" 2>&1> /dev/tty)
+    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --no-shadow --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Check Resources" 5 "Edit Patch Options" "${misc[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
