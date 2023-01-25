@@ -390,13 +390,19 @@ setargs()
     
 }
 
-versionselector()
+
+getapplist()
 {
     checkresources
     internet
     readarray -t appverlist < <(python3 python-utils/fetch-versions.py "$appname" "$source")
     organisation="${appverlist[-1]}"
     unset appverlist[-1]
+}
+
+
+versionselector()
+{
     if [ "${appverlist[0]}" = "error" ]
     then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
@@ -468,6 +474,7 @@ buildapp()
         internet
         python3 python-utils/sync-patches.py "$source"
     fi
+    getapplist
     if [ "$variant" = "root" ]
     then
         if ! su -c "pm path $pkgname" > /dev/null 2>&1
