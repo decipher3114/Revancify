@@ -386,7 +386,7 @@ dlmicrog()
 setargs()
 {
     includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
-    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
+    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-e /g"))
     
 }
 
