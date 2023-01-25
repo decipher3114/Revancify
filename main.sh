@@ -21,7 +21,6 @@ setup()
         sed -i 's/TikTok/Tik-Tok/g' sources.json
     fi
     source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
-    readarray -t availableapps < <(jq -r 'map(select(.appName != null))[].appName' ${source}-patches.json)
 }
 
 internet()
@@ -93,7 +92,7 @@ resourcemenu()
 
 getresources()
 {
-    useragent=""$useragent""
+    useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
     [ "${source_latest[2]}" != "$cli_available_size" ] &&\
     wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
 
@@ -126,8 +125,6 @@ changesource()
         tmp=$(mktemp)
         jq -r 'map(select(.).sourceStatus = "off")' sources.json | jq -r --arg selectedsource "$selectedsource" 'map(select(.sourceMaintainer == $selectedsource).sourceStatus = "on")' > "$tmp" && mv "$tmp" sources.json
         source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
-        optionscompatible=$(jq -r 'map(select(.sourceStatus == "on"))[].optionsCompatible' sources.json)
-        readarray -t availableapps < <(jq -r 'map(select(.appName != null))[].appName' ${source}-patches.json)
         checkresources
     fi
     mainmenu
@@ -150,6 +147,7 @@ checkjson()
 selectapp()
 {
     checkjson
+    readarray -t availableapps < <(jq -r 'map(select(.appName != null))[].appName' ${source}-patches.json)
     appname=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --no-items --keep-window --no-shadow --ok-label "Select" --menu "Use arrow keys to navigate" -1 -1 15 "${availableapps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
@@ -388,10 +386,8 @@ dlmicrog()
 setargs()
 {
     includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
-    if [ "$optionscompatible" = true ] && ls options* > /dev/null 2>&1
-    then
-        optionsarg="--options options.toml"
-    fi
+    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
+    
 }
 
 versionselector()
@@ -424,7 +420,7 @@ patchapp()
         python3 python-utils/sync-patches.py "$source"
     fi
     setargs
-    java -jar ${source}-cli-*.jar -b ${source}-patches-*.jar -m ${source}-integrations-*.apk -c $apkargs $includepatches --keystore revanced.keystore --custom-aapt2-binary binaries/aapt2_"$arch" $optionsarg --experimental --exclusive 2>&1 | tee .patchlog | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" -1 -1
+    java -jar ${source}-cli-*.jar -b ${source}-patches-*.jar -m ${source}-integrations-*.apk -c $apkargs $includepatches $excludepatches --keystore revanced.keystore --custom-aapt2-binary binaries/aapt2_"$arch" --options options.toml --experimental 2>&1 | tee .patchlog | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appname-$appver.apk" -1 -1
     tput civis
     sleep 2
     if ! grep -q "Finished" .patchlog
