@@ -14,13 +14,13 @@ versionlist=[]
 def fetchurl(url):
     return BeautifulSoup(get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).content, 'html.parser')
 
-# with open(f'{arg[2]}-patches.json', "r") as patches_file:
-#     json = load(patches_file)
+with open(f'{arg[2]}-patches.json', "r") as patches_file:
+    json = load(patches_file)
 
-# for app in json:
-#         if app['appName'] == arg[1]:
-#             supportedvers = list(app['versions'])
-#             break
+for app in json:
+        if app['appName'] == arg[1]:
+            supportedvers = list(app['versions'])
+            break
 
 
 try:
@@ -39,7 +39,7 @@ try:
         appver = re.search('(?<=\s)\d.*?(?=\s|\Z)', appver).group()
         
         support=""
-        if appver in []:
+        if appver in supportedvers:
             support=" [SUPPORTED]"
 
         
