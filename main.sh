@@ -76,7 +76,8 @@ resourcemenu()
     then
         if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$cli_available_size" ] && [ "${source_latest[7]}" = "$patches_available_size" ] && [ "${source_latest[10]}" = "$integrations_available_size" ]
         then
-            "${header[@]}" --msgbox "Woah !!\nEverything is up-to-date." 12 40
+            "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
+            python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
             mainmenu
         else
             [ "v$patches_latest" != "$patches_available" ] && rm ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.json

@@ -10,7 +10,7 @@ localjson = None
         
 jsonfile = f'{arg[1]}-patches.json'
 
-appDict= {"com.google.android.youtube": "YouTube", "com.google.android.apps.youtube.music": "YouTube-Music", "com.twitter.android": "Twitter", "com.reddit.frontpage": "Reddit", "com.ss.android.ugc.trill": "Tik-Tok", "tv.twitch.android.app": "Twitch", "de.dwd.warnapp": "WarnWetter", "co.windyapp.android": "Windy-Wind-Weather-Forecast", "ginlemon.iconpackstudio": "Icon-Pack-Studio", "com.ticktick.task": "Ticktick-to-do-list-with-reminder-day-planner", "net.dinglisch.android.taskerm": "Tasker"}
+appDict= {"com.google.android.youtube": "YouTube", "com.google.android.apps.youtube.music": "YouTube-Music", "com.twitter.android": "Twitter", "com.reddit.frontpage": "Reddit", "com.ss.android.ugc.trill": "Tik-Tok", "tv.twitch.android.app": "Twitch", "de.dwd.warnapp": "WarnWetter", "co.windyapp.android": "Windy-Wind-Weather-Forecast", "com.teslacoilsw.launcher" :"Nova-Launcher", "ginlemon.iconpackstudio": "Icon-Pack-Studio", "com.ticktick.task": "Ticktick-to-do-list-with-reminder-day-planner", "net.dinglisch.android.taskerm": "Tasker"}
 
 
 def openjson():
