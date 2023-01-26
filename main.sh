@@ -139,7 +139,7 @@ checkjson()
         resourcemenu
         return 0
     fi
-    if ! ls {$source}-patches.json > /dev/null 2>&1
+    if ! ls ${source}-patches.json > /dev/null 2>&1
     then
         python3 python-utils/sync-patches.py "$source"
     fi
@@ -423,7 +423,7 @@ versionselector()
 
 patchapp()
 {
-    if ! ls ${source}-patches* > /dev/null 2>&1
+    if ! ls ${source}-patches.json > /dev/null 2>&1
     then
         python3 python-utils/sync-patches.py "$source"
     fi
@@ -471,7 +471,7 @@ buildapp()
 {
     selectapp
     checkresources
-    if ! ls patches* > /dev/null 2>&1
+    if ! ls ${source}-patches.json > /dev/null 2>&1
     then
         internet
         python3 python-utils/sync-patches.py "$source"
