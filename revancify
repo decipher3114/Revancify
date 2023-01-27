@@ -59,6 +59,8 @@ then
         git checkout . > /dev/null 2>&1
         git config --global pull.rebase true
         git pull > /dev/null 2>&1
+        "${startup[@]}"
+        sleep 0.5
         ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
         bash main.sh $1
