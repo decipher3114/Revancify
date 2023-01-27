@@ -165,10 +165,7 @@ selectpatches()
 {
     checkjson
     patchselectionheight=$(($(tput lines) - 3))
-    if ! readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
-    then
-        python3 python-utils/sync-patches.py "$source"
-    fi
+    readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
     choices=($("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 15 "${patchesinfo[@]}" 2>&1 >/dev/tty))
     selectpatchstatus=$?
     patchsaver

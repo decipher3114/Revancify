@@ -36,7 +36,7 @@ try:
     for app in localjson:
         for patch in app['patches']:
             if patch['status'] == "on":
-                savedPatches.append(patch['name'])
+                savedPatches.append(f"{patch['name']}({app['pkgName']})")
 except:
     pass
 
@@ -65,11 +65,11 @@ for key in remotejson:
             except:
                 appName= None
 
-            if patchName in savedPatches:
+            if f"{patchName}({pkgName})" in savedPatches:
                 status = "on"
             else:
                 status = "off"
-            
+
             if pkgName not in apps:
 
                 apps.append(pkgName)
@@ -87,15 +87,17 @@ for key in remotejson:
                         patchkey = {"name": patchName, "description": patchDesc, "status": status}
                         app['patches'].append(patchkey)
     else:
-        if key['name'] in savedPatches:
-            status = "on"
-        else:
-            status = "off"
-        generic.append({"name": key['name'], "description": key['description'], "status": status})
+        generic.append({"name": key['name'], "description": key['description'], "status": "off"})
 
-for key in generic:
-    for app in localjson:
-        app['patches'].append(key)
+for app in localjson:
+    for key in generic:
+        patch = key.copy()
+        if f"{key['name']}({app['pkgName']})" in savedPatches:
+            patch['status'] = "on"
+            app['patches'].append(patch)
+        else:
+            patch['status'] = "off"
+            app['patches'].append(patch)
 
 with open(jsonfile, "w") as patchesfile:
     dump(localjson, patchesfile, indent=4)
