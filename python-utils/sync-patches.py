@@ -10,7 +10,7 @@ localjson = None
         
 jsonfile = f'{arg[1]}-patches.json'
 
-appDict= {"com.google.android.youtube": "YouTube", "com.google.android.apps.youtube.music": "YouTube-Music", "com.twitter.android": "Twitter", "com.reddit.frontpage": "Reddit", "com.ss.android.ugc.trill": "Tik-Tok", "tv.twitch.android.app": "Twitch", "de.dwd.warnapp": "WarnWetter", "co.windyapp.android": "Windy-Wind-Weather-Forecast", "com.teslacoilsw.launcher" :"Nova-Launcher", "ginlemon.iconpackstudio": "Icon-Pack-Studio", "com.ticktick.task": "Ticktick-to-do-list-with-reminder-day-planner", "net.dinglisch.android.taskerm": "Tasker"}
+appDict= {"com.google.android.youtube": "YouTube", "com.google.android.apps.youtube.music": "YouTube-Music", "com.twitter.android": "Twitter", "com.reddit.frontpage": "Reddit", "com.ss.android.ugc.trill": "Tik-Tok", "com.zhiliaoapp.musically": "Tik-Tok-including-Musical-ly", "tv.twitch.android.app": "Twitch", "de.dwd.warnapp": "WarnWetter", "co.windyapp.android": "Windy-Wind-Weather-Forecast", "com.teslacoilsw.launcher" :"Nova-Launcher", "ginlemon.iconpackstudio": "Icon-Pack-Studio", "com.ticktick.task": "Ticktick-to-do-list-with-reminder-day-planner", "net.dinglisch.android.taskerm": "Tasker"}
 
 
 def openjson():
@@ -41,50 +41,61 @@ except:
     pass
 
 localjson = []
+
+generic = []
+
 for key in remotejson:
     # check app
-    
-    try:
-        pkgName = key['compatiblePackages'][0]['name']
-    except:
-        pkgName = "generic"
 
-    try:
-        versions = key['compatiblePackages'][0]['versions']
-    except:
-        versions = []
+    if len(key['compatiblePackages']) != 0:
+        for pkg in key['compatiblePackages']:
+            pkgName = pkg['name']
 
-    
-    patchName = key['name']
-    patchDesc = key['description']
-    try:
-        appName= appDict[pkgName]
-    except:
-        appName= None
+            try:
+                versions = key['compatiblePackages'][0]['versions']
+            except:
+                versions = []
 
-    if patchName in savedPatches:
-        status = "on"
+            
+            patchName = key['name']
+            patchDesc = key['description']
+            
+            try:
+                appName= appDict[pkgName]
+            except:
+                appName= None
+
+            if patchName in savedPatches:
+                status = "on"
+            else:
+                status = "off"
+            
+            if pkgName not in apps:
+
+                apps.append(pkgName)
+
+                patchkey = [{"name": patchName, "description": patchDesc, "status": status}]
+                localjson.append({"appName": appName, "pkgName": pkgName, "versions": sorted(versions), "patches": patchkey})
+
+            else:
+                versions = list(set(versions))
+                for app in localjson:
+                    if app['pkgName'] == pkgName:
+                        previousVersions = app['versions']
+
+                        versions = sorted(list(set(versions) | set(previousVersions)))
+                        patchkey = {"name": patchName, "description": patchDesc, "status": status}
+                        app['patches'].append(patchkey)
     else:
-        status = "off"
+        if key['name'] in savedPatches:
+            status = "on"
+        else:
+            status = "off"
+        generic.append({"name": key['name'], "description": key['description'], "status": status})
 
-
-    if pkgName not in apps:
-
-        apps.append(pkgName)
-
-        patchkey = [{"name": patchName, "description": patchDesc, "status": status}]
-        localjson.append({"appName": appName, "pkgName": pkgName, "versions": sorted(versions), "patches": patchkey})
-
-    else:
-        versions = list(set(versions))
-        for app in localjson:
-            if app['pkgName'] == pkgName:
-                previousVersions = app['versions']
-
-                versions = sorted(list(set(versions) | set(previousVersions)))
-                patchkey = {"name": patchName, "description": patchDesc, "status": status}
-                app['patches'].append(patchkey)
-
+for key in generic:
+    for app in localjson:
+        app['patches'].append(key)
 
 with open(jsonfile, "w") as patchesfile:
     dump(localjson, patchesfile, indent=4)

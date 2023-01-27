@@ -165,7 +165,7 @@ selectpatches()
 {
     checkjson
     patchselectionheight=$(($(tput lines) - 3))
-    if ! readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname or .pkgName == "generic"))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
+    if ! readarray -t patchesinfo < <(jq -r --arg pkgname "$pkgname" 'map(select(.pkgName == $pkgname))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
     then
         python3 python-utils/sync-patches.py "$source"
     fi
@@ -386,8 +386,8 @@ dlmicrog()
 
 setargs()
 {
-    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
-    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname or .pkgName == "generic") | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-e /g"))
+    includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname) | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
+    excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname) | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-e /g"))
     
 }
 
