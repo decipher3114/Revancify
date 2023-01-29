@@ -24,7 +24,6 @@ try:
     for element in data:
         if element.parent.find(['span']).string == "APK":
             appurl2 = f"https://apkmirror.com{element.parent.find(['a'], class_='accent_color')['href']}"
-            break
 
     print(33, flush=True)
 
