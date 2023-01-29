@@ -80,19 +80,19 @@ resourcemenu()
         then
             "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
             python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
-            mainmenu
         else
             [ "v$patches_latest" != "$patches_available" ] && rm ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.json
             [ "v$cli_latest" != "$cli_available" ] && rm ${source}-cli-*.jar > /dev/null 2>&1
             [ "v$integrations_latest" != "$integrations_available" ] && rm ${source}-integrations-*.apk > /dev/null 2>&1
             getresources
-            mainmenu
         fi
-    elif [ $resexitstatus -eq 1 ]
-    then
-        mainmenu
     elif [ $resexitstatus -eq 2 ]
     then
+        if ! ls -1 ${source}-*-* > /dev/null 2>&1
+        then
+            "${header[@]}" --msgbox "No resources exist !!\n\nDownload the resources first." 12 40
+            mainmenu
+        fi
         if "${header[@]}" --begin 2 0 --title '| Clean resources |' --no-items --defaultno --keep-window --no-shadow --yesno "Do you want to delete the resources for the source $source?\nThis will delete the following files:\n$(ls -1 ${source}-*-*)" -1 -1
         then
             ls ${source}-cli-*.jar > /dev/null 2>&1 && rm ${source}-cli-*.jar
@@ -100,10 +100,9 @@ resourcemenu()
             ls ${source}-patches-*.json > /dev/null 2>&1 && rm ${source}-patches-*.json
             ls ${source}-integrations-*.apk > /dev/null 2>&1 && rm ${source}-integrations-*.apk
             mainmenu
-        else
-            mainmenu
         fi
     fi
+    mainmenu
 }
 
 getresources()
