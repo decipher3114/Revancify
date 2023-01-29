@@ -72,7 +72,9 @@ resourcemenu()
     patches_available_size=$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )
     integrations_available_size=$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )
 
-    if "${header[@]}" --begin 2 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" -1 -1
+    "${header[@]}" --begin 2 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --help-button --help-label "Delete All" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourcefilelines[0]}\n${resourcefilelines[1]}\n${resourcefilelines[2]}\n${resourcefilelines[3]}\n\nDo you want to fetch latest resources?" -1 -1
+    resexitstatus=$?
+    if [ $resexitstatus -eq 0 ]
     then
         if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$cli_available_size" ] && [ "${source_latest[7]}" = "$patches_available_size" ] && [ "${source_latest[10]}" = "$integrations_available_size" ]
         then
@@ -86,8 +88,21 @@ resourcemenu()
             getresources
             mainmenu
         fi
-    else
+    elif [ $resexitstatus -eq 1 ]
+    then
         mainmenu
+    elif [ $resexitstatus -eq 2 ]
+    then
+        if "${header[@]}" --begin 2 0 --title '| Clean resources |' --no-items --defaultno --keep-window --no-shadow --yesno "Do you want to delete the resources for the source $source?\nThis will delete the following files:\n$(ls -1 ${source}-*-*)" -1 -1
+        then
+            ls ${source}-cli-*.jar > /dev/null 2>&1 && rm ${source}-cli-*.jar
+            ls ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.jar
+            ls ${source}-patches-*.json > /dev/null 2>&1 && rm ${source}-patches-*.json
+            ls ${source}-integrations-*.apk > /dev/null 2>&1 && rm ${source}-integrations-*.apk
+            mainmenu
+        else
+            mainmenu
+        fi
     fi
 }
 

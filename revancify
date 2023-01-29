@@ -40,7 +40,7 @@ checkrevancify()
 {
     if cd /data/data/com.termux/files/home/storage/Revancify > /dev/null 2>&1 
     then
-        startup=(dialog  --keep-window --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42)
+        startup=(dialog  --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42)
         return 0
     else
         echo "Revancify is not installed"
@@ -59,7 +59,7 @@ then
         git checkout . > /dev/null 2>&1
         git config --global pull.rebase true
         git pull > /dev/null 2>&1
-        "${startup[@]}"
+        dialog  --keep-window --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42
         sleep 0.5
         ls /data/data/com.termux/files/home/.dialog* > /dev/null 2>&1 && grep -q decipher /data/data/com.termux/files/home/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O /data/data/com.termux/files/home/.dialogrc
         cp revancify /data/data/com.termux/files/home/../usr/bin/revancify
