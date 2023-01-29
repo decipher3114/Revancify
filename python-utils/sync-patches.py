@@ -1,7 +1,3 @@
-"""
-Sync saved-patches from patches
-"""
-
 from json import load, dump
 from sys import argv as arg
 import glob

@@ -1,7 +1,3 @@
-"""
-Fetch and format list of versions from apkmirror.com
-"""
-
 from bs4 import BeautifulSoup
 from re import compile, sub
 from sys import argv as arg

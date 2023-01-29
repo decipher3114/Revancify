@@ -66,7 +66,7 @@ resourcemenu()
     ls ${source}-patches-*.json > /dev/null 2>&1 && json_available=$(basename ${source}-patches-*.json .json | cut -d '-' -f 3) || json_available="Not found"
     ls ${source}-integrations-*.apk > /dev/null 2>&1 && integrations_available=$(basename ${source}-integrations-*.apk .apk | cut -d '-' -f 3) || integrations_available="Not found"
 
-    readarray -t resourcefilelines < <(echo -e "Resource_Latest_Downloaded\nCLI_v${cli_latest}_${cli_available}\nPatches_v${patches_latest}_${patches_available}\nIntegrations_v${integrations_latest}_${integrations_available}" | column -t -s '_')
+    readarray -t resourcefilelines < <(echo -e "Resource_Latest_Downloaded\nCLI_${cli_latest}_${cli_available}\nPatches_${patches_latest}_${patches_available}\nIntegrations_${integrations_latest}_${integrations_available}" | column -t -s '_')
 
     cli_available_size=$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )
     patches_available_size=$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )
@@ -76,14 +76,14 @@ resourcemenu()
     resexitstatus=$?
     if [ $resexitstatus -eq 0 ]
     then
-        if [ "v$patches_latest" = "$patches_available" ] && [ "v$patches_latest" = "$json_available" ] && [ "v$cli_latest" = "$cli_available" ] && [ "v$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$cli_available_size" ] && [ "${source_latest[7]}" = "$patches_available_size" ] && [ "${source_latest[10]}" = "$integrations_available_size" ]
+        if [ "$patches_latest" = "$patches_available" ] && [ "$patches_latest" = "$json_available" ] && [ "$cli_latest" = "$cli_available" ] && [ "$integrations_latest" = "$integrations_available" ] && [ "${source_latest[2]}" = "$cli_available_size" ] && [ "${source_latest[7]}" = "$patches_available_size" ] && [ "${source_latest[10]}" = "$integrations_available_size" ]
         then
             "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
             python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
         else
-            [ "v$patches_latest" != "$patches_available" ] && rm ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.json
-            [ "v$cli_latest" != "$cli_available" ] && rm ${source}-cli-*.jar > /dev/null 2>&1
-            [ "v$integrations_latest" != "$integrations_available" ] && rm ${source}-integrations-*.apk > /dev/null 2>&1
+            [ "$patches_latest" != "$patches_available" ] && rm ${source}-patches-*.jar > /dev/null 2>&1 && rm ${source}-patches-*.json
+            [ "$cli_latest" != "$cli_available" ] && rm ${source}-cli-*.jar > /dev/null 2>&1
+            [ "$integrations_latest" != "$integrations_available" ] && rm ${source}-integrations-*.apk > /dev/null 2>&1
             getresources
         fi
     elif [ $resexitstatus -eq 2 ]
@@ -107,21 +107,20 @@ resourcemenu()
 
 getresources()
 {
-    useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
     [ "${source_latest[2]}" != "$cli_available_size" ] &&\
-    wget -q -c "$cli_url" -O ${source}-cli-v"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$cli_url" -O ${source}-cli-"$cli_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: CLI\nVersion : $cli_latest\nSize    : $cli_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[2]}" != "$( ls ${source}-cli-*.jar > /dev/null 2>&1 && du -b ${source}-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
     
     [ "${source_latest[7]}" != "$patches_available_size" ] &&\
-    wget -q -c "$patches_url" -O ${source}-patches-v"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$patches_url" -O ${source}-patches-"$patches_latest".jar --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: Patches\nVersion : $patches_latest\nSize    : $patches_size\n\nDownloading..." -1 -1 && tput civis
 
-    wget -q -c "$json_url" -O ${source}-patches-v"$patches_latest".json --user-agent="$useragent"
+    wget -q -c "$json_url" -O ${source}-patches-"$patches_latest".json --user-agent="$useragent"
 
     [ "${source_latest[7]}" != "$( ls ${source}-patches-*.jar > /dev/null 2>&1 && du -b ${source}-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] &&  "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
     [ "${source_latest[10]}" != "$integrations_available_size" ] &&\
-    wget -q -c "$integrations_url" -O ${source}-integrations-v"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." -1 -1 && tput civis
+    wget -q -c "$integrations_url" -O ${source}-integrations-"$integrations_latest".apk --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: Integrations\nVersion : $integrations_latest\nSize    : $integrations_size\n\nDownloading..." -1 -1 && tput civis
 
     [ "${source_latest[10]}" != "$( ls ${source}-integrations-*.apk > /dev/null 2>&1 && du -b ${source}-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
@@ -358,21 +357,21 @@ fetchapk()
 app_dl()
 {
     internet
-    readarray -t fetchlinkresponse < <( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$organisation" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
+    appurl=$( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$organisation" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
     tput civis
-    echo "${fetchlinkresponse[1]}" > ."$appname"size
-    if [ "${fetchlinkresponse[0]}" = "error" ]
+    curl -s -L -I "$appurl" -A "$useragent" | sed -n '/Content-Length/s/Content-Length: //p' > ."$appname"size
+    if [ "$appurl" = "error" ]
     then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
         mainmenu
         return 0
-    elif [ "${fetchlinkresponse[0]}" = "noapk" ]
+    elif [ "$appurl" = "noapk" ]
     then
         "${header[@]}" --msgbox "No APK found.\nTry selecting other version" 12 40
         mainmenu
         return 0
     fi
-    wget -q -c "${fetchlinkresponse[0]}" -O "$appname"-"$appver".apk --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." -1 -1
+    wget -q -c "$appurl" -O "$appname"-"$appver".apk --show-progress --user-agent="" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." -1 -1
     tput civis
     sleep 0.5s
     if [ "$(cat ."$appname"size)" != "$(du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1)" ]
@@ -388,9 +387,9 @@ dlmicrog()
     if "${header[@]}" --begin 2 0 --title '| MicroG Prompt |' --no-items --defaultno --keep-window --no-shadow --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YouTube Music won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" -1 -1
     then
         internet
-        microgheaders=$(wget -qO- "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest")
-        wget -q -c "$(echo $microgheaders | jq -r '.assets[].browser_download_url')" -O "VancedMicroG-$(echo $microgheaders | jq -r '.tag_name').apk" --show-progress --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"  2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : Vanced MicroG\nVersion : $(echo $microgheaders | jq -r '.tag_name')\nSize    : $(echo $microgheaders | jq -r '.assets[].size' | numfmt --to=iec --format="%0.1f")\n\nDownloading..." -1 -1 && tput civis
-        ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* /storage/emulated/0/Revancify/ && termux-open /storage/emulated/0/Revancify/VancedMicroG-$(echo $microgheaders | jq -r '.tag_name').apk
+        readarray -t microgheaders < <(curl -s "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest" | jq -r '(.assets[] | .browser_download_url, .size), .tag_name')
+        wget -q -c "${microgheaders[0]}" -O "VancedMicroG-${microgheaders[2]}.apk" --show-progress --user-agent="$useragent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : Vanced MicroG\nVersion : ${microgheaders[2]}\nSize    : $(echo "${microgheaders[1]}" | numfmt --to=iec --format="%0.1f")\n\nDownloading..." -1 -1 && tput civis
+        ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* /storage/emulated/0/Revancify/ && termux-open "/storage/emulated/0/Revancify/VancedMicroG-${microgheaders[2]}.apk"
     fi
     mainmenu
 }
@@ -399,7 +398,6 @@ setargs()
 {
     includepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname) | .patches[] | select(.status == "on") | .name' "${source}-patches.json" | sed "s/^/-i /g"))
     excludepatches=$(while read -r line; do printf %s"$line" " "; done < <(jq -r --arg pkgname "$pkgname" '.[] | select(.pkgName == $pkgname) | .patches[] | select(.status == "off") | .name' "${source}-patches.json" | sed "s/^/-e /g"))
-    
 }
 
 
@@ -515,6 +513,7 @@ buildapp()
 sucheck
 setup
 header=(dialog --backtitle "Revancify  |  [Arch: $arch, SU: $variant]")
+useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 mainmenu()
 {
     [ "$variant" = "root" ] && misc=(6 "Uninstall Revanced app") || misc=(6 "Download Vanced Microg")

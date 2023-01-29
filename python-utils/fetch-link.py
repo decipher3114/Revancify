@@ -1,7 +1,3 @@
-"""
-Fetch the link for the app and version specified by the arguments passed.
-"""
-
 from re import compile
 from sys import argv, stderr
 from requests import get, Session
@@ -34,7 +30,6 @@ try:
     print(100, flush=True)
 
     stderr.write(f'{appdllink}\n')
-    stderr.write(get(appdllink, stream=True, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).headers['Content-length'])
 
 except NameError:
     stderr.write("noapk")
