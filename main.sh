@@ -39,14 +39,16 @@ resourcemenu()
 {
     internet
 
-    python3 python-utils/revanced-latest.py "$source" && readarray -t source_latest < .${source}latest
-    
-    if [ "${source_latest[0]}" = "error" ]
+    fetchresources
+
+    if [ "$(wc -l < ".${source}latest")" -lt "11" ]
     then
         "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
         mainmenu
         return 0
     fi
+
+    readarray -t source_latest < ".${source}latest"
 
     cli_latest="${source_latest[0]}"
     cli_url="${source_latest[1]}"
@@ -127,6 +129,15 @@ getresources()
     python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
 }
 
+fetchresources()
+{
+    resources=(cli patches integrations)
+    : > ".${source}latest"
+    for resource in "${resources[@]}"
+    do
+        curl -s --fail-early --connect-timeout 2 --max-time 5  "https://api.github.com/repos/${source}/revanced-${resource}/releases/latest" | jq -r '.tag_name, (.assets[] | .browser_download_url, .size)' >> ".${source}latest"
+    done
+}
 
 changesource()
 {
