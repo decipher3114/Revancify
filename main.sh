@@ -343,7 +343,7 @@ fetchapk()
     checkpatched
     if ls "$appname"-"$appver"* > /dev/null 2>&1
     then
-        if [ "$([ -f ."$appname"size ] && cat ."$appname"size || echo "0" )" != "$([ -f "$appname"-"$appver".apk ] && du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1 || echo "None")" ]
+        if [ "$([ -f ".${appname}size" ] && cat ".${appname}size" || echo "0" )" != "$([ -f "$appname"-"$appver".apk ] && du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1 || echo "None")" ]
         then
             app_dl
         fi
@@ -359,7 +359,7 @@ app_dl()
     internet
     appurl=$( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$organisation" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
     tput civis
-    curl -s -L -I "$appurl" -A "$useragent" | sed -n '/Content-Length/s/Content-Length: //p' > ."$appname"size
+    curl -s -L -I "$appurl" -A "$useragent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r' > ".${appname}size"
     if [ "$appurl" = "error" ]
     then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
@@ -374,7 +374,7 @@ app_dl()
     wget -q -c "$appurl" -O "$appname"-"$appver".apk --show-progress --user-agent="" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\nSize   : $(numfmt --to=iec --format="%0.1f" < ".${appname}size" )\n\nDownloading..." -1 -1
     tput civis
     sleep 0.5s
-    if [ "$(cat ."$appname"size)" != "$(du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1)" ]
+    if [ "$(cat ".${appname}size")" != "$(du -b "$appname"-"$appver".apk | cut -d $'\t' -f 1)" ]
     then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 40
         mainmenu
