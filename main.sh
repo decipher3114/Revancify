@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/bash
 
 terminatescript(){
     clear && echo "Script terminated" ; rm -rf *cache; tput cnorm ; cd ~ ; exit
@@ -231,7 +231,7 @@ rootinstall()
 {   
     "${header[@]}" --no-shadow --infobox "Installing $appname by Mounting..." 12 40
     pkgname=$pkgname appname=$appname appver=$appver su -mm -c 'grep $pkgname /proc/mounts | while read -r line; do echo $line | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l > /dev/null 2>&1; done &&\
-    cp /data/data/com.termux/files/home/storage/Revancify/"$appname"Revanced-"$appver".apk /data/local/tmp/revanced.delete &&\
+    cp ./"$appname"Revanced-"$appver".apk /data/local/tmp/revanced.delete &&\
     mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgname".apk &&\
     stockapp=$(pm path $pkgname | grep base | sed "s/package://g") &&\
     revancedapp=/data/adb/revanced/"$pkgname".apk &&\
