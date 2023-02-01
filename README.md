@@ -2,16 +2,9 @@
 A simple and direct Revanced Installer script.  
 It uses Revanced CLI to build Revanced Apps.
 
-Apps Supported:
-1. YouTube
-2. YouTube Music
-3. Twitter
-4. Reddit
-5. TikTok
-
 
 ### Note:  
-Download Termux from their github or FDroid
+Download Termux from Github or FDroid. Termux app available on playstore is not maintained.
 
 # Installation
 1. Open Termux.  
@@ -19,14 +12,11 @@ Download Termux from their github or FDroid
 ```
 pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify && cd Revancify && bash revancify
 ```
-### Dependencies:  
-**packages**: python, openjdk-17, wget, ncurses-utils, jq  
-**python modules**: requests, wheel, bs4  
 
 # Usage
-1. Open Termux.  
-2. Type `revancify`  
 
+Run this command:  
+`revancify`  
 
 # Support
 
@@ -34,12 +24,14 @@ For help and support, Join [Telegram Channel](https://t.me/revancify)
 
 # Troubleshoot
 
-Run `revancify -t`  
-  
-  
+Run this command:  
+`revancify -t`  
+
+
 # Uninstallation 
   
-Type `revancify -u`   
+Run this command:  
+`revancify -u`   
   
 # Thanks & Credits
 [Revanced](https://github.com/revanced) 
