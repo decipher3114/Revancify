@@ -15,7 +15,7 @@ try:
     appurl=f'https://www.apkmirror.com/apk/{argv[3]}/{argv[1]}/{argv[1]}-{version}-release/'
 
 
-    data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], text=compile(f'{argv[4]}|universal|noarch'))
+    data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], string=compile(f'{argv[4]}|universal|noarch'))
 
     for element in data:
         if element.parent.find(['span']).string == "APK":

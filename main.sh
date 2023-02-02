@@ -370,7 +370,7 @@ app_dl()
     internet
     appurl=$( ( python3 python-utils/fetch-link.py "$appname" "$appver" "$organisation" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appname\nVersion: $appver\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
     tput civis
-    curl -s -L -I "$appurl" -A "$useragent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r' > ".${appname}size"
+    curl -sLI "$appurl" -A "$useragent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r' > ".${appname}size"
     if [ "$appurl" = "error" ]
     then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
@@ -454,6 +454,7 @@ patchapp()
     if ! grep -q "Finished" .patchlog
     then
         echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appname-$appver.apk" >> .patchlog
+        ls -1 ${source}-*-* >> .patchlog
         cp .patchlog /storage/emulated/0/Revancify/patchlog.txt
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 40
         mainmenu
