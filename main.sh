@@ -109,7 +109,7 @@ getresources()
     wget -q -c "$cliUrl" -O "$source"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: CLI\nVersion : $cliLatest\nSize    : $cliSize\n\nDownloading..." -1 -1 && tput civis
 
     [ "${sourceLatest[2]}" != "$( ls "$source"-cli-*.jar > /dev/null 2>&1 && du -b "$source"-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
-    
+
     [ "${sourceLatest[7]}" != "$patchesAvailableSize" ] &&\
     wget -q -c "$patchesUrl" -O "$source"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: Patches\nVersion : $patchesLatest\nSize    : $patchesSize\n\nDownloading..." -1 -1 && tput civis
 
@@ -224,16 +224,7 @@ patchoptions()
 rootinstall()
 {
     "${header[@]}" --no-shadow --infobox "Installing $appName by Mounting..." 12 40
-    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl &&\
-    cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete &&\
-    mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk &&\
-    stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") &&\
-    revancedApp=/data/adb/revanced/"$pkgName".apk &&\
-    chmod -v 644 "$revancedApp" &&\
-    chown -v system:system "$revancedApp" &&\
-    chcon -v u:object_r:apk_data_file:s0 "$revancedApp" &&\
-    mount -vo bind "$revancedApp" "$stockApp" &&\
-    am force-stop $pkgName' > ./.mountlog 2>&1
+    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp=/data/adb/revanced/"$pkgName".apk && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > ./.mountlog 2>&1
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --no-shadow --infobox "Installation Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
@@ -248,7 +239,7 @@ rootinstall()
 }
 
 rootUninstall()
-{   
+{ 
     selectApp
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
@@ -257,10 +248,7 @@ rootUninstall()
     fi
     "${header[@]}" --no-shadow --infobox "Uninstalling $appName Revanced by Unmounting..." 12 40
     pkgName=$pkgName su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l &&\
-    stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") &&\
-    am force-stop $pkgName &&\
-    rm /data/adb/service.d/mount_revanced_$pkgName.sh &&\
-    rm -rf /data/adb/revanced/$pkgName.apk' > /dev/null 2>&1
+    stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && am force-stop $pkgName && rm /data/adb/service.d/mount_revanced_$pkgName.sh && rm -rf /data/adb/revanced/$pkgName.apk' > /dev/null 2>&1
     sleep 0.5s
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
@@ -384,7 +372,7 @@ downloadApp()
     then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 40
         mainmenu
-    fi      
+    fi
 }
 
 downloadMicrog()
@@ -486,7 +474,7 @@ buildApp()
     if [ "$variant" = "root" ]
     then
         if ! su -c "pm path $pkgName" > /dev/null 2>&1
-        then 
+        then
             termux-open "https://play.google.com/store/apps/details?id=$pkgName"
             mainmenu
         fi
