@@ -10,7 +10,7 @@ Download Termux from Github or FDroid. Termux app available on playstore is not 
 1. Open Termux.  
 2. Copy and paste this code.  
 ```
-pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify && cd Revancify && bash revancify
+pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify && ./Revancify/revancify
 ```
 
 # Usage
