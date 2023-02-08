@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 
-if [ "$(getprop ro.product.cpu.abi | cut -d "-" -f 1)" = "armeabi" ]
+if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]
 then
-    echo "Device with CPU architecture \"armeabi-v7a\" are not supported for patching."
+    echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
     echo "You may get build errors."
     read -N 1 -s -r -p $'Press ENTER to CONTINUE or SPACE to EXIT...\n' key
     if [ "$key" = " " ]
@@ -12,31 +12,11 @@ then
     fi
 fi
 
-arg="$1"
-path=$(find ~ -type d -name "Revancify")
-
-case "$arg" in 
-  "-t") rm -rf "$path" && git clone https://github.com/decipher3114/Revancify && cd "$path" && bash revancify
-        exit
-    ;;
-  "-u") echo "Are you sure you want to uninstall revancify?"
-        read -r -p "[Y/N]: " choice
-        case "$choice" in 
-        y|Y ) rm -rf "$path"
-            rm ~/../usr/bin/revancify
-            exit
-        ;;
-        * ) exit
-        ;;
-        esac
-    ;;
-  * ) :
-  ;;
-esac
+path=$(find "$HOME" -type d -name "Revancify")
 
 checkdependencies()
 {
-    if [ -e ~/../usr/bin/java ] && [ -e ~/../usr/bin/python ] && [ -e ~/../usr/bin/wget ] && [ -e ~/../usr/bin/dialog ] && [ -e ~/../usr/bin/tput ] && [ -e ~/../usr/bin/jq ] && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules"
+    if bins=$(ls "$PATH") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$HOME/.dialog"* > /dev/null 2>&1 && ls "$PATH/revancify" > /dev/null 2>&1
     then
         return 0
     else
@@ -52,9 +32,9 @@ installdependencies()
     pkg update -y &&
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
     pip install wheel &&
-    pip install requests bs4 &&
-    ls ~/.dialog* > /dev/null 2>&1 && grep -q decipher ~/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O ~/.dialogrc
-    sed -i '/allow-external-apps/s/# //' ~/.termux/termux.properties &&
+    pip install requests bs4
+    grep -q decipher "$HOME/.dialogrc" > /dev/null 2>&1 || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O "$HOME/.dialogrc"
+    sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties" &&
     echo "Dependencies installed successfully."
 }
 
@@ -62,13 +42,57 @@ checkrevancify()
 {
     if cd "$path" > /dev/null 2>&1 
     then
-        startup=(dialog  --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42)
+        startup=(dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42)
         return 0
     else
         echo "Revancify is not installed"
         exit
     fi
 }
+
+help()
+{
+    echo -e "\e[1;34mrevancify\n\e[0m"
+    echo -e "\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m"
+    echo -e "\e[1;33mOptions:\e[0m"
+    echo -e "\e[1;33m-n         \e[1;34mRun revancify as non root in rooted device\e[0m"
+    echo -e "\e[1;33m-f         \e[1;34mForce update check for resources on startup\e[0m"
+    echo -e "\e[1;33m-r         \e[1;34mReinstall revancify\e[0m"
+    echo -e "\e[1;33m-u         \e[1;34mUninstall or remove revancify\e[0m"
+    echo -e "\e[1;33m-h,--help  \e[1;34mPrints help statement\e[0m"
+    echo -e "\n\e[1;35mGithub repo: https://github.com/decipher3114/Revancify\nTelegram channel: https://t.me/revancify\nTelegram support group: https://t.me/revancifychat\e[0m"
+}
+
+while [ "${1:-}" != "" ]
+do
+    case "$1" in
+    "-h" | "--help" ) help
+        exit 0
+    ;;
+    "-n" | "-f" ) arg="$1"
+    ;;
+    "-r" ) rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && cd "$path" && bash revancify
+    ;;
+    "-u" ) echo -e "\e[1;31mAre you sure you want to uninstall revancify?\e[0m"
+        read -r -p "[Y/N]: " choice
+        case "$choice" in
+        y|Y ) rm -rf "$path"
+            rm "$PATH/revancify"
+            echo "Successfully Uninstalled revancify."
+            exit 0
+        ;;
+        ? ) echo "Uninstall Cancelled"
+            exit 1
+        ;;
+        esac
+    ;;
+    * ) echo -e "\e[1;31mInvalid option: $1\n\e[0m"
+        help
+        exit 1
+    ;;
+    esac
+    shift
+done
 
 if ping -c 1 google.com > /dev/null 2>&1
 then
@@ -81,18 +105,17 @@ then
         git checkout . > /dev/null 2>&1
         git config --global pull.rebase true
         git pull > /dev/null 2>&1
-        dialog  --keep-window --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42
+        dialog --keep-window --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')" 9 42
         sleep 0.5
-        ls ~/.dialog* > /dev/null 2>&1 && grep -q decipher ~/.dialogrc || wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O ~/.dialogrc
-        cp revancify ~/../usr/bin/revancify
-        bash main.sh $1
+        cp revancify "$PATH/revancify"
+        bash main.sh "$arg"
     else
-        cp revancify ~/../usr/bin/revancify
+        cp revancify "$PATH/revancify"
         installdependencies &&
         tput civis &&
         "${startup[@]}"
-        bash main.sh $1
-        cd ~
+        bash main.sh "$arg"
+        cd "$HOME" || :
     fi
 else
     checkrevancify
@@ -102,10 +125,10 @@ else
         rm -rf ./*cache
         tput civis &&
         "${startup[@]}"
-        bash main.sh $1
-        cd ~
+        bash main.sh "$arg"
+        cd "$HOME" || :
     else
-        cp revancify ~/../usr/bin/revancify
+        cp revancify "$PATH/revancify"
         echo "Dependencies not installed. Run again with internet connection."
     fi
 fi

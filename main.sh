@@ -26,16 +26,14 @@ setup()
 
 internet()
 {
-    if ping -c 1 google.com > /dev/null 2>&1
+    if ! ping -c 1 google.com > /dev/null 2>&1
     then
-        return 0
-    else
         "${header[@]}" --msgbox "Oops! No Internet Connection available.\n\nConnect to Internet and try again later" 12 40
         mainmenu
     fi
 }
 
-resourceMenu()
+resourcesVars()
 {
     internet
 
@@ -66,12 +64,15 @@ resourceMenu()
     ls "$source"-patches-*.json > /dev/null 2>&1 && json_available=$(basename "$source"-patches-*.json .json | cut -d '-' -f 3) || json_available="Not found"
     ls "$source"-integrations-*.apk > /dev/null 2>&1 && integrations_available=$(basename "$source"-integrations-*.apk .apk | cut -d '-' -f 3) || integrations_available="Not found"
 
-    readarray -t resourceTable < <(echo -e "ResourceLatest_Downloaded\nCLI_${cliLatest}_${cli_available}\nPatches_${patchesLatest}_${patches_available}\nIntegrations_${integrationsLatest}_${integrations_available}" | column -t -s '_')
-
     cliAvailableSize=$( ls "$source"-cli-*.jar > /dev/null 2>&1 && du -b "$source"-cli-*.jar | cut -d $'\t' -f 1 || echo "None" )
     patchesAvailableSize=$( ls "$source"-patches-*.jar > /dev/null 2>&1 && du -b "$source"-patches-*.jar | cut -d $'\t' -f 1 || echo "None" )
     integrationsAvailableSize=$( ls "$source"-integrations-*.apk > /dev/null 2>&1 && du -b "$source"-integrations-*.apk | cut -d $'\t' -f 1 || echo "None" )
+}
 
+resourceMenu()
+{
+    resourcesVars
+    readarray -t resourceTable < <(echo -e "ResourceLatest_Downloaded\nCLI_${cliLatest}_${cli_available}\nPatches_${patchesLatest}_${patches_available}\nIntegrations_${integrationsLatest}_${integrations_available}" | column -t -s '_')
     "${header[@]}" --begin 2 0 --title '| Resources List |' --no-items --defaultno --yes-label "Fetch" --no-label "Cancel" --help-button --help-label "Delete All" --keep-window --no-shadow --yesno "Current Source: $source\n\n${resourceTable[0]}\n${resourceTable[1]}\n${resourceTable[2]}\n${resourceTable[3]}\n\nDo you want to fetch latest resources?" -1 -1
     resexitstatus=$?
     if [ $resexitstatus -eq 0 ]
@@ -81,10 +82,7 @@ resourceMenu()
             "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
             python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
         else
-            [ "$patchesLatest" != "$patches_available" ] && rm "$source"-patches-*.jar > /dev/null 2>&1 && rm "$source"-patches-*.json
-            [ "$cliLatest" != "$cli_available" ] && rm "$source"-cli-*.jar > /dev/null 2>&1
-            [ "$integrationsLatest" != "$integrations_available" ] && rm "$source"-integrations-*.apk > /dev/null 2>&1
-            getresources
+            getResources
         fi
     elif [ $resexitstatus -eq 2 ]
     then
@@ -105,8 +103,11 @@ resourceMenu()
     mainmenu
 }
 
-getresources()
+getResources()
 {
+    [ "$patchesLatest" != "$patches_available" ] && rm "$source"-patches-*.jar > /dev/null 2>&1 && rm "$source"-patches-*.json > /dev/null 2>&1
+    [ "$cliLatest" != "$cli_available" ] && rm "$source"-cli-*.jar > /dev/null 2>&1
+    [ "$integrationsLatest" != "$integrations_available" ] && rm "$source"-integrations-*.apk > /dev/null 2>&1
     [ "${sourceLatest[2]}" != "$cliAvailableSize" ] &&\
     wget -q -c "$cliUrl" -O "$source"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: CLI\nVersion : $cliLatest\nSize    : $cliSize\n\nDownloading..." -1 -1 && tput civis
 
@@ -240,7 +241,7 @@ patchoptions()
     mainmenu
 }
 
-rootinstall()
+rootInstall()
 {
     "${header[@]}" --no-shadow --infobox "Installing $appName by Mounting..." 12 40
     pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp=/data/adb/revanced/"$pkgName".apk && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > ./.mountlog 2>&1
@@ -318,12 +319,12 @@ checkpatched()
             then
                 rm "$appName-Revanced-$appVer"*
             else
-                rootinstall
+                rootInstall
             fi
         else
             rm "$appName-Revanced-"* > /dev/null 2>&1
         fi
-    elif [ "$variant" = "nonroot" ]
+    elif [ "$variant" = "nonRoot" ]
     then
         if ls "/storage/emulated/0/Revancify/$appName-Revanced-$appVer"* > /dev/null 2>&1
         then
@@ -342,13 +343,13 @@ checkSU()
     then
         if [ "$arg" = '-n' ]
         then
-            variant=nonroot
+            variant=nonRoot
         else
             variant=root
             su -c "mkdir -p /data/adb/revanced"
         fi
     else
-        variant=nonroot
+        variant=nonRoot
     fi
 }
 
@@ -467,7 +468,7 @@ checkMicrogPatch()
             jq -r --arg pkgName "$pkgName" '(.[] | select(.pkgName == $pkgName) | .patches[] | select(.name | test(".*microg.*")) | .status) |= "off"' "${source}-patches.json" > "$tmp" && mv "$tmp" "${source}-patches.json"
             return 0
         fi
-    elif [ "$microgStatus" = "off" ] && [ "$variant" = "nonroot" ]
+    elif [ "$microgStatus" = "off" ] && [ "$variant" = "nonRoot" ]
     then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --no-shadow --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1
         then
@@ -484,11 +485,7 @@ buildApp()
 {
     selectApp
     checkResources
-    if ! ls "$source"-patches.json > /dev/null 2>&1
-    then
-        internet
-        python3 python-utils/sync-patches.py "$source"
-    fi
+    checkJson
     getAppVer
     if [ "$variant" = "root" ]
     then
@@ -498,20 +495,14 @@ buildApp()
             mainmenu
         fi
         appVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
-    elif [ "$variant" = "nonroot" ]
+    elif [ "$variant" = "nonRoot" ]
     then
         versionSelector
     fi
-    checkMicrogPatch
     fetchApk
+    checkMicrogPatch
     patchApp
-    if [ "$variant" = "root" ]
-    then
-        rootinstall
-    elif [ "$variant" = "nonroot" ]
-    then
-        nonRootInstall
-    fi
+    ${variant}Install
 }
 
 checkSU
@@ -546,7 +537,7 @@ mainmenu()
             if [ "$variant" = "root" ]
             then
                 rootUninstall
-            elif [ "$variant" = "nonroot" ]
+            elif [ "$variant" = "nonRoot" ]
             then
                 downloadMicrog
             fi
@@ -557,4 +548,9 @@ mainmenu()
     fi
 }
 
+if [ "$arg" = '-f' ]
+then
+    resourcesVars
+    getResources
+fi
 mainmenu

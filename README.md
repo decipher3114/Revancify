@@ -10,28 +10,26 @@ Download Termux from Github or FDroid. Termux app available on playstore is not 
 1. Open Termux.  
 2. Copy and paste this code.  
 ```
-pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify && ./Revancify/revancify
+pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
 ```
 
 # Usage
 
-Run this command:  
-`revancify`  
-
-# Support
-
-For help and support, Join [Telegram Channel](https://t.me/revancify)  
-
-# Troubleshoot
-
-Run this command:  
-`revancify -t`  
-
-
-# Uninstallation 
+After installation, type `revancify` in termux and press enter.  
+   
+Or use with arguments  
+```
+revancify  
   
-Run this command:  
-`revancify -u`   
+Usage: revancify [OPTION] 
+
+Options:  
+-n         Run revancify as non root in rooted device  
+-f         Force update check for resources on startup  
+-r         Reinstall revancify  
+-u         Uninstall or remove revancify    
+-h,--help  Prints help statement  
+```  
   
 # Thanks & Credits
 [Revanced](https://github.com/revanced) 
