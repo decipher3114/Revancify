@@ -15,11 +15,13 @@ setup()
     if ! ls sources* > /dev/null 2>&1
     then
         echo "$sourceString" | jq '.' > sources.json
-    else
-        sed -i 's/YTMusic/YouTube-Music/g' sources.json
-        sed -i 's/TikTok/Tik-Tok/g' sources.json
     fi
     source=$(jq -r 'map(select(.sourceStatus == "on"))[].sourceMaintainer' sources.json)
+
+    if ls "$source-patches.json" > /dev/null 2>&1
+    then
+        python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
+    fi
 }
 
 internet()
@@ -184,8 +186,17 @@ selectPatches()
 {
     checkJson
     patchselectionheight=$(($(tput lines) - 3))
+    toogleName="Exclude All"
+    for i in $(jq -r --arg pkgName "$pkgName" '.[] | select(.pkgName == $pkgName) | .patches[].status' "$source-patches.json")
+    do
+        if [ "$i" == "off" ]
+        then
+            toogleName="Include All"
+            break
+        fi
+    done
     readarray -t patchesinfo < <(jq -r --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName))[].patches[] | "\(.name)\n\(.status)\n\(.description)"' "${source}-patches.json")
-    choices=($("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --help-button --help-label "Exclude all" --extra-button --extra-label "Include all" --ok-label "Save" --no-cancel --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 15 "${patchesinfo[@]}" 2>&1 >/dev/tty))
+    choices=($("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --no-shadow --ok-label "Save" --cancel-label "$toogleName" --help-button --help-label "Recommended" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 15 "${patchesinfo[@]}" 2>&1 >/dev/tty))
     selectPatchStatus=$?
     patchSaver
 }
@@ -197,15 +208,23 @@ patchSaver()
         tmp=$(mktemp)
         jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "off")' "$source-patches.json" | jq '(.[].patches[] | select(IN(.name; $ARGS.positional[])) | .status ) |= "on"' --args "${choices[@]}" > "$tmp" && mv "$tmp" "$source-patches.json"
         mainmenu
+    elif [ $selectPatchStatus -eq 1 ]
+    then
+        if [ "$toogleName" == "Include All" ]
+        then
+            tmp=$(mktemp)
+            jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" "$source-patches.json"
+            selectPatches
+        elif [ "$toogleName" == "Exclude All" ]
+        then
+            tmp=$(mktemp)
+            jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" "$source-patches.json"
+            selectPatches
+        fi
     elif [ $selectPatchStatus -eq 2 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "off")' "$source-patches.json" > "$tmp" && mv "$tmp" "$source-patches.json"
-        selectPatches
-    elif [ $selectPatchStatus -eq 3 ]
-    then
-        tmp=$(mktemp)
-        jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "on")' "$source-patches.json" > "$tmp" && mv "$tmp" "$source-patches.json"
+        jq --arg pkgName "$pkgName" 'map(select(.pkgName == $pkgName).patches[].status = "off")' "$source-patches.json" | jq --arg pkgName "$pkgName" '(.[] | select(.pkgName == $pkgName) | .patches[] | select(.excluded == false) | .status) |= "on"' > "$tmp" && mv "$tmp" "$source-patches.json"
         selectPatches
     fi
 }

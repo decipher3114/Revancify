@@ -70,7 +70,7 @@ for key in remotejson:
 
                 apps.append(pkgName)
 
-                patchkey = [{"name": patchName, "description": patchDesc, "status": status}]
+                patchkey = [{"name": patchName, "description": patchDesc, "status": status, "excluded": key['excluded']}]
                 localjson.append({"appName": appName, "pkgName": pkgName, "versions": sorted(versions), "patches": patchkey})
 
             else:
@@ -80,10 +80,10 @@ for key in remotejson:
                         previousVersions = app['versions']
 
                         versions = sorted(list(set(versions) | set(previousVersions)))
-                        patchkey = {"name": patchName, "description": patchDesc, "status": status}
+                        patchkey = {"name": patchName, "description": patchDesc, "status": status, "excluded": key['excluded']}
                         app['patches'].append(patchkey)
     else:
-        generic.append({"name": key['name'], "description": key['description'], "status": "off"})
+        generic.append({"name": key['name'], "description": key['description'], "status": "off", "excluded": key['excluded']})
 
 for app in localjson:
     for key in generic:
