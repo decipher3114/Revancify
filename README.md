@@ -1,10 +1,9 @@
 # Revancify
-A simple and direct Revanced Installer script.  
-It uses Revanced CLI to build Revanced Apps.
+A TUI wrapper for Revanced patcher.  
+Supports apps that are available of "apkmirror.com".
 
 
-### Note:  
-Download Termux from Github or FDroid. Termux app available on playstore is not maintained.
+> Note: Download Termux from Github or FDroid. Termux app available on playstore is not maintained.  
 
 # Installation
 1. Open Termux.  

@@ -7,12 +7,9 @@ from bs4 import BeautifulSoup
 def fetchurl(url):
     return BeautifulSoup(Session().get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).content, 'html.parser')
 
-
 try:
 
-    version = argv[2].replace(".","-")
-
-    appurl=f'https://www.apkmirror.com/apk/{argv[3]}/{argv[1]}/{argv[1]}-{version}-release/'
+    appurl=f'https://www.apkmirror.com/apk/{argv[1]}/{argv[2]}/{argv[2]}-{argv[3]}-release/'
 
 
     data = fetchurl(appurl).find(['div'], class_='variants-table').find_all(['div'], string=compile(f'{argv[4]}|universal|noarch'))

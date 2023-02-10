@@ -1,47 +1,45 @@
+from requests import post
 from json import load, dump
-from sys import argv as arg
+from sys import argv
 import glob
+from re import sub
 
-localjson = None
+localJson = None
         
-jsonfile = f'{arg[1]}-patches.json'
-
-appDict= {"com.google.android.youtube": "YouTube", "com.google.android.apps.youtube.music": "YouTube-Music", "com.twitter.android": "Twitter", "com.reddit.frontpage": "Reddit", "com.ss.android.ugc.trill": "Tik-Tok", "com.zhiliaoapp.musically": "Tik-Tok-including-Musical-ly", "tv.twitch.android.app": "Twitch", "de.dwd.warnapp": "WarnWetter", "co.windyapp.android": "Windy-Wind-Weather-Forecast", "com.teslacoilsw.launcher" :"Nova-Launcher", "ginlemon.iconpackstudio": "Icon-Pack-Studio", "com.ticktick.task": "Ticktick-to-do-list-with-reminder-day-planner", "net.dinglisch.android.taskerm": "Tasker", "net.binarymode.android.irplus": "Irplus-Infrared-Remote"}
+jsonFile = f'{argv[1]}-patches.json'
 
 
 def openjson():
-    global localjson
+    global localJson
     try:
-        with open(jsonfile, "r") as patches_file:
-            localjson = load(patches_file)
+        with open(jsonFile, "r") as patchesFile:
+            localJson = load(patchesFile)
     except Exception as e:
-        with open(jsonfile, "w") as patches_file:
-            empty_json = [{"appName": None, "pkgName": None, "versions": [], "patches": []}]
-            dump(empty_json, patches_file, indent=4)
-        openjson()
+        localJson = {"appName": None, "link": None, "versions": [], "patches": []}
 
 openjson()
 
-with open(glob.glob(f'{arg[1]}-patches-*json')[0], "r") as patches:
+with open(glob.glob(f'{argv[1]}-patches-*json')[0], "r") as patches:
     remotejson = load(patches)
 
-apps = []
+pkgs = []
 savedPatches = []
+appNames = {}
 
 try:
-    for app in localjson:
-        for patch in app['patches']:
+    for app in localJson:
+        for patch in localJson[app]['patches']:
             if patch['status'] == "on":
-                savedPatches.append(f"{patch['name']}({app['pkgName']})")
+                savedPatches.append(f"{patch['name']}({app})")
+            appNames[app] = {"appName": localJson[app]['appName'], "appLink": localJson[app]['link']}
 except:
     pass
 
-localjson = []
 
+localJson = {}
 generic = []
 
 for key in remotejson:
-    # check app
 
     if len(key['compatiblePackages']) != 0:
         for pkg in key['compatiblePackages']:
@@ -56,44 +54,70 @@ for key in remotejson:
             patchName = key['name']
             patchDesc = key['description']
             
-            try:
-                appName= appDict[pkgName]
-            except:
-                appName= None
 
             if f"{patchName}({pkgName})" in savedPatches:
                 status = "on"
             else:
                 status = "off"
 
-            if pkgName not in apps:
+            if pkgName not in pkgs:
+                pkgs.append(pkgName)
+                try:
+                    appName = appNames[pkgName]['appName']
+                    link = appNames[pkgName]['appLink']
+                except:
+                    appName = None
+                    link = None
+                localJson[pkgName] = {"appName": appName, "link": link, "versions": [], "patches": []}
 
-                apps.append(pkgName)
+            previousVersions = localJson[pkgName]['versions']
 
-                patchkey = [{"name": patchName, "description": patchDesc, "status": status, "excluded": key['excluded']}]
-                localjson.append({"appName": appName, "pkgName": pkgName, "versions": sorted(versions), "patches": patchkey})
+            localJson[pkgName]['versions'] = sorted(list(set(versions) | set(previousVersions)))
 
-            else:
-                versions = list(set(versions))
-                for app in localjson:
-                    if app['pkgName'] == pkgName:
-                        previousVersions = app['versions']
-
-                        versions = sorted(list(set(versions) | set(previousVersions)))
-                        patchkey = {"name": patchName, "description": patchDesc, "status": status, "excluded": key['excluded']}
-                        app['patches'].append(patchkey)
+            patchkey = {"name": patchName, "description": patchDesc, "status": status, "excluded": key['excluded']}
+            localJson[pkgName]['patches'].append(patchkey)
     else:
         generic.append({"name": key['name'], "description": key['description'], "status": "off", "excluded": key['excluded']})
 
-for app in localjson:
+for app in localJson:
     for key in generic:
         patch = key.copy()
-        if f"{key['name']}({app['pkgName']})" in savedPatches:
+        if f"{key['name']}({app})" in savedPatches:
             patch['status'] = "on"
-            app['patches'].append(patch)
+            localJson[app]['patches'].append(patch)
         else:
             patch['status'] = "off"
-            app['patches'].append(patch)
+            localJson[app]['patches'].append(patch)
 
-with open(jsonfile, "w") as patchesfile:
-    dump(localjson, patchesfile, indent=4)
+try:
+    fetchType = argv[2]
+except:
+    fetchType = None
+
+if fetchType == "online":
+    try:
+        headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic YXBpLXRvb2xib3gtZm9yLWdvb2dsZS1wbGF5OkNiVVcgQVVMZyBNRVJXIHU4M3IgS0s0SCBEbmJL',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'
+            }
+
+        body = {"pnames": pkgs}
+
+        response = post('https://www.apkmirror.com/wp-json/apkm/v1/app_exists/',json=body , headers=headers)
+
+        apps = []
+
+        for data in response.json()['data']:
+            if data['exists']:
+                appName = sub(" \(.*\)", '', data['app']['name']).replace("&amp;", "&")
+                localJson[data['pname']]['appName'] = sub('[^0-9a-zA-Z]+', '-', appName)
+                localJson[data['pname']]['link'] = data['app']['link'].replace("-wear-os","")
+    except:
+        print("error")
+        exit()
+
+
+with open(jsonFile, "w") as patchesfile:
+    dump(localJson, patchesfile, indent = 4)

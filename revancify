@@ -71,7 +71,10 @@ do
     ;;
     "-n" | "-f" ) arg="$1"
     ;;
-    "-r" ) rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && cd "$path" && bash revancify
+    "-r" ) if ping -c 1 google.com > /dev/null 2>&1
+        then
+            cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+        fi
     ;;
     "-u" ) echo -e "\e[1;31mAre you sure you want to uninstall revancify?\e[0m"
         read -r -p "[Y/N]: " choice

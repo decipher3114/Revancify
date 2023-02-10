@@ -1,0 +1,9 @@
+*.json
+!sources.json
+*.jar
+*.apk
+*.sh
+!main.sh
+*.py
+!python-utils/*.py
+*.txt
