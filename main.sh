@@ -191,12 +191,13 @@ checkJson()
 selectApp()
 {
     checkJson
-    readarray -t availableApps < <(jq -r 'to_entries[] | if .value.appName != null then .key, .value.appName else empty end' "$patchSource-patches.json")
-    pkgName=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --no-items --item-help --keep-window --no-shadow --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate" $patchselectionheight -1 15 "${availableApps[@]}" 2>&1> /dev/tty)
+    readarray -t availableApps < <(jq -r 'to_entries | map(select(.value.appName != null) | [ .value.appName, .key ]) | to_entries | map(.key + 1, .value[])[]' "$patchSource-patches.json")
+    appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --no-shadow --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate" $patchselectionheight -1 15 "${availableApps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
-        appName=$(jq -r --arg pkgName "$pkgName" '.[$pkgName].appName' "$patchSource-patches.json")
+        appName="${availableApps[$(($(( "$appIndex" * 3 )) - 2 ))]}"
+        pkgName="${availableApps[$(($(( "$appIndex" * 3 )) - 1 ))]}"
     elif [ $exitstatus -ne 0 ]
     then
         mainmenu

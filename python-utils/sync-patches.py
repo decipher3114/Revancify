@@ -3,21 +3,15 @@ from json import load, dump
 from sys import argv
 import glob
 from re import sub
-
-localJson = None
         
 jsonFile = f'{argv[1]}-patches.json'
 
+try:
+    with open(jsonFile, "r") as patchesFile:
+        localJson = load(patchesFile)
+except Exception as e:
+    localJson = {"appName": None, "link": None, "versions": [], "patches": []}
 
-def openjson():
-    global localJson
-    try:
-        with open(jsonFile, "r") as patchesFile:
-            localJson = load(patchesFile)
-    except Exception as e:
-        localJson = {"appName": None, "link": None, "versions": [], "patches": []}
-
-openjson()
 
 with open(glob.glob(f'{argv[1]}-patches-*json')[0], "r") as patches:
     remotejson = load(patches)
