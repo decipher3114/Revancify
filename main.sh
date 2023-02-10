@@ -136,7 +136,7 @@ getResources()
 
 fetchResources()
 {
-    "${header[@]}" --infobox "Please Wait !!" 12 40
+    "${header[@]}" --infobox "Please Wait !!\nFetching reources data from github API..." 12 40
     : > ".${source}latest"
     for resource in "${resources[@]}"
     do
@@ -191,7 +191,8 @@ checkJson()
 selectApp()
 {
     checkJson
-    readarray -t availableApps < <(jq -r 'to_entries | map(select(.value.appName != null) | [ .value.appName, .key ]) | to_entries | map(.key + 1, .value[])[]' "$patchSource-patches.json")
+    previousAppName="$appName"
+    readarray -t availableApps < <(jq -r 'to_entries | map(select(.value.appName != null)) | to_entries | map(.key + 1, .value.value.appName, .value.key)[]' "$patchSource-patches.json")
     appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --no-shadow --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate" $patchselectionheight -1 15 "${availableApps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
@@ -202,7 +203,10 @@ selectApp()
     then
         mainmenu
     fi
-    unset appVerList
+    if [ "$previousAppName" != "$appName" ]
+    then
+        unset appVerList
+    fi
 }
 
 selectPatches()
@@ -255,6 +259,7 @@ patchSaver()
 patchoptions()
 {
     checkResources
+    "${header[@]}" --infobox "Please Wait !!\nGenerating options.toml file..." 12 40
     java -jar "$cliSource"-cli-*.jar -b "$patchSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk > /dev/null 2>&1
     tput cnorm
     tmp=$(mktemp)
@@ -274,7 +279,7 @@ rootInstall()
         sleep 1
         mainmenu
     fi
-    echo -e "#!/system/bin/sh\nwhile [ \"\$(getprop sys.boot_completed | tr -d '\\\r')\" != \"1\" ]; do sleep 1; done\n\nif [ \$(dumpsys package $pkgName | grep versionName | cut -d= -f 2 | sed -n '1p') =  \"$appVer\" ]\nthen\n\tbase_path=\"/data/adb/revanced/$pkgName.apk\"\n\tstock_path=\$( pm path $pkgName | sed -n '/base/s/package://p' )\n\n\tchcon u:object_r:apk_data_file:s0 \$base_path\n\tmount -o bind \$base_path \$stock_path\nfi" > "mount_revanced_$pkgName.sh"
+    echo -e "#!/system/bin/sh\nwhile [ \"\$(getprop sys.boot_completed | tr -d '\\\r')\" != \"1\" ]; do sleep 1; done\n\nif [ \$(dumpsys package $pkgName | grep versionName | cut -d '=' -f 2 | sed -n '1p') =  \"$selectedVer\" ]\nthen\n\tbase_path=\"/data/adb/revanced/$pkgName.apk\"\n\tstock_path=\$( pm path $pkgName | sed -n '/base/s/package://p' )\n\n\tchcon u:object_r:apk_data_file:s0 \$base_path\n\tmount -o bind \$base_path \$stock_path\nfi" > "mount_revanced_$pkgName.sh"
     su -c "mv mount_revanced_$pkgName.sh /data/adb/service.d && chmod +x /data/adb/service.d/mount_revanced_$pkgName.sh"
     sleep 1
     su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" > /dev/null 2>&1
@@ -337,11 +342,18 @@ checkpatched()
     then
         if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
         then
-            if "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --keep-window --no-shadow --yesno "Current directory already contains $appName Revanced version $appVer. \n\n\nDo you want to patch $appName again?" -1 -1
+            "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --no-shadow --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
+            apkFoundPrompt=$?
+            if [ "$apkFoundPrompt" -eq 0 ]
             then
                 rm "$appName-Revanced-$appVer"*
-            else
+            elif [ "$apkFoundPrompt" -eq 1 ]
+            then
                 rootInstall
+            elif [ "$apkFoundPrompt" -eq 2 ]
+            then
+                mainmenu
+                return 0
             fi
         else
             rm "$appName-Revanced-"* > /dev/null 2>&1
@@ -350,7 +362,7 @@ checkpatched()
     then
         if ls "/storage/emulated/0/Revancify/$appName-Revanced-$appVer"* > /dev/null 2>&1
         then
-            if ! "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --keep-window --no-shadow --yesno "Patched $appName with version $appVer already exists. \n\n\nDo you want to patch $appName again?" -1 -1
+            if ! "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --keep-window --no-shadow --yesno "Patched $appName with version $selectedVer already exists. \n\n\nDo you want to patch $appName again?" -1 -1
             then
                 nonRootInstall
             fi
@@ -456,14 +468,14 @@ getAppVer()
                 mainmenu
             fi
         fi
-        appVer=$(su -c dumpsys package "$pkgName" | grep -oP '(?<=versionName\=).*' | sed -e 's/[^0-9a-zA-Z]/-/g')
+        selectedVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
+        appVer=${selectedVer//[^0-9a-zA-Z]/-}
     elif [ "$variant" = "nonRoot" ]
     then
-        
-        internet
-        "${header[@]}" --infobox "Please Wait !!" 12 40
         if [ -z "$appVerList" ]
         then
+            internet
+            "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 40
             readarray -t appVerList < <(python3 python-utils/fetch-versions.py "$remoteAppName" "$pkgName" "$source")
         fi
         versionSelector
@@ -478,12 +490,13 @@ versionSelector()
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
         mainmenu
     fi
-    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --no-shadow --ok-label "Select" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
+    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --no-shadow --ok-label "Select" --cancel-label "Back" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     appVer="${selectedVer//[^0-9a-zA-Z]/-}"
     if [ $exitstatus -ne 0 ]
     then
-        mainmenu
+        selectApp
+        getAppVer
         return 0
     fi
 }
@@ -497,8 +510,7 @@ patchApp()
     sleep 2
     if ! grep -q "Finished" .patchlog
     then
-        echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk" >> .patchlog
-        ls -1 "$source"-*-* >> .patchlog
+        echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >> .patchlog
         cp .patchlog /storage/emulated/0/Revancify/patchlog.txt
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 40
         mainmenu
