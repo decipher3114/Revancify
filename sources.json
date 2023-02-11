@@ -5,7 +5,7 @@
             "Integrations" : "revanced/revanced-integrations"
         },
     "inotia00" : {
-        "CLI" : "revanced/revanced-cli",
+        "CLI" : "inotia00/revanced-cli",
         "Patches" : "inotia00/revanced-patches",
         "Integrations" : "inotia00/revanced-integrations"
         }

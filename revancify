@@ -128,6 +128,7 @@ else
         rm -rf ./*cache
         tput civis &&
         "${startup[@]}"
+        sleep 2
         bash main.sh "$arg"
         cd "$HOME" || :
     else
