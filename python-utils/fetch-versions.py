@@ -37,6 +37,5 @@ try:
         else:
             pass
 
-except Exception as w:
-    print(w)
-
+except:
+    print("error")

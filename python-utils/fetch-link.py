@@ -32,5 +32,9 @@ except NameError:
     stderr.write("noapk")
     exit()
 
+except AttributeError:
+    stderr.write("noversion")
+    exit()
+
 except:
     stderr.write("error")

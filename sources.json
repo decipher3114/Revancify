@@ -1,12 +1,36 @@
-{ 
-    "revanced" : {
-            "CLI" : "revanced/revanced-cli",
-            "Patches" : "revanced/revanced-patches",
-            "Integrations" : "revanced/revanced-integrations"
+{
+    "revanced": {
+            "cli":
+            {
+                "org": "revanced",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "revanced",
+                "repo": "revanced-patches"
+            },
+            "integrations":
+            {
+                "org": "revanced",
+                "repo": "revanced-integrations"
+            }
         },
-    "inotia00" : {
-        "CLI" : "inotia00/revanced-cli",
-        "Patches" : "inotia00/revanced-patches",
-        "Integrations" : "inotia00/revanced-integrations"
+    "inotia00": {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "inotia00",
+                "repo": "revanced-patches"
+            },
+            "integrations":
+            {
+                "org": "inotia00",
+                "repo": "revanced-integrations"
+            }
         }
 }
