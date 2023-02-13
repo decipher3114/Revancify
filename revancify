@@ -11,6 +11,8 @@ then
         exit
     fi
 fi
+HOME=/data/data/com.termux/files/home
+PATH=/data/data/com.termux/files/usr/bin
 
 path=$(find "$HOME" -type d -name "Revancify")
 

@@ -68,7 +68,12 @@ getResources()
     resourcesVars
     if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]
     then
-        python3 python-utils/sync-patches.py "$source" online > /dev/null 2>&1
+        if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+        then
+            "${header[@]}" --msgbox "Resources are already downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
+            mainmenu
+            return 0
+        fi
         "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
         mainmenu
         return 0
@@ -93,7 +98,12 @@ getResources()
 
     [ "$integrationsSize" != "$( ls "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0 )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
-    python3 python-utils/sync-patches.py "$source" online > /dev/null 2>&1
+    if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+    then
+        "${header[@]}" --msgbox "Resources are successfully downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
+        mainmenu
+        return 0
+    fi
     mainmenu
     return 0
 }
@@ -137,7 +147,12 @@ checkJson()
     if ! ls "$patchesSource"-patches.json > /dev/null 2>&1
     then
         internet
-        python3 python-utils/sync-patches.py "$source" online
+        if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+        then
+            "${header[@]}" --msgbox "Patches are not successfully synced.\nRevancify may crash." 12 40
+            mainmenu
+            return 0
+        fi
     fi
 }
 
@@ -204,7 +219,7 @@ patchSaver()
     elif [ $selectPatchStatus -eq 2 ]
     then
         tmp=$(mktemp)
-        jq --arg pkgName "$pkgName" '.[$pkgName].patches[].status = "off" | (.[$pkgName].patches[] | select(.excluded == false) | .status ) |= "on"' > "$tmp" && mv "$tmp" "$patchesSource-patches.json"
+        jq --arg pkgName "$pkgName" '.[$pkgName].patches[].status = "off" | (.[$pkgName].patches[] | select(.excluded == false) | .status ) |= "on"' < "$patchesSource-patches.json" > "$tmp" && mv "$tmp" "$patchesSource-patches.json"
         selectPatches
     fi
 }

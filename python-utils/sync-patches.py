@@ -110,7 +110,6 @@ if fetchType == "online":
                 localJson[data['pname']]['link'] = data['app']['link'].replace("-wear-os","")
     except:
         print("error")
-        exit()
 
 
 with open(jsonFile, "w") as patchesfile:
