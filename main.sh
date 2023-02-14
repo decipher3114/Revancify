@@ -310,7 +310,7 @@ checkpatched()
     then
         if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
         then
-            "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
+            "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
             apkFoundPrompt=$?
             if [ "$apkFoundPrompt" -eq 0 ]
             then
@@ -330,7 +330,7 @@ checkpatched()
     then
         if ls "/storage/emulated/0/Revancify/$appName-Revanced-$appVer"* > /dev/null 2>&1
         then
-            if ! "${header[@]}" --begin 2 0 --title '| Patched APK found |' --no-items --defaultno --keep-window --yesno "Patched $appName with version $selectedVer already exists. \n\n\nDo you want to patch $appName again?" -1 -1
+            if ! "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --keep-window --yesno "Patched $appName with version $selectedVer already exists. \n\n\nDo you want to patch $appName again?" -1 -1
             then
                 nonRootInstall
             fi
@@ -385,16 +385,16 @@ downloadApp()
     then
         if [ "$variant" == "nonRoot" ]
         then
-            "${header[@]}" --msgbox "No APK found on apkmirror.com for version $selectedVer !!\nTry selecting other version" 12 40
+            "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nTry selecting other version" 12 40
             getAppVer
         else
-            "${header[@]}" --msgbox "No APK found on apkmirror.com for version $selectedVer !!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Install $appName as non root. You can run 'revancify -n' to run as non root." 12 40
+            "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Install the app as non root. You can run 'revancify -n' to run as non root." 15 40
             mainmenu
         fi
         return 0
     elif [ "$appUrl" = "noversion" ]
     then
-        "${header[@]}" --msgbox "The version $selectedVer of $appName is not on APKMirror!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Install $appName as non root. You can run 'revancify -n' to run as non root." 12 40
+        "${header[@]}" --msgbox "This version is not uploaded on apkmirror.com!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Install the app as non root. You can run 'revancify -n' to run as non root." 15 40
         mainmenu
         return 0
     fi
@@ -442,7 +442,7 @@ getAppVer()
             fi
         fi
         selectedVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
-        appVer=${selectedVer//[^0-9a-zA-Z]/-}
+        appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
     elif [ "$variant" = "nonRoot" ]
     then
         if [ -z "$appVerList" ]
@@ -465,7 +465,7 @@ versionSelector()
     fi
     selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
     exitstatus=$?
-    appVer="${selectedVer//[^0-9a-zA-Z]/-}"
+    appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
     if [ $exitstatus -ne 0 ]
     then
         selectApp

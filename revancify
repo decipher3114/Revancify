@@ -121,20 +121,22 @@ do
 done
 
 checkrevancify
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Checking..." 10 42
 checkdependencies
+sleep 1
 if ping -c 1 google.com > /dev/null 2>&1
 then
-    if [ "$arg" == "-f" ]
+    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
+    if ! git pull > /dev/null 2>&1
     then
         git fetch --all > /dev/null 2>&1
         git reset --hard origin/main > /dev/null 2>&1
     fi
-    (git pull && cp revancify "$PATH/revancify") 2>&1 | dialog --no-collapse --no-shadow --progressbox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\n              by decipher\n         CONNECTED TO INTERNET" 20 42
-    tput civis
-    sleep 0.5
+    cp ./revancify "$PATH/revancify"
     
 else
-    sleep 2 | dialog --no-collapse --no-shadow --progressbox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\n              by decipher\n       NOT CONNECTED TO INTERNET" 20 42 && tput civis
+    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
+    sleep 2
 fi
 bash main.sh "$arg"
 cd "$HOME" || :
