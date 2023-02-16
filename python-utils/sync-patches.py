@@ -49,7 +49,7 @@ for key in remotejson:
             patchDesc = key['description']
             
 
-            if f"{patchName}({pkgName})" in savedPatches:
+            if f"{patchName}({pkgName})" in savedPatches or not key['excluded']:
                 status = "on"
             else:
                 status = "off"

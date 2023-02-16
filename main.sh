@@ -279,9 +279,9 @@ rootUninstall()
 
 nonRootInstall()
 {
-    "${header[@]}" --infobox "Moving $appName-Revanced $selectedVer to Internal Storage..." 12 40
+    "${header[@]}" --infobox "Copying $appName-Revanced $selectedVer to Internal Storage..." 12 40
     sleep 0.5
-    mv "$appName-Revanced"* /storage/emulated/0/Revancify/ > /dev/null 2>&1
+    cp "$appName-Revanced"* /storage/emulated/0/Revancify/ > /dev/null 2>&1
     termux-open /storage/emulated/0/Revancify/"$appName-Revanced-$appVer".apk
     mainmenu
 }
@@ -303,41 +303,6 @@ checkResources()
     fi
 }
 
-
-checkpatched()
-{
-    if [ "$variant" = "root" ]
-    then
-        if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
-        then
-            "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
-            apkFoundPrompt=$?
-            if [ "$apkFoundPrompt" -eq 0 ]
-            then
-                rm "$appName-Revanced-$appVer"*
-            elif [ "$apkFoundPrompt" -eq 1 ]
-            then
-                rootInstall
-            elif [ "$apkFoundPrompt" -eq 2 ]
-            then
-                mainmenu
-                return 0
-            fi
-        else
-            rm "$appName-Revanced-"* > /dev/null 2>&1
-        fi
-    elif [ "$variant" = "nonRoot" ]
-    then
-        if ls "/storage/emulated/0/Revancify/$appName-Revanced-$appVer"* > /dev/null 2>&1
-        then
-            if ! "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --keep-window --yesno "Patched $appName with version $selectedVer already exists. \n\n\nDo you want to patch $appName again?" -1 -1
-            then
-                nonRootInstall
-            fi
-        fi
-    fi
-}
-
 arg="$1"
 checkSU()
 {
@@ -355,9 +320,84 @@ checkSU()
     fi
 }
 
+getAppVer()
+{
+    checkResources
+    linkVar=$(jq -r --arg pkgName "$pkgName" '.[$pkgName].link' "$patchesSource-patches.json")
+    developer=$(cut -d '/' -f 3 <<< "$linkVar")
+    remoteAppName=$(cut -d '/' -f 4 <<< "$linkVar")
+    if [ "$variant" = "root" ]
+    then
+        if ! su -c "pm path $pkgName" > /dev/null 2>&1
+        then
+            if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1
+            then
+                variant="nonRoot"
+                getAppVer
+                return 0
+            else
+                termux-open "https://play.google.com/store/apps/details?id=$pkgName"
+                mainmenu
+            fi
+        fi
+        selectedVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
+        appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
+    elif [ "$variant" = "nonRoot" ]
+    then
+        if [ -z "$appVerList" ]
+        then
+            internet
+            "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 40
+            readarray -t appVerList < <(python3 python-utils/fetch-versions.py "$remoteAppName" "$pkgName" "$source")
+        fi
+        versionSelector
+    fi
+    fetchApk
+}
+
+versionSelector()
+{
+    if [ "${appVerList[0]}" = "error" ]
+    then
+        "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
+        mainmenu
+    fi
+    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
+    exitstatus=$?
+    appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
+    if [ $exitstatus -ne 0 ]
+    then
+        selectApp
+        getAppVer
+        return 0
+    fi
+}
+
 fetchApk()
 {
-    checkpatched
+    if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+    then
+        buildApp
+        return 0
+    fi
+    if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
+    then
+        "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
+        apkFoundPrompt=$?
+        if [ "$apkFoundPrompt" -eq 0 ]
+        then
+            rm "$appName-Revanced-$appVer"*
+        elif [ "$apkFoundPrompt" -eq 1 ]
+        then
+            ${variant}Install
+        elif [ "$apkFoundPrompt" -eq 2 ]
+        then
+            mainmenu
+            return 0
+        fi
+    else
+        rm "$appName-Revanced-"* > /dev/null 2>&1
+    fi
     if ls "$appName"-"$appVer"* > /dev/null 2>&1
     then
         if [ "$([ -f ".${appName}size" ] && cat ".${appName}size" || echo "0" )" != "$([ -f "$appName"-"$appVer".apk ] && du -b "$appName"-"$appVer".apk | cut -d $'\t' -f 1 || echo 0)" ]
@@ -421,70 +461,16 @@ downloadMicrog()
     mainmenu
 }
 
-getAppVer()
-{
-    checkResources
-    linkVar=$(jq -r --arg pkgName "$pkgName" '.[$pkgName].link' "$patchesSource-patches.json")
-    developer=$(cut -d '/' -f 3 <<< "$linkVar")
-    remoteAppName=$(cut -d '/' -f 4 <<< "$linkVar")
-    if [ "$variant" = "root" ]
-    then
-        if ! su -c "pm path $pkgName" > /dev/null 2>&1
-        then
-            if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1
-            then
-                variant="nonRoot"
-                getAppVer
-                return 0
-            else
-                termux-open "https://play.google.com/store/apps/details?id=$pkgName"
-                mainmenu
-            fi
-        fi
-        selectedVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
-        appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
-    elif [ "$variant" = "nonRoot" ]
-    then
-        if [ -z "$appVerList" ]
-        then
-            internet
-            "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 40
-            readarray -t appVerList < <(python3 python-utils/fetch-versions.py "$remoteAppName" "$pkgName" "$source")
-        fi
-        versionSelector
-    fi
-    fetchApk
-}
-
-versionSelector()
-{
-    if [ "${appVerList[0]}" = "error" ]
-    then
-        "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
-        mainmenu
-    fi
-    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
-    exitstatus=$?
-    appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
-    if [ $exitstatus -ne 0 ]
-    then
-        selectApp
-        getAppVer
-        return 0
-    fi
-}
-
 patchApp()
 {
     checkJson
     readarray -t patchesArg < <(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[] | if .status == "on" then "-i " + .name else "-e " + .name end' "$patchesSource-patches.json")
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore revanced.keystore --custom-aapt2-binary "binaries/aapt2_$arch" --options options.toml --experimental 2>&1 | tee .patchlog | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore revanced.keystore --custom-aapt2-binary "binaries/aapt2_$arch" --options options.toml --experimental 2>&1 | tee /storage/emulated/0/Revancify/patchlog.txt | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     tput civis
     sleep 2
-    if ! grep -q "Finished" .patchlog
+    if ! grep -q "Finished" /storage/emulated/0/Revancify/patchlog.txt
     then
-        echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >> .patchlog
-        cp .patchlog /storage/emulated/0/Revancify/patchlog.txt
+        echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >> /storage/emulated/0/Revancify/patchlog.txt
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 40
         mainmenu
     fi
