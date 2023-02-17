@@ -83,6 +83,7 @@ help()
     echo -e "\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m"
     echo -e "\e[1;33mOptions:\e[0m"
     echo -e "\e[1;33m-n         \e[1;34mRun revancify as non root in rooted device\e[0m"
+    echo -e "\e[1;33m-c         \e[1;34mClean resources for the current source\e[0m"
     echo -e "\e[1;33m-f         \e[1;34mForce update check for resources on startup\e[0m"
     echo -e "\e[1;33m-r         \e[1;34mReinstall revancify\e[0m"
     echo -e "\e[1;33m-h,--help  \e[1;34mPrints help statement\e[0m"

@@ -78,9 +78,9 @@ getResources()
         mainmenu
         return 0
     fi
-    [ "$patchesLatest" != "$patchesAvailable" ] && rm "$patchesSource"-patches-*.jar > /dev/null 2>&1 && rm "$patchesSource"-patches-*.json > /dev/null 2>&1
-    [ "$cliLatest" != "$cliAvailable" ] && rm "$cliSource"-cli-*.jar > /dev/null 2>&1
-    [ "$integrationsLatest" != "$integrationsAvailable" ] && rm "$integrationsSource"-integrations-*.apk > /dev/null 2>&1
+    [ "$patchesLatest" != "$patchesAvailable" ] && rm "$patchesSource"-patches-*.jar > /dev/null 2>&1 && rm "$patchesSource"-patches-*.json > /dev/null 2>&1 && patchesAvailableSize=0
+    [ "$cliLatest" != "$cliAvailable" ] && rm "$cliSource"-cli-*.jar > /dev/null 2>&1 && cliAvailableSize=0
+    [ "$integrationsLatest" != "$integrationsAvailable" ] && rm "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && integrationsAvailableSize=0
     [ "$cliSize" != "$cliAvailableSize" ] &&\
     wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Resource: CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 $(( $(( "$cliAvailableSize" * 100 )) / "$cliSize" )) && tput civis
 
