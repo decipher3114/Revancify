@@ -1,10 +1,13 @@
 #!/usr/bin/bash
-
-terminatescript()
+terminate()
 {
-    clear && echo "Script terminated" ; rm -rf -- *cache; tput cnorm ; exit
+    pkill -9 java > /dev/null 2>&1
+    pkill -9 python > /dev/null 2>&1
+    clear
+    exit ${1:-1}
 }
-trap terminatescript SIGINT
+trap terminate SIGTERM SIGINT SIGABRT
+
 
 setup()
 {
@@ -552,7 +555,7 @@ mainmenu()
         fi
     elif [ $exitstatus -ne 0 ]
     then
-        terminatescript
+        terminate 0
     fi
 }
 

@@ -1,5 +1,11 @@
 #!/usr/bin/bash
 
+HOME=/data/data/com.termux/files/home
+BIN=/data/data/com.termux/files/usr/bin
+
+path=$(find "$HOME" -type d -name "Revancify")
+cp "$path/revancify" "$BIN/revancify" > /dev/null 2>&1
+
 if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]
 then
     echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
@@ -11,14 +17,11 @@ then
         exit
     fi
 fi
-HOME=/data/data/com.termux/files/home
-PATH=/data/data/com.termux/files/usr/bin
 
-path=$(find "$HOME" -type d -name "Revancify")
 
 checkdependencies()
 {
-    if bins=$(ls "$PATH") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$HOME/.dialog"* > /dev/null 2>&1 && ls "$PATH/revancify" > /dev/null 2>&1
+    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$HOME/.dialog"* > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1
     then
         return 0
     else
@@ -27,7 +30,7 @@ checkdependencies()
             installdependencies
             checkdependencies
         else
-            cp revancify "$PATH/revancify"
+            cp revancify "$BIN/revancify"
             echo "Dependencies not installed. Run again with internet connection."
             exit 1
         fi
@@ -43,7 +46,7 @@ installdependencies()
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
     pip install wheel &&
     pip install requests bs4
-    cp revancify "$PATH/revancify"
+    cp revancify "$BIN/revancify"
     wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O "$HOME/.dialogrc"
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties" &&
     echo "Dependencies installed successfully."
@@ -66,7 +69,7 @@ checkrevancify()
         ;;
         n|N ) echo "Removing revancify completely !!"
             sleep 0.5s
-            rm "$PATH/revancify"
+            rm "$BIN/revancify"
             echo "Successfully Uninstalled revancify."
             exit 0
         ;;
@@ -122,7 +125,7 @@ do
 done
 
 checkrevancify
-dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Checking..." 10 42
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus: Checking..." 10 42
 checkdependencies
 sleep 1
 if ping -c 1 google.com > /dev/null 2>&1
@@ -133,11 +136,20 @@ then
         git fetch --all > /dev/null 2>&1
         git reset --hard origin/main > /dev/null 2>&1
     fi
-    cp ./revancify "$PATH/revancify"
-    
+    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
 else
     dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
     sleep 2
 fi
 bash main.sh "$arg"
+exitstatus=$?
+clear
 cd "$HOME" || :
+if [ $exitstatus -eq 0 ]
+then
+    echo "Script exited !!"
+else
+    echo "Script terminated !!"
+    rm -rf -- *cache > /dev/null 2>&1
+fi
+tput cnorm
