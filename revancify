@@ -106,16 +106,11 @@ case "$1" in
 "-n" | "-f" ) flag="$1"
 ;;
 "-d" | "--delete" ) case "$2" in
-        "resources" | "apps" | "toml" ) echo -e "\e[1;31mAre you sure you want to delete $2?\e[0m"
-                            echo -e "\e[1;31mYou have to redownload them later.\e[0m"
-                            read -r -p "[Y/N]: " choice
-                            case "$choice" in
-                            y|Y ) flag="$1" 
-                                arg="$2"
-                            ;;
-                            ? ) :
-                            ;;
-                            esac
+        "resources" ) echo -e "\e[1;31mAre you sure you want to delete resources(CLI, patches, integrations)\nfor currently selected source?\e[0m"
+        ;;
+        "apps" ) echo -e "\e[1;31mAre you sure you want to delete all downloaded apps?\e[0m"
+        ;;
+        "toml" ) echo -e "\e[1;31mAre you sure you want to delete the options.toml file?\e[0m"
         ;;
         "" ) echo -e "\e[1;31mNo Option specified !!\n\e[0m"
             echo -e "\e[1;33mAllowed Options: resources, apps, toml\n\e[0m"
@@ -124,6 +119,14 @@ case "$1" in
         * ) echo -e "\e[1;31mInvalid option: $2\n\e[0m"
             echo -e "\e[1;33mAllowed Options: resources, apps, toml\n\e[0m"
             exit 1
+        ;;
+        esac
+        read -r -p "[Y/N]: " choice
+        case "$choice" in
+        y|Y ) flag="$1" 
+            arg="$2"
+        ;;
+        ? ) :
         ;;
         esac
 ;;
@@ -157,7 +160,7 @@ else
     dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
     sleep 2
 fi
-cd "$DATA/revancify-data" || (mkdir -p "$DATA/revancify-data" && cd "$DATA/revancify-data")
+cd "$DATA"  > /dev/null 2>&1 || (mkdir -p "$DATA" && cd "$DATA")
 bash "$path/main.sh" "$flag" "$arg"
 exitstatus=$?
 clear
