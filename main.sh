@@ -13,21 +13,21 @@ setup()
 {
     arch=$(getprop ro.product.cpu.abi)
     mkdir -p /storage/emulated/0/Revancify
+    path=$(find "$HOME" -type d -name "Revancify")
 
-    if ! ls .source > /dev/null 2>&1
+    if ! ls ".source" > /dev/null 2>&1
     then
-        echo "revanced" > .source
+        echo "revanced" > ".source"
     fi
     
-    source=$(cat .source)
+    source=$(cat ".source")
 
-    source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' sources.json)
+    source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
 
     if ls "$patchesSource-patches.json" > /dev/null 2>&1
     then
-        python3 python-utils/sync-patches.py "$source" > /dev/null 2>&1
+        python3 "$path"/python-utils/sync-patches.py "$source" > /dev/null 2>&1
     fi
-    patchselectionheight=$(($(tput lines) - 3))
 }
 
 internet()
@@ -71,7 +71,7 @@ getResources()
     resourcesVars
     if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]
     then
-        if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+        if [ "$(python3 "$path"/python-utils/sync-patches.py "$source" online)" == "error" ]
         then
             "${header[@]}" --msgbox "Resources are already downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
             mainmenu
@@ -101,7 +101,7 @@ getResources()
 
     [ "$integrationsSize" != "$( ls "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0 )" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
 
-    if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+    if [ "$(python3 "$path"/python-utils/sync-patches.py "$source" online)" == "error" ]
     then
         "${header[@]}" --msgbox "Resources are successfully downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
         mainmenu
@@ -114,8 +114,8 @@ getResources()
 fetchResources()
 {
     "${header[@]}" --infobox "Please Wait !!\nFetching resources data from github API..." 12 40
-    readarray -t resources < <(jq -r --arg source "$source" '.[$source] | keys_unsorted[]' sources.json)
-    readarray -t links < <(jq -r --arg source "$source" '.[$source][] | .org+"/"+.repo' sources.json)
+    readarray -t resources < <(jq -r --arg source "$source" '.[$source] | keys_unsorted[]' "$path"/sources.json)
+    readarray -t links < <(jq -r --arg source "$source" '.[$source][] | .org+"/"+.repo' "$path"/sources.json)
     : > ".${source}latest"
     i=0 && for resource in "${resources[@]}"
     do
@@ -127,13 +127,13 @@ fetchResources()
 changeSource()
 {
     internet
-    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key+"\non" else .key+"\noff" end' sources.json)
+    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key+"\non" else .key+"\noff" end' "$path"/sources.json)
     selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --keep-window --no-items --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1> /dev/tty)
     if [ "$source" != "$selectedSource" ]
     then
-        echo "$selectedSource" > .source
-        source=$(cat .source)
-        source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' sources.json)
+        echo "$selectedSource" > ".source"
+        source=$(cat ".source")
+        source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
         checkResources
     fi
     mainmenu
@@ -150,7 +150,7 @@ checkJson()
     if ! ls "$patchesSource"-patches.json > /dev/null 2>&1
     then
         internet
-        if [ "$(python3 python-utils/sync-patches.py "$source" online)" == "error" ]
+        if [ "$(python3 "$path"/python-utils/sync-patches.py "$source" online)" == "error" ]
         then
             "${header[@]}" --msgbox "Patches are not successfully synced.\nRevancify may crash." 12 40
             mainmenu
@@ -162,6 +162,7 @@ checkJson()
 selectApp()
 {
     checkJson
+    patchselectionheight=$(($(tput lines) - 3))
     previousAppName="$appName"
     readarray -t availableApps < <(jq -r 'to_entries | map(select(.value.appName != null)) | to_entries | map(.key + 1, .value.value.appName, .value.key)[]' "$patchesSource-patches.json")
     appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate" $patchselectionheight -1 15 "${availableApps[@]}" 2>&1> /dev/tty)
@@ -183,6 +184,7 @@ selectApp()
 selectPatches()
 {
     checkJson
+    patchselectionheight=$(($(tput lines) - 3))
     toogleName="Exclude All"
     for i in $(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[].status' "$patchesSource-patches.json")
     do
@@ -242,7 +244,7 @@ patchoptions()
 rootInstall()
 {
     "${header[@]}" --infobox "Installing $appName by Mounting..." 12 40
-    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp=/data/adb/revanced/"$pkgName".apk && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > ./.mountlog 2>&1
+    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp=/data/adb/revanced/"$pkgName".apk && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > .mountlog 2>&1
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --infobox "Installation Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
@@ -306,12 +308,13 @@ checkResources()
     fi
 }
 
-arg="$1"
+flag="$1"
+arg="$2"
 checkSU()
 {
     if su -c exit > /dev/null 2>&1
     then
-        if [ "$arg" = '-n' ]
+        if [ "$flag" = '-n' ]
         then
             variant=nonRoot
         else
@@ -351,7 +354,7 @@ getAppVer()
         then
             internet
             "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 40
-            readarray -t appVerList < <(python3 python-utils/fetch-versions.py "$remoteAppName" "$pkgName" "$source")
+            readarray -t appVerList < <(python3 "$path"/python-utils/fetch-versions.py "$remoteAppName" "$pkgName" "$source")
         fi
         versionSelector
     fi
@@ -416,7 +419,7 @@ fetchApk()
 downloadApp()
 {
     internet
-    appUrl=$( ( python3 python-utils/fetch-link.py "$developer" "$remoteAppName" "$appVer" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
+    appUrl=$( ( python3 "$path"/python-utils/fetch-link.py "$developer" "$remoteAppName" "$appVer" "$arch" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2 ) 3>&1 )
     tput civis
     curl -sLI "$appUrl" -A "$userAgent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r' > ".${appName}size"
     if [ "$appUrl" = "error" ]
@@ -468,7 +471,7 @@ patchApp()
 {
     checkJson
     readarray -t patchesArg < <(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[] | if .status == "on" then "-i " + .name else "-e " + .name end' "$patchesSource-patches.json")
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore revanced.keystore --custom-aapt2-binary "binaries/aapt2_$arch" --options options.toml --experimental 2>&1 | tee /storage/emulated/0/Revancify/patchlog.txt | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options options.toml --experimental 2>&1 | tee /storage/emulated/0/Revancify/patchlog.txt | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     tput civis
     sleep 2
     if ! grep -q "Finished" /storage/emulated/0/Revancify/patchlog.txt
@@ -559,15 +562,24 @@ mainmenu()
     fi
 }
 
-if [ "$arg" = '-f' ]
+if [ "$flag" = '-f' ]
 then
     resourcesVars
     getResources
-elif [ "$arg" = '-c' ]
+elif [ "$flag" = '-d' ]
 then
-    rm "$cliSource"-cli-*.jar > /dev/null 2>&1
-    rm "$patchesSource"-patches-*.jar > /dev/null 2>&1
-    rm "$patchesSource"-patches-*.json > /dev/null 2>&1
-    rm "$integrationsSource"-integrations-*.apk > /dev/null 2>&1
+    if [ "$arg" == "resources" ]
+    then
+        rm "$cliSource"-cli-*.jar > /dev/null 2>&1
+        rm "$patchesSource"-patches-*.jar > /dev/null 2>&1
+        rm "$patchesSource"-patches-*.json > /dev/null 2>&1
+        rm "$integrationsSource"-integrations-*.apk > /dev/null 2>&1
+    elif [ "$arg" == "apps" ]
+    then
+        ls -1 *.apk | grep -v integrations | xargs rm > /dev/null 2>&1
+    elif [ "$arg" == "toml" ]
+    then
+        rm options.toml > /dev/null 2>&1
+    fi
 fi
 mainmenu

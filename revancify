@@ -5,6 +5,8 @@ BIN=/data/data/com.termux/files/usr/bin
 
 path=$(find "$HOME" -type d -name "Revancify")
 cp "$path/revancify" "$BIN/revancify" > /dev/null 2>&1
+DATA=$HOME/revancify-data
+
 
 if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]
 then
@@ -85,44 +87,58 @@ help()
     echo -e "\e[1;34mrevancify\n\e[0m"
     echo -e "\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m"
     echo -e "\e[1;33mOptions:\e[0m"
-    echo -e "\e[1;33m-n         \e[1;34mRun revancify as non root in rooted device\e[0m"
-    echo -e "\e[1;33m-c         \e[1;34mClean resources for the current source\e[0m"
-    echo -e "\e[1;33m-f         \e[1;34mForce update check for resources on startup\e[0m"
-    echo -e "\e[1;33m-r         \e[1;34mReinstall revancify\e[0m"
-    echo -e "\e[1;33m-h,--help  \e[1;34mPrints help statement\e[0m"
+    echo -e "\e[1;33m-n               \e[1;34mRun revancify as non root\e[0m"
+    echo -e "\e[1;33m                 \e[1;34min rooted device"
+    echo -e "\e[1;33m-d [OPT],        \e[1;34mDelete the specified component\e[0m"
+    echo -e "\e[1;33m --delete [OPT]  \e[1;34mOPT: resources, apps, toml\e[0m"
+    echo -e "\e[1;33m-f               \e[1;34mForce update check for resources\e[0m"
+    echo -e "\e[1;33m                 \e[1;34mon startup\e[0m"
+    echo -e "\e[1;33m-r               \e[1;34mReinstall revancify\e[0m"
+    echo -e "\e[1;33m-h,--help        \e[1;34mPrints help statement\e[0m"
     echo -e "\n\e[1;35mGithub repo: https://github.com/decipher3114/Revancify\nTelegram channel: https://t.me/revancify\nTelegram support group: https://t.me/revancifychat\e[0m"
 }
 
-while [ "${1:-}" != "" ]
-do
-    case "$1" in
-    "-h" | "--help" ) help
-        exit 0
-    ;;
-    "-n" | "-f" ) arg="$1"
-    ;;
-    "-c" ) echo -e "\e[1;31mAre you sure you want to clean resources?\e[0m"
-        echo -e "\e[1;31mThis will delete the CLI, patches and integrations for the current selected source.\e[0m"
-        read -r -p "[Y/N]: " choice
-        case "$choice" in
-        y|Y ) arg="$1"
+
+case "$1" in
+"-h" | "--help" ) help
+    exit 0
+;;
+"-n" | "-f" ) flag="$1"
+;;
+"-d" | "--delete" ) case "$2" in
+        "resources" | "apps" | "toml" ) echo -e "\e[1;31mAre you sure you want to delete $2?\e[0m"
+                            echo -e "\e[1;31mYou have to redownload them later.\e[0m"
+                            read -r -p "[Y/N]: " choice
+                            case "$choice" in
+                            y|Y ) flag="$1" 
+                                arg="$2"
+                            ;;
+                            ? ) :
+                            ;;
+                            esac
         ;;
-        ? ) :
+        "" ) echo -e "\e[1;31mNo Option specified !!\n\e[0m"
+            echo -e "\e[1;33mAllowed Options: resources, apps, toml\n\e[0m"
+            exit 1
+        ;;
+        * ) echo -e "\e[1;31mInvalid option: $2\n\e[0m"
+            echo -e "\e[1;33mAllowed Options: resources, apps, toml\n\e[0m"
+            exit 1
         ;;
         esac
-    ;;
-    "-r" ) if ping -c 1 google.com > /dev/null 2>&1
-        then
-            cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
-        fi
-    ;;
-    * ) echo -e "\e[1;31mInvalid option: $1\n\e[0m"
-        help
-        exit 1
-    ;;
-    esac
-    shift
-done
+;;
+"-r" ) if ping -c 1 google.com > /dev/null 2>&1
+    then
+        cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+    fi
+;;
+"" ) :
+;;
+* ) echo -e "\e[1;31mInvalid option: $1\n\e[0m"
+    help
+    exit 1
+;;
+esac
 
 checkrevancify
 dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus: Checking..." 10 42
@@ -141,7 +157,8 @@ else
     dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
     sleep 2
 fi
-bash main.sh "$arg"
+cd "$DATA/revancify-data" || (mkdir -p "$DATA/revancify-data" && cd "$DATA/revancify-data")
+bash "$path/main.sh" "$flag" "$arg"
 exitstatus=$?
 clear
 cd "$HOME" || :
