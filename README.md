@@ -16,19 +16,7 @@ pkg update -y && pkg install git -y && git clone https://github.com/decipher3114
 
 After installation, type `revancify` in termux and press enter.  
    
-Or use with arguments  
-```
-revancify  
-  
-Usage: revancify [OPTION] 
-
-Options:  
--n         Run revancify as non root in rooted device  
--f         Force update check for resources on startup  
--r         Reinstall revancify  
--u         Uninstall or remove revancify    
--h,--help  Prints help statement  
-```  
+Or use with arguments. Check them with `revancify -h` or `revancify --help`  
   
 # Thanks & Credits
 [Revanced](https://github.com/revanced) 

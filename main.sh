@@ -232,11 +232,11 @@ patchSaver()
 patchoptions()
 {
     checkResources
-    "${header[@]}" --infobox "Please Wait !!\nGenerating options.toml file..." 12 40
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk > /dev/null 2>&1
+    "${header[@]}" --infobox "Please Wait !!\nGenerating options file for $source patches..." 12 40
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$source.toml" > /dev/null 2>&1
     tput cnorm
     tmp=$(mktemp)
-    "${header[@]}" --begin 2 0 --ok-label "Save" --cancel-label "Exit" --keep-window --title '| Options File Editor |' --editbox options.toml -1 -1 2> "$tmp" && mv "$tmp" options.toml
+    "${header[@]}" --begin 2 0 --ok-label "Save" --cancel-label "Exit" --keep-window --title '| Options File Editor |' --editbox "$source.toml" -1 -1 2> "$tmp" && mv "$tmp" "$source.toml"
     tput civis
     mainmenu
 }
@@ -471,7 +471,7 @@ patchApp()
 {
     checkJson
     readarray -t patchesArg < <(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[] | if .status == "on" then "-i " + .name else "-e " + .name end' "$patchesSource-patches.json")
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options options.toml --experimental 2>&1 | tee /storage/emulated/0/Revancify/patchlog.txt | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" ${patchesArg[@]} --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$source.toml" --experimental 2>&1 | tee /storage/emulated/0/Revancify/patchlog.txt | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     tput civis
     sleep 2
     if ! grep -q "Finished" /storage/emulated/0/Revancify/patchlog.txt
@@ -579,7 +579,7 @@ then
         ls -1 *.apk | grep -v integrations | xargs rm > /dev/null 2>&1
     elif [ "$arg" == "toml" ]
     then
-        rm options.toml > /dev/null 2>&1
+        rm "$source.toml" > /dev/null 2>&1
     fi
 fi
 mainmenu
