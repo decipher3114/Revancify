@@ -1,5 +1,9 @@
 {
-    "revanced": {
+    "revanced": 
+    {
+        "projectName": "[Revanced]",
+        "sources": 
+        {
             "cli":
             {
                 "org": "revanced",
@@ -15,8 +19,13 @@
                 "org": "revanced",
                 "repo": "revanced-integrations"
             }
-        },
-    "inotia00": {
+        }
+    },
+    "inotia00": 
+    {
+        "projectName": "[Revanced Extended]",
+        "sources": 
+        {
             "cli":
             {
                 "org": "inotia00",
@@ -33,4 +42,5 @@
                 "repo": "revanced-integrations"
             }
         }
+    }
 }

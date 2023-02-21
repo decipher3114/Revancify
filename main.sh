@@ -22,7 +22,7 @@ setup()
     
     source=$(cat ".source")
 
-    source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
+    source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
 
     if ls "$patchesSource-patches.json" > /dev/null 2>&1
     then
@@ -114,8 +114,8 @@ getResources()
 fetchResources()
 {
     "${header[@]}" --infobox "Please Wait !!\nFetching resources data from github API..." 12 40
-    readarray -t resources < <(jq -r --arg source "$source" '.[$source] | keys_unsorted[]' "$path"/sources.json)
-    readarray -t links < <(jq -r --arg source "$source" '.[$source][] | .org+"/"+.repo' "$path"/sources.json)
+    readarray -t resources < <(jq -r --arg source "$source" '.[$source].sources | keys_unsorted[]' "$path"/sources.json)
+    readarray -t links < <(jq -r --arg source "$source" '.[$source].sources[] | .org+"/"+.repo' "$path"/sources.json)
     : > ".${source}latest"
     i=0 && for resource in "${resources[@]}"
     do
@@ -127,13 +127,13 @@ fetchResources()
 changeSource()
 {
     internet
-    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key+"\non" else .key+"\noff" end' "$path"/sources.json)
-    selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --keep-window --no-items --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1> /dev/tty)
+    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key,.value.projectName,"on" else .key,.value.projectName,"off" end' "$path"/sources.json)
+    selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --keep-window --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1> /dev/tty)
     if [ "$source" != "$selectedSource" ]
     then
         echo "$selectedSource" > ".source"
         source=$(cat ".source")
-        source <(jq -r --arg source "$source" '.[$source] | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
+        source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
         checkResources
     fi
     mainmenu
