@@ -1,7 +1,7 @@
 {
     "revanced": 
     {
-        "projectName": "[Revanced]",
+        "projectName": "Revanced",
         "sources": 
         {
             "cli":
@@ -23,7 +23,7 @@
     },
     "inotia00": 
     {
-        "projectName": "[Revanced Extended]",
+        "projectName": "Revanced Extended",
         "sources": 
         {
             "cli":

@@ -8,6 +8,14 @@ cp "$path/revancify" "$BIN/revancify" > /dev/null 2>&1
 DATA=$HOME/revancify-data
 
 
+terminate()
+{
+    clear
+    echo "Script terminated !!"
+    exit 1
+}
+trap terminate SIGTERM SIGINT SIGABRT
+
 if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]
 then
     echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
