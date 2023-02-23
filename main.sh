@@ -406,10 +406,28 @@ versionSelector()
 
 fetchApk()
 {
-    if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+    if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if length == 0 then "null" else empty end' "$patchesSource-patches.json")" == "null" ]
     then
-        buildApp
-        return 0
+        if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+        then
+            buildApp
+            return 0
+        fi
+    else
+        if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if index($selectedVer) != null then 0 else 1 end' "$patchesSource-patches.json")" -eq 0 ]
+        then
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+            then
+                buildApp
+                return 0
+            fi
+        else
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The version $selectedVer is not supported. Supported versions are \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions[] | "> "+.+"\n"' "$patchesSource-patches.json")\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
+            then
+                buildApp
+                return 0
+            fi
+        fi
     fi
     if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
     then
