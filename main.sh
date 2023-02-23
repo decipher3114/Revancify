@@ -19,8 +19,15 @@ setup()
     then
         echo "revanced" > ".source"
     fi
+
+    if ! ls ".theme" > /dev/null 2>&1
+    then
+        echo "Dark" > ".theme"
+    fi
     
     source=$(cat ".source")
+    theme=$(cat .theme)
+    export DIALOGRC=.dialogrc$theme
 
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
@@ -135,6 +142,7 @@ changeSource()
         echo "$selectedSource" > ".source"
         source=$(cat ".source")
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
+        sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
         checkResources
     fi
     mainmenu
@@ -239,6 +247,22 @@ patchoptions()
     tmp=$(mktemp)
     "${header[@]}" --begin 2 0 --ok-label "Save" --cancel-label "Exit" --keep-window --title '| Options File Editor |' --editbox "$source.toml" -1 -1 2> "$tmp" && mv "$tmp" "$source.toml"
     tput civis
+    mainmenu
+}
+
+switchTheme()
+{
+    allThemes=(Default off Dark off Light off)
+    for i in "${!allThemes[@]}"
+    do
+        if [ "${allThemes[$i]}" == "$(cat .theme)" ]
+        then
+            allThemes["$(( "$i" + 1 ))"]="on"
+        fi
+    done
+    selectedTheme=$("${header[@]}" --begin 2 0 --title '| Theme Selection Menu |' --no-items --keep-window --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allThemes[@]}" 2>&1> /dev/tty)
+    echo "$selectedTheme" > .theme
+    export DIALOGRC=.dialogrc$selectedTheme
     mainmenu
 }
 
@@ -527,7 +551,7 @@ userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 
 mainmenu()
 {
     [ "$variant" = "root" ] && misc=(6 "Uninstall Revanced app") || misc=(6 "Download Vanced Microg")
-    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" "${misc[@]}" 2>&1> /dev/tty)
+    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" "${misc[@]}" 7 "Switch Theme" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
@@ -556,6 +580,9 @@ mainmenu()
             then
                 downloadMicrog
             fi
+        elif [ "$mainmenu" -eq "7" ]
+        then
+            switchTheme
         fi
     elif [ $exitstatus -ne 0 ]
     then

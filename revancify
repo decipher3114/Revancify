@@ -6,6 +6,7 @@ BIN=/data/data/com.termux/files/usr/bin
 path=$(find "$HOME" -type d -name "Revancify")
 cp "$path/revancify" "$BIN/revancify" > /dev/null 2>&1
 DATA=$HOME/revancify-data
+mkdir -p "$DATA"
 
 
 terminate()
@@ -28,10 +29,12 @@ then
     fi
 fi
 
+theme=$(cat "$DATA/.theme")
+export DIALOGRC=$DATA/.dialogrc$theme
 
 checkdependencies()
 {
-    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$HOME/.dialog"* > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1
+    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$DATA/.dialogrcLight" > /dev/null 2>&1 && ls "$DATA/.dialogrcDark" > /dev/null 2>&1 && ls "$DATA/.dialogrcDefault" > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1
     then
         return 0
     else
@@ -57,7 +60,9 @@ installdependencies()
     pip install wheel &&
     pip install requests bs4
     cp revancify "$BIN/revancify"
-    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc" -O "$HOME/.dialogrc"
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_dark" -O "$DATA/.dialogrcDark"
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_light" -O "$DATA/.dialogrcLight"
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_default" -O "$DATA/.dialogrcDefault"
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties" &&
     echo "Dependencies installed successfully."
     return 0
@@ -157,18 +162,18 @@ checkdependencies
 sleep 1
 if ping -c 1 google.com > /dev/null 2>&1
 then
-    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
+    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
     if ! git pull > /dev/null 2>&1
     then
         git fetch --all > /dev/null 2>&1
         git reset --hard origin/main > /dev/null 2>&1
     fi
-    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
+    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
 else
-    dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
+    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Offline" 10 42
     sleep 2
 fi
-cd "$DATA"  > /dev/null 2>&1 || (mkdir -p "$DATA" && cd "$DATA")
+cd "$DATA"  > /dev/null 2>&1 || :
 bash "$path/main.sh" "$flag" "$arg"
 exitstatus=$?
 clear
