@@ -60,6 +60,7 @@ installdependencies()
     pip install wheel &&
     pip install requests bs4
     cp revancify "$BIN/revancify"
+    git config --global pull.rebase true
     wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_dark" -O "$DATA/.dialogrcDark"
     wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_light" -O "$DATA/.dialogrcLight"
     wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_default" -O "$DATA/.dialogrcDefault"

@@ -422,7 +422,7 @@ fetchApk()
                 return 0
             fi
         else
-            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The version $selectedVer is not supported. Supported versions are \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions[] | "> "+.+"\n"' "$patchesSource-patches.json")\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The version $selectedVer is not supported. Supported versions are: \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end' "$patchesSource-patches.json")\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
             then
                 buildApp
                 return 0
