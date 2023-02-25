@@ -14,10 +14,13 @@ setup()
     arch=$(getprop ro.product.cpu.abi)
     mkdir -p /storage/emulated/0/Revancify
     path=$(find "$HOME" -type d -name "Revancify")
+    header=(dialog --backtitle "Revancify | [Arch: $arch, SU: $variant]" --no-shadow)
 
-    if ! ls ".source" > /dev/null 2>&1
+    if ! (ls ".source" > /dev/null 2>&1) || [ "$(cat .source)" == "" ]
     then
-        echo "revanced" > ".source"
+        allSources=("revanced" "[Revanced]" on "inotia00" "[Revanced Extended]" off)
+        selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --keep-window --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1> /dev/tty)
+        echo "$selectedSource" > .source
     fi
 
     if ! ls ".theme" > /dev/null 2>&1
@@ -564,7 +567,6 @@ buildApp()
 
 checkSU
 setup
-header=(dialog --backtitle "Revancify | [Arch: $arch, SU: $variant]" --no-shadow)
 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 mainmenu()
 {
