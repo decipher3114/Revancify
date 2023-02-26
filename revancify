@@ -34,7 +34,7 @@ export DIALOGRC=$DATA/.dialogrc$theme
 
 checkdependencies()
 {
-    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$DATA/.dialogrcLight" > /dev/null 2>&1 && ls "$DATA/.dialogrcDark" > /dev/null 2>&1 && ls "$DATA/.dialogrcDefault" > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1
+    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(pip list) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$DATA/.dialogrcLight" > /dev/null 2>&1 && ls "$DATA/.dialogrcDark" > /dev/null 2>&1 && ls "$DATA/.dialogrcDefault" > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1 && ls "$HOME/storage" > /dev/null 2>&1
     then
         return 0
     else
@@ -55,6 +55,7 @@ installdependencies()
     clear
     echo "Installing dependencies..."
     sleep 1
+    termux-setup-storage
     pkg update -y &&
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
     pip install wheel &&
@@ -167,7 +168,7 @@ then
     if ! git pull > /dev/null 2>&1
     then
         git fetch --all > /dev/null 2>&1
-        git reset --hard origin/main > /dev/null 2>&1
+        git reset --hard @{u} > /dev/null 2>&1
     fi
     dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: Online" 10 42
 else

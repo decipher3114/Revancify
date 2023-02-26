@@ -27,7 +27,7 @@ setup()
     then
         echo "Dark" > ".theme"
     fi
-    
+
     source=$(cat ".source")
     theme=$(cat .theme)
     export DIALOGRC=.dialogrc$theme
@@ -173,16 +173,37 @@ checkJson()
 
 selectApp()
 {
+    if [ "$1" == "extra" ]
+    then
+        customOpt=(1 "From Apk File" "Choose apk from storage.")
+        incrementVal=2
+    elif [ "$1" == "normal" ]
+    then
+        unset customOpt
+        incrementVal=1
+    fi
     checkJson
-    patchselectionheight=$(($(tput lines) - 3))
     previousAppName="$appName"
-    readarray -t availableApps < <(jq -r 'to_entries | map(select(.value.appName != null)) | to_entries | map(.key + 1, .value.value.appName, .value.key)[]' "$patchesSource-patches.json")
-    appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate" $patchselectionheight -1 15 "${availableApps[@]}" 2>&1> /dev/tty)
+    readarray -t availableApps < <(jq -r --argjson incrementVal "$incrementVal" 'to_entries | map(select(.value.appName != null)) | to_entries | map(.key + $incrementVal, .value.value.appName, .value.key)[]' "$patchesSource-patches.json")
+    appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" $(($(tput lines) - 3)) -1 15 "${customOpt[@]}" "${availableApps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
-        appName="${availableApps[$(($(( "$appIndex" * 3 )) - 2 ))]}"
-        pkgName="${availableApps[$(($(( "$appIndex" * 3 )) - 1 ))]}"
+        if [ "$1" == "extra" ] && [ "$appIndex" -eq 1 ]
+        then
+            appType=custom
+        else
+            if [ "$1" == "extra" ]
+            then
+                appName="${availableApps[$(($(( $(( "$appIndex" - 1 )) * 3 )) - 2 ))]}"
+                pkgName="${availableApps[$(($(( $(( "$appIndex" - 1 )) * 3 )) - 1 ))]}"
+            elif [ "$1" == "normal" ]
+            then
+                appName="${availableApps[$(($(( "$appIndex" * 3 )) - 2 ))]}"
+                pkgName="${availableApps[$(($(( "$appIndex" * 3 )) - 1 ))]}"
+            fi
+            appType=normal
+        fi
     elif [ $exitstatus -ne 0 ]
     then
         mainmenu
@@ -196,7 +217,6 @@ selectApp()
 selectPatches()
 {
     checkJson
-    patchselectionheight=$(($(tput lines) - 3))
     toogleName="Exclude All"
     for i in $(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[].status' "$patchesSource-patches.json")
     do
@@ -207,9 +227,14 @@ selectPatches()
         fi
     done
     readarray -t patchesInfo < <(jq -r --arg pkgName "$pkgName" '.[$pkgName].patches[] | "\(.name)\n\(.status)\n\(.description)"' "$patchesSource-patches.json")
-    choices=($("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --ok-label "Save" --cancel-label "$toogleName" --help-button --help-label "Recommended" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $patchselectionheight -1 15 "${patchesInfo[@]}" 2>&1 >/dev/tty))
+    choices=($("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --keep-window --ok-label "Save" --cancel-label "$toogleName" --help-button --help-label "Recommended" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch\nSource: $sourceName; AppName: $appName" $(($(tput lines) - 3)) -1 15 "${patchesInfo[@]}" 2>&1 >/dev/tty))
     selectPatchStatus=$?
     patchSaver
+    if [ "$appType" == "normal" ]
+    then
+        selectApp normal
+        selectPatches
+    fi
 }
 
 patchSaver()
@@ -218,8 +243,7 @@ patchSaver()
     then
         tmp=$(mktemp)
         jq --arg pkgName "$pkgName" '.[$pkgName].patches[].status = "off" | (.[$pkgName].patches[] | select(IN(.name; $ARGS.positional[])) | .status ) |= "on"' --args "${choices[@]}" < "$patchesSource-patches.json" > "$tmp" && mv "$tmp" "$patchesSource-patches.json"
-        selectApp
-        selectPatches
+        return 0
     elif [ $selectPatchStatus -eq 1 ]
     then
         if [ "$toogleName" == "Include All" ]
@@ -276,7 +300,7 @@ rootInstall()
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --infobox "Installation Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
-        cp ./.mountlog /storage/emulated/0/Revancify/mountlog.txt
+        cp ./.mountlog "/storage/emulated/0/Revancify/mountlog.txt"
         sleep 1
         mainmenu
     fi
@@ -287,8 +311,8 @@ rootInstall()
 }
 
 rootUninstall()
-{ 
-    selectApp
+{
+    selectApp normal
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --msgbox "$appName Revanced is not installed(mounted) in your device." 12 40
@@ -315,7 +339,7 @@ nonRootInstall()
     "${header[@]}" --infobox "Copying $appName-Revanced $selectedVer to Internal Storage..." 12 40
     sleep 0.5
     cp "$appName-Revanced"* /storage/emulated/0/Revancify/ > /dev/null 2>&1
-    termux-open /storage/emulated/0/Revancify/"$appName-Revanced-$appVer".apk
+    termux-open "/storage/emulated/0/Revancify/$appName-Revanced-$appVer.apk"
     mainmenu
 }
 
@@ -364,7 +388,7 @@ getAppVer()
     then
         if ! su -c "pm path $pkgName" > /dev/null 2>&1
         then
-            if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --keep-window --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1
+            if "${header[@]}" --begin 2 0 --title '| Apk Not Installed |' --no-items --defaultno --keep-window --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1
             then
                 variant="nonRoot"
                 getAppVer
@@ -396,42 +420,19 @@ versionSelector()
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
         mainmenu
     fi
-    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Choose App Version for $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
+    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName; AppName: $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
     if [ $exitstatus -ne 0 ]
     then
-        selectApp
+        selectApp extra
         getAppVer
         return 0
     fi
 }
 
-fetchApk()
+checkPatched()
 {
-    if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if length == 0 then "null" else empty end' "$patchesSource-patches.json")" == "null" ]
-    then
-        if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
-        then
-            buildApp
-            return 0
-        fi
-    else
-        if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if index($selectedVer) != null then 0 else 1 end' "$patchesSource-patches.json")" -eq 0 ]
-        then
-            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
-            then
-                buildApp
-                return 0
-            fi
-        else
-            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The version $selectedVer is not supported. Supported versions are: \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end' "$patchesSource-patches.json")\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
-            then
-                buildApp
-                return 0
-            fi
-        fi
-    fi
     if ls "$appName-Revanced-$appVer"* > /dev/null 2>&1
     then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
@@ -450,6 +451,162 @@ fetchApk()
     else
         rm "$appName-Revanced-"* > /dev/null 2>&1
     fi
+}
+
+selectFile()
+{
+    currentPath=${currentPath:-/storage/emulated/0}
+    dirList=()
+    files=()
+    if [ "$currentPath" != "/storage/emulated/0" ]
+    then
+        dirUp=(1 ".." "GO BACK TO PREVIOUS DIRECTORY")
+        num=1
+    else
+        unset dirUp
+        num=0
+    fi
+    while read -r item
+    do
+        if [ -d "$currentPath/$item" ]
+        then
+            files+=("$item")
+            [ ${#item} -gt $(( "$(tput cols)" - 24 )) ] && item=${item:0:$(( "$(tput cols)" - 34 ))}...${item: -10}
+            num=$(( "$num" + 1 ))
+            dirList+=("$num")
+            dirList+=("$item")
+            dirList+=("DIRECTORY")
+        elif [ "${item##*.}" == "apk" ]
+        then
+            files+=("$item")
+            [ ${#item} -gt $(( "$(tput cols)" - 24 )) ] && item=${item:0:$(( "$(tput cols)" - 34 ))}...${item: -10}
+            num=$(( "$num" + 1 ))
+            dirList+=("$num")
+            dirList+=("$item")
+            dirList+=("APK FILE")
+        fi
+    done < <(ls -1 --group-directories-first "$currentPath")
+    pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1> /dev/tty)
+    exitstatus=$?
+    if [ $exitstatus -eq 1 ]
+    then
+        mainmenu
+        return 0
+    fi
+    if [ "$currentPath" != "/storage/emulated/0" ] && [ "$pathIndex" -eq 1 ]
+    then
+        newPath=".."
+    elif [ "$currentPath" != "/storage/emulated/0" ] && [ "$pathIndex" -ne 1 ]
+    then
+        newPath=${files[$pathIndex - 2]}
+    else
+        newPath=${files[$pathIndex - 1]}
+    fi
+    if [ "$newPath" == ".." ]
+    then
+        newPath=${currentPath%/*}
+    else
+        newPath=$currentPath/$newPath
+    fi
+    if [ -d "$newPath" ]
+    then
+        currentPath=$newPath
+        selectFile
+    elif [ -f "$newPath" ]
+    then
+        if [ "${newPath##*.}" != "apk" ]
+        then
+            "${header[@]}" --msgbox "$(basename "$newPath") is not an apk file. Please select again !!" 12 40
+            selectFile
+        fi
+    fi
+}
+
+fetchCustomApk()
+{
+    selectFile
+    "${header[@]}" --infobox "Please Wait !!\nExtracting data from \"$(basename "$newPath")\"" 12 40
+    if ! aaptData=$("$path/binaries/aapt2_$arch" dump badging "$newPath")
+    then
+        "${header[@]}" --msgbox "The apkfile you selected is not an valid app. Download the apk again and retry." 12 40
+        mainmenu
+    fi
+    pkgName=$(grep "package:" <<< "$aaptData" | sed -e 's/package: name='\''//' -e 's/'\'' versionCode.*//')
+    if [ "$(jq --arg pkgName "$pkgName" '.[$pkgName].patches' "$patchesSource-patches.json")" == "null" ]
+    then
+        "${header[@]}" --msgbox "The app you selected is not supported for patching by $sourceName patches !!" 12 40
+        mainmenu
+    fi
+    appName=$(grep "application-label:" <<< "$aaptData" | sed -e 's/application-label://' -e 's/'\''//g')
+    selectedVer=$(grep "package:" <<< "$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
+    appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
+    if [ "$variant" = "root" ]
+    then
+        if ! su -c "pm path $pkgName" > /dev/null 2>&1
+        then
+            if "${header[@]}" --begin 2 0 --title '| Apk Not Installed |' --no-items --defaultno --keep-window --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1
+            then
+                variant="nonRoot"
+                return 0
+            else
+                termux-open "https://play.google.com/store/apps/details?id=$pkgName"
+                mainmenu
+            fi
+        fi
+    fi
+    cp "$newPath" "$appName-$appVer.apk"
+    if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if length == 0 then "null" else empty end' "$patchesSource-patches.json")" == "null" ]
+    then
+        if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $appName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1
+        then
+            mainmenu
+            return 0
+        fi
+    else
+        if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if index($selectedVer) != null then 0 else 1 end' "$patchesSource-patches.json")" -eq 0 ]
+        then
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $appName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1
+            then
+                mainmenu
+                return 0
+            fi
+        else
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $appName\nPackage Name: $pkgName\nVersion     : $selectedVer\n\nThe version $selectedVer is not supported. Supported versions are: \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end' "$patchesSource-patches.json")\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
+            then
+                mainmenu
+                return 0
+            fi
+        fi
+    fi
+    checkPatched
+}
+
+fetchApk()
+{
+    if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if length == 0 then "null" else empty end' "$patchesSource-patches.json")" == "null" ]
+    then
+        if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+        then
+            mainmenu
+            return 0
+        fi
+    else
+        if [ "$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | if index($selectedVer) != null then 0 else 1 end' "$patchesSource-patches.json")" -eq 0 ]
+        then
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1
+            then
+                mainmenu
+                return 0
+            fi
+        else
+            if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --keep-window --yesno "The version $selectedVer is not supported. Supported versions are: \n$(jq -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" '.[$pkgName].versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end' "$patchesSource-patches.json")\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1
+            then
+                mainmenu
+                return 0
+            fi
+        fi
+    fi
+    checkPatched
     if ls "$appName"-"$appVer"* > /dev/null 2>&1
     then
         if [ "$([ -f ".${appName}size" ] && cat ".${appName}size" || echo "0" )" != "$([ -f "$appName"-"$appVer".apk ] && du -b "$appName"-"$appVer".apk | cut -d $'\t' -f 1 || echo 0)" ]
@@ -508,7 +665,7 @@ downloadMicrog()
         internet
         readarray -t microgheaders < <(curl -s "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest" | jq -r '(.assets[] | .browser_download_url, .size), .tag_name')
         wget -q -c "${microgheaders[0]}" -O "VancedMicroG-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : Vanced MicroG\nVersion : ${microgheaders[2]}\nSize    : $(echo "${microgheaders[1]}" | numfmt --to=iec --format="%0.1f")\n\nDownloading..." -1 -1 && tput civis
-        ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* /storage/emulated/0/Revancify/ && termux-open "/storage/emulated/0/Revancify/VancedMicroG-${microgheaders[2]}.apk"
+        ls VancedMicroG* > /dev/null 2>&1 && mv VancedMicroG* "/storage/emulated/0/Revancify/" && termux-open "/storage/emulated/0/Revancify/VancedMicroG-${microgheaders[2]}.apk"
     fi
     mainmenu
 }
@@ -554,11 +711,20 @@ checkMicrogPatch()
     fi
 }
 
-buildApp()
+buildCustomApk()
 {
-    selectApp
     checkResources
     checkJson
+    fetchCustomApk
+    selectPatches
+    checkMicrogPatch
+    patchApp
+    ${variant}Install
+}
+
+buildApk()
+{
+    checkResources
     getAppVer
     checkMicrogPatch
     patchApp
@@ -571,16 +737,22 @@ userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 
 mainmenu()
 {
     [ "$variant" = "root" ] && misc=(6 "Uninstall Revanced app") || misc=(6 "Download Vanced Microg")
-    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" "${misc[@]}" 7 "Switch Theme" 2>&1> /dev/tty)
+    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --keep-window --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" "${misc[@]}" 7 "Switch Theme" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
     then
         if [ "$mainmenu" -eq "1" ]
         then
-            buildApp
+            selectApp extra
+            if [ "$appType" == "normal" ]
+            then
+                buildApk
+            else
+                buildCustomApk
+            fi
         elif [ "$mainmenu" -eq "2" ]
         then
-            selectApp
+            selectApp normal
             selectPatches
         elif [ "$mainmenu" -eq "3" ]
         then
