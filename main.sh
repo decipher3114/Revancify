@@ -294,20 +294,45 @@ rootInstall()
     if [ "$installedStatus" == "false" ]
     then
         "${header[@]}" --infobox "Installing stock $appName app..." 12 40
-        su -c pm install --user 0 -i com.android.vending -r -d "$appName"-"$appVer".apk > /dev/null 2>&1
+        su -c pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk > /dev/null 2>&1
     fi
     "${header[@]}" --infobox "Mounting $appName Revanced on stock app..." 12 40
-    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete /data/adb/revanced/"$pkgName".apk && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp=/data/adb/revanced/"$pkgName".apk && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > "$storagePath/Revancify/mountlog.txt" 2>&1
+    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'am force-stop $pkgName && grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete "/data/local/tmp/revancify/$pkgName.apk" && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp="/data/local/tmp/revancify/$pkgName.apk" && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > "$storagePath/Revancify/mountlog.txt" 2>&1
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --infobox "Mount Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
         sleep 1
         mainmenu
     fi
-    echo -e "#!/system/bin/sh\nwhile [ \"\$(getprop sys.boot_completed | tr -d '\\\r')\" != \"1\" ]; do sleep 1; done\n\nif [ \$(dumpsys package $pkgName | grep versionName | cut -d '=' -f 2 | sed -n '1p') =  \"$selectedVer\" ]\nthen\n\tbase_path=\"/data/adb/revanced/$pkgName.apk\"\n\tstock_path=\$( pm path $pkgName | sed -n '/base/s/package://p' )\n\n\tchcon u:object_r:apk_data_file:s0 \$base_path\n\tmount -o bind \$base_path \$stock_path\nfi" > "mount_revanced_$pkgName.sh"
-    su -c "mv mount_revanced_$pkgName.sh /data/adb/service.d && chmod +x /data/adb/service.d/mount_revanced_$pkgName.sh"
+    cat << EOF > "mount_revanced_$pkgName.sh"
+#!/system/bin/sh
+while [ "\$(getprop sys.boot_completed | tr -d '\r')" != "1" ]; do sleep 3; done
+
+if [ "\$(dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')" = "$selectedVer" ]
+then
+    base_path="/data/local/tmp/revancify/$pkgName.apk"
+    stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
+    chmod 0644 "\$base_path"
+    chown system:system "\$base_path"
+    chcon u:object_r:apk_data_file:s0 "\$base_path"
+    [ -n "\$stock_path" ] && mount -o bind "\$base_path" "\$stock_path"
+fi
+EOF
+    su -c "mv mount_revanced_$pkgName.sh /data/adb/service.d && chmod 0744 /data/adb/service.d/mount_revanced_$pkgName.sh"
+    cat << EOF > "umount_revanced_$pkgName.sh"
+#!/system/bin/sh
+stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
+[ -n "\$stock_path" ] && umount -l "\$stock_path"
+grep $pkgName /proc/mounts | | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l
+EOF
+    su -c "mv umount_revanced_$pkgName.sh /data/adb/post-fs-data.d && chmod 0744 /data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
     sleep 1
-    su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" > /dev/null 2>&1
+    if "${header[@]}" --begin 2 0 --title '| Apk Mounted |' --no-items --keep-window --yesno "App Mounted Successfully !!\nDo you want to launch app??" -1 -1
+    then
+        su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" > /dev/null 2>&1
+    else
+        mainmenu
+    fi
 }
 
 rootUninstall()
@@ -319,8 +344,7 @@ rootUninstall()
         extrasMenu
     fi
     "${header[@]}" --infobox "Uninstalling $appName Revanced by Unmounting..." 12 40
-    pkgName=$pkgName su -mm -c 'grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l &&\
-    stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && am force-stop $pkgName && rm /data/adb/service.d/mount_revanced_$pkgName.sh && rm -rf /data/adb/revanced/$pkgName.apk' > /dev/null 2>&1
+    pkgName=$pkgName su -mm -c 'am force-stop $pkgName && grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && am force-stop $pkgName && rm /data/adb/service.d/mount_revanced_$pkgName.sh && rm /data/adb/post-fs-data.d/umount_revanced_$pkgName.sh && rm -rf /data/local/tmp/revancify/$pkgName.apk' > /dev/null 2>&1
     sleep 0.5s
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
@@ -371,7 +395,7 @@ checkSU()
             variant=nonRoot
         else
             variant=root
-            su -c "mkdir -p /data/adb/revanced"
+            su -c "mkdir -p /data/local/tmp/revancify"
         fi
     else
         variant=nonRoot
