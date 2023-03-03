@@ -2,13 +2,13 @@ from bs4 import BeautifulSoup
 from re import compile, sub
 from sys import argv
 from json import load
-from requests import get
+from pycurl_requests import get
 import re
 
 versionlist=[]
 
 def fetchurl(url):
-    return BeautifulSoup(get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).content, 'html.parser')
+    return BeautifulSoup(get(url, headers={'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'}).text, 'html.parser')
 
 with open(f'{argv[3]}-patches.json', "r") as patches_file:
     supportedvers = list(load(patches_file)[argv[2]]['versions'])

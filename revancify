@@ -36,7 +36,7 @@ export DIALOGRC=$DATA/.dialogrc$theme
 checkdependencies()
 {
     
-    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(ls $HOME/../usr/lib/python"$(python --version | cut -b 8-11)"/site-packages) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q requests <<< "$modules" && ls "$DATA/.dialogrcLight" > /dev/null 2>&1 && ls "$DATA/.dialogrcDark" > /dev/null 2>&1 && ls "$DATA/.dialogrcDefault" > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1 && ls "$HOME/storage" > /dev/null 2>&1
+    if bins=$(ls "$BIN") && grep -q java <<< "$bins" && grep -q python <<< "$bins" && grep -q wget <<< "$bins" && grep -q tput <<< "$bins" && grep -q dialog <<< "$bins" && grep -q jq <<< "$bins" && modules=$(ls $HOME/../usr/lib/python"$(python --version | cut -b 8-11)"/site-packages) && grep -q wheel <<< "$modules" && grep -q bs4 <<< "$modules" && grep -q pycurl_requests <<< "$modules" && grep -q requests <<< "$modules" && ls "$DATA/.dialogrcLight" > /dev/null 2>&1 && ls "$DATA/.dialogrcDark" > /dev/null 2>&1 && ls "$DATA/.dialogrcDefault" > /dev/null 2>&1 && ls "$BIN/revancify" > /dev/null 2>&1 && ls "$HOME/storage" > /dev/null 2>&1
     then
         return 0
     else
@@ -61,7 +61,7 @@ installdependencies()
     pkg update -y &&
     pkg install python openjdk-17 wget ncurses-utils dialog jq -y &&
     pip install wheel &&
-    pip install requests bs4
+    pip install requests bs4 pycurl_requests
     cp revancify "$BIN/revancify"
     git config --global pull.rebase true
     wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_dark" -O "$DATA/.dialogrcDark"

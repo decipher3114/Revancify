@@ -1,4 +1,4 @@
-from requests import post
+from pycurl_requests import post
 from json import load, dump
 from sys import argv
 import glob
@@ -100,8 +100,6 @@ if fetchType == "online":
         body = {"pnames": pkgs}
 
         response = post('https://www.apkmirror.com/wp-json/apkm/v1/app_exists/',json=body , headers=headers)
-
-        apps = []
 
         for data in response.json()['data']:
             if data['exists']:
