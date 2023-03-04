@@ -4,6 +4,7 @@
 *.apk
 *.sh
 !main.sh
+!mount_apk.sh
 *.py
 !python-utils/*.py
 *.txt

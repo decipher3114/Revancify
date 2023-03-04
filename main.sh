@@ -297,7 +297,7 @@ rootInstall()
         su -c pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk > /dev/null 2>&1
     fi
     "${header[@]}" --infobox "Mounting $appName Revanced on stock app..." 12 40
-    pkgName=$pkgName appName=$appName appVer=$appVer su -mm -c 'rm /data/adb/service.d/mount_revanced_$pkgName.sh && /data/adb/post-fs-data.d/umount_revanced_$pkgName.sh && rm "/data/local/tmp/revancify/$pkgName.apk" && am force-stop $pkgName && grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl && cp ./"$appName"-Revanced-"$appVer".apk /data/local/tmp/revanced.delete && mv /data/local/tmp/revanced.delete "/data/local/tmp/revancify/$pkgName.apk" && stockApp=$(pm path $pkgName | sed -n "/base/s/package://p") && revancedApp="/data/local/tmp/revancify/$pkgName.apk" && chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp" && chcon -v u:object_r:apk_data_file:s0 "$revancedApp" && mount -vo bind "$revancedApp" "$stockApp" && am force-stop $pkgName' > "$storagePath/Revancify/mountlog.txt" 2>&1
+    su -mm -c "/system/bin/sh $path/mount_apk.sh $appName $pkgName $appVer" 
     if ! su -c "grep -q $pkgName /proc/mounts"
     then
         "${header[@]}" --infobox "Mount Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
@@ -314,14 +314,13 @@ chcon u:object_r:apk_data_file:s0 "\$base_path"
 [ ! -z "\$stock_path" ] && mount -o bind "\$base_path" "\$stock_path"
 am force-stop $pkgName
 EOF
-    su -c "mv mount_revanced_$pkgName.sh /data/adb/service.d && chmod 0744 /data/adb/service.d/mount_revanced_$pkgName.sh"
     cat << EOF > "umount_revanced_$pkgName.sh"
 #!/system/bin/sh
 stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
 [ ! -z "\$stock_path" ] && umount -l "\$stock_path"
 grep $pkgName /proc/mounts | | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l
 EOF
-    su -c "mv umount_revanced_$pkgName.sh /data/adb/post-fs-data.d && chmod 0744 /data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
+    su -c "mv mount_revanced_$pkgName.sh /data/adb/service.d && chmod 0744 /data/adb/service.d/mount_revanced_$pkgName.sh && mv umount_revanced_$pkgName.sh /data/adb/post-fs-data.d && chmod 0744 /data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
     sleep 1
     if "${header[@]}" --begin 2 0 --title '| Apk Mounted |' --no-items --keep-window --yesno "App Mounted Successfully !!\nDo you want to launch app??" -1 -1
     then
