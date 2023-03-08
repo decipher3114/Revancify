@@ -5,6 +5,6 @@
 *.sh
 !main.sh
 !mount_apk.sh
-*.py
-!python-utils/*.py
+!fetch*.sh
 *.txt
+pup
