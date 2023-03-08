@@ -444,6 +444,10 @@ versionSelector()
     fi
     selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName; AppName: $appName" -1 -1 15 "${appVerList[@]}" 2>&1> /dev/tty)
     exitstatus=$?
+    if [ "$selectedVer" == "Auto Select" ]
+    then
+        selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
+    fi
     appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
     if [ $exitstatus -ne 0 ]
     then
