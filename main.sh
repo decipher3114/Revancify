@@ -25,6 +25,11 @@ setup()
     then
         tmp=$(mktemp) && jq '.theme |= "Dark"' settings.json > "$tmp" && mv "$tmp" settings.json
     fi
+
+    if [ "$(jq -r '.riplibStatus' settings.json)" == "null" ]
+    then
+        tmp=$(mktemp) && jq '.riplibStatus |= true' settings.json > "$tmp" && mv "$tmp" settings.json
+    fi
     theme=$(jq -r '.theme' settings.json)
     export DIALOGRC=.dialogrc$theme
 
@@ -448,6 +453,10 @@ versionSelector()
     then
         selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
     fi
+    if [ "$selectedVer" == "Auto Select" ]
+    then
+        selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
+    fi
     appVer="$(sed 's/\./-/g;s/ /-/g' <<< "$selectedVer")"
     if [ $exitstatus -ne 0 ]
     then
@@ -694,8 +703,12 @@ downloadMicrog()
 patchApp()
 {
     checkJson
+    if [ "$source" == "inotia00" ] && [ "$(jq -r '.riplibStatus' settings.json)" == "true" ]
+    then
+        riplibArgs=$(sed "s/--rip-lib=$arch //" <<< "--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a ")
+    fi
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.toml" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.toml" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >> "$storagePath/Revancify/patchlog.txt"
     tput civis
     sleep 1
@@ -753,14 +766,23 @@ switchTheme()
 
 extrasMenu()
 {
-    [ "$variant" = "root" ] && misc=(6 "Uninstall Revanced app") || misc=(6 "Download Vanced Microg")
-    extrasPrompt=$("${header[@]}" --begin 2 0 --title '| Extras Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Delete Resources" 2 "Delete Apps" 3 "Delete Options.toml" 4 "Resources Update on startup" 5 "Switch Theme" "${misc[@]}" 2>&1> /dev/tty)
+    [ "$variant" = "root" ] && misc="Uninstall Revanced app" || misc="Download Vanced Microg"
+    extrasPrompt=$("${header[@]}" --begin 2 0 --title '| Extras Menu |' --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "$misc" 2 "Delete Resources" 3 "Delete Apps" 4 "Delete Options.toml" 5 "Riplibs after patching" 6 "Resources Update on startup" 7 "Switch Theme" 2>&1> /dev/tty)
     extrasExitStatus=$?
     if [ "$extrasExitStatus" -ne 0 ]
     then
         mainmenu
     fi
     if [ "$extrasPrompt" -eq 1 ]
+    then
+        if [ "$variant" = "root" ]
+        then
+            rootUninstall
+        elif [ "$variant" = "nonRoot" ]
+        then
+            downloadMicrog
+        fi
+    elif [ "$extrasPrompt" -eq 2 ]
     then
         if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --keep-window --yesno "Please confirm to delete the resources.\nIt will delete the $sourceName CLI, patches and integrations." -1 -1
         then
@@ -770,40 +792,39 @@ extrasMenu()
             rm "$integrationsSource"-integrations-*.apk > /dev/null 2>&1
             "${header[@]}" --msgbox "All $sourceName Resources successfully deleted !!" 12 40
         fi
-    elif [ "$extrasPrompt" -eq 2 ]
+    elif [ "$extrasPrompt" -eq 3 ]
     then
         if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --keep-window --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1
         then
             ls -1 *.apk | grep -v integrations | xargs rm > /dev/null 2>&1
             "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 40
         fi
-    elif [ "$extrasPrompt" -eq 3 ]
+    elif [ "$extrasPrompt" -eq 4 ]
     then
         if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --keep-window --yesno "Please confirm to delete the options file for $sourceName patches." -1 -1
         then
             rm "$storagePath/Revancify/$source-options.toml" > /dev/null 2>&1
             "${header[@]}" --msgbox "Options file successfully deleted for current source !!" 12 40
         fi
-    elif [ "$extrasPrompt" -eq 4 ]
+    elif [ "$extrasPrompt" -eq 5 ]
     then
-        if "${header[@]}" --begin 2 0 --title '| Force Update Check |' --no-items --defaultno --yes-label "true" --no-label "false" --keep-window --yesno "Set the value for revancify to force check update for resources at startup?\nCurrent Value: $(jq -r '.forceUpdateCheckStatus' settings.json)" -1 -1
+        if "${header[@]}" --begin 2 0 --title '| Force Update Check |' --no-items --defaultno --yes-label "true" --no-label "false" --keep-window --yesno "Set the value for riplibs argument. If \"true\", all libs for archs other than $arch will be removed from the app.\n\nCurrent Value: $(jq -r '.riplibStatus' settings.json)\n\nNote: Only for Revanced Extended." -1 -1
+        then
+            tmp=$(mktemp) && jq '.riplibStatus |= true' settings.json > "$tmp" && mv "$tmp" settings.json
+        else
+            tmp=$(mktemp) && jq '.riplibStatus |= false' settings.json > "$tmp" && mv "$tmp" settings.json
+        fi
+    elif [ "$extrasPrompt" -eq 6 ]
+    then
+        if "${header[@]}" --begin 2 0 --title '| Force Update Check |' --no-items --defaultno --yes-label "true" --no-label "false" --keep-window --yesno "Set the value for revancify to force check update for resources at startup.\n\nCurrent Value: $(jq -r '.forceUpdateCheckStatus' settings.json)" -1 -1
         then
             tmp=$(mktemp) && jq '.forceUpdateCheckStatus |= true' settings.json > "$tmp" && mv "$tmp" settings.json
         else
             tmp=$(mktemp) && jq '.forceUpdateCheckStatus |= false' settings.json > "$tmp" && mv "$tmp" settings.json
         fi
-    elif [ "$extrasPrompt" -eq 5 ]
+    elif [ "$extrasPrompt" -eq 7 ]
     then
         switchTheme
-    elif [ "$extrasPrompt" -eq 6 ]
-    then
-        if [ "$variant" = "root" ]
-        then
-            rootUninstall
-        elif [ "$variant" = "nonRoot" ]
-        then
-            downloadMicrog
-        fi
     fi
     extrasMenu
 }
