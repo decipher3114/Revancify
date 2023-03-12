@@ -48,6 +48,9 @@ setup()
     if ls "$patchesSource"-patches.json > /dev/null 2>&1
     then
         bash "$path/fetch_patches.sh" "$source" > /dev/null 2>&1
+        patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
+        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     fi
 }
 
@@ -128,6 +131,9 @@ getResources()
         mainmenu
         return 0
     fi
+    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
+    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+    appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     mainmenu
     return 0
 }
@@ -156,6 +162,8 @@ changeSource()
         source="$selectedSource"
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
+        patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
+        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
         checkResources
     fi
     mainmenu
@@ -179,8 +187,6 @@ checkJson()
             return 0
         fi
     fi
-    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
 }
 
 selectApp()
@@ -196,8 +202,7 @@ selectApp()
     fi
     checkJson
     previousAppName="$appName"
-    appsArray=$(jq -n --arg incrementVal "$incrementVal" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1+ ($incrementVal | tonumber)), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
-    readarray -t availableApps < <(jq -n -r --argjson appsArray "$appsArray" '$appsArray[] | .index, .appName, .pkgName')
+    readarray -t availableApps < <(jq -n -r --arg incrementVal "$incrementVal" --argjson appsArray "$appsArray" '$appsArray[] | .index + ($incrementVal | tonumber), .appName, .pkgName')
     appIndex=$("${header[@]}" --begin 2 0 --title '| App Selection Menu |' --item-help --keep-window --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" $(($(tput lines) - 3)) -1 15 "${customOpt[@]}" "${availableApps[@]}" 2>&1> /dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 0 ]
@@ -206,7 +211,7 @@ selectApp()
         then
             appType=custom
         else
-            readarray -t appSelectedResult < <(jq -n -r --arg appIndex "$appIndex" --argjson appsArray "$appsArray" '$appsArray[] | select(.index == ($appIndex | tonumber)) | .appName, .pkgName, .developerName, .apkmirrorAppName')
+            readarray -t appSelectedResult < <(jq -n -r --arg incrementVal "$incrementVal" --arg appIndex "$appIndex" --argjson appsArray "$appsArray" '$appsArray[] | select(.index == (($appIndex | tonumber) - ($incrementVal | tonumber))) | .appName, .pkgName, .developerName, .apkmirrorAppName')
             appName="${appSelectedResult[0]}"
             pkgName="${appSelectedResult[1]}"
             developerName="${appSelectedResult[2]}"
@@ -226,6 +231,7 @@ selectApp()
 selectPatches()
 {
     checkJson
+    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     toogleName=$(jq -r -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" --argjson includedPatches "$includedPatches" 'if [$patchesJson[] | .name as $patchName | .compatiblePackages | if (map(.name) | index($pkgName) != null) or length == 0 then $patchName else empty end] == ($includedPatches[] | select(.pkgName == $pkgName).includedPatches) then "Exclude All" else "Include All" end')
     readarray -t patchesInfo < <(jq -n -r --arg pkgName "$pkgName"\
         --argjson patchesJson "$patchesJson"\
@@ -313,10 +319,11 @@ rootInstall()
     fi
     cat << EOF > "mount_revanced_$pkgName.sh"
 #!/system/bin/sh
-while [ "\$(getprop sys.boot_completed | tr -d '\r')" != "1" ]; do sleep 3; done
+while [ "\$(getprop sys.boot_completed | tr -d '\r')" != "1" ]; do sleep 5; done
 
 base_path="/data/local/tmp/revancify/$pkgName.apk"
 stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
+am force-stop "$pkgName"
 chcon u:object_r:apk_data_file:s0 "\$base_path"
 [ ! -z "\$stock_path" ] && mount -o bind "\$base_path" "\$stock_path"
 am force-stop $pkgName
@@ -381,6 +388,7 @@ checkResources()
 
     if [ "$cliSize" = "$( ls "$cliSource"-cli-*.jar > /dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$patchesSize" = "$( ls "$patchesSource"-patches-*.jar > /dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$integrationsSize" = "$( ls "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0 )" ] && ls "$patchesSource"-patches.json > /dev/null 2>&1
     then
+        appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
         return 0
     else
         getResources
@@ -406,7 +414,6 @@ checkSU()
 
 getAppVer()
 {
-    checkResources
     if [ "$variant" = "root" ]
     then
         if ! su -c "pm path $pkgName" > /dev/null 2>&1
@@ -843,6 +850,7 @@ buildCustomApk()
 buildApk()
 {
     checkResources
+    checkJson
     getAppVer
     checkMicrogPatch
     patchApp
