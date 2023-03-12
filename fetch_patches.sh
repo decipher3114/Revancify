@@ -64,14 +64,16 @@ generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches
             if (($includedPatches | length) != 0) then
                 [
                     (($includedPatches[] | select(.pkgName == $pkgName)) |
-                        if ((.includedPatches | length) != null) then
-                            .includedPatches[]
+                        if ((.includedPatches | length) == null) then
+                            ($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)
+                        elif ((.includedPatches | length) == 0) then
+                            ($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)
                         else
-                            null
+                            .includedPatches[]
                         end)
                 ]
             else
-                []
+                [($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)]
             end
         )
     }
