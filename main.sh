@@ -45,7 +45,7 @@ setup()
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
 
-    if ls "$patchesSource"-patches.json > /dev/null 2>&1
+    if ls "$patchesSource-patches.json" > /dev/null 2>&1
     then
         bash "$path/fetch_patches.sh" "$source" > /dev/null 2>&1
         patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
@@ -162,8 +162,6 @@ changeSource()
         source="$selectedSource"
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
-        patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
         checkResources
     fi
     mainmenu
@@ -177,7 +175,7 @@ checkJson()
         getResources
         return 0
     fi
-    if ! ls "$patchesSource"-patches.json > /dev/null 2>&1
+    if ! ls "$patchesSource-patches.json" > /dev/null 2>&1
     then
         internet
         if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]
@@ -386,8 +384,10 @@ checkResources()
         getResources
     fi
 
-    if [ "$cliSize" = "$( ls "$cliSource"-cli-*.jar > /dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$patchesSize" = "$( ls "$patchesSource"-patches-*.jar > /dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$integrationsSize" = "$( ls "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0 )" ] && ls "$patchesSource"-patches.json > /dev/null 2>&1
+    if [ "$cliSize" = "$( ls "$cliSource"-cli-*.jar > /dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$patchesSize" = "$( ls "$patchesSource"-patches-*.jar > /dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0 )" ] && [ "$integrationsSize" = "$( ls "$integrationsSource"-integrations-*.apk > /dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0 )" ] && ls "$patchesSource-patches.json" > /dev/null 2>&1
     then
+        patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
+        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
         appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
         return 0
     else
