@@ -79,16 +79,16 @@ generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches
     }
 ]')
 
-if [ "$2" == "online" ]
-then
-    response=$(curl --fail-early --connect-timeout 2 --max-time 5 -s 'https://www.apkmirror.com/wp-json/apkm/v1/app_exists/'\
-    -H 'Accept: application/json'\
-    -H 'Content-Type: application/json'\
-    -H 'Authorization: Basic YXBpLXRvb2xib3gtZm9yLWdvb2dsZS1wbGF5OkNiVVcgQVVMZyBNRVJXIHU4M3IgS0s0SCBEbmJL'\
-    -H 'User-Agent: Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36'\
-    -d "$(jq -n --argjson pkgs "$pkgs" '{"pnames": $pkgs}')")
+if [ "$2" == "online" ]; then
+    response=$(curl --fail-early --connect-timeout 2 --max-time 5 -s 'https://www.apkmirror.com/wp-json/apkm/v1/app_exists/' \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        -H 'Authorization: Basic YXBpLXRvb2xib3gtZm9yLWdvb2dsZS1wbGF5OkNiVVcgQVVMZyBNRVJXIHU4M3IgS0s0SCBEbmJL' \
+        -H 'User-Agent: Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36' \
+        -d "$(jq -n --argjson pkgs "$pkgs" '{"pnames": $pkgs}')")
 
-    if ! responseJson=$(jq -n --argjson response "$response" '[$response.data[] |
+    if ! responseJson=$(
+        jq -n --argjson response "$response" '[$response.data[] |
             if .exists then
                 ({
                     "key": (.pname),
@@ -100,17 +100,15 @@ then
                 })
             else
                 empty
-            end] | from_entries' 2> /dev/null
-    )
-    then
+            end] | from_entries' 2>/dev/null
+    ); then
         echo error
         exit 1
     fi
     generatedJson=$(
         jq -n --argjson generatedJson "$generatedJson" --argjson responseJson "$responseJson" '[
                 $generatedJson[] | .pkgName as $pkgName | (.appName = ($responseJson[$pkgName].appName)) | (.apkmirrorAppName = ($responseJson[$pkgName].apkmirrorAppName)) | (.developerName = ($responseJson[$pkgName].developerName))]'
-        )
+    )
 fi
 
-
-echo "$generatedJson" | jq '.' > "$source-patches.json"
+echo "$generatedJson" | jq '.' >"$source-patches.json"

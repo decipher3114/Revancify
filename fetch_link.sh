@@ -11,16 +11,14 @@ pup="$path/binaries/pup_$arch"
 
 page1=$(curl -vsL -A "$UserAgent" "https://www.apkmirror.com/apk/$organisation/$appName/$appName-$appVer-release" 2>&1)
 
-grep -q 'class="error404"' <<< "$page1" && echo noversion >&2 && exit 1
+grep -q 'class="error404"' <<<"$page1" && echo noversion >&2 && exit 1
 
-page2=$("$pup" -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<< "$page1")
+page2=$("$pup" -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<<"$page1")
 
+[[ "$("$pup" -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<<"$page2")" == "" ]] || arch=noarch
+[[ "$("$pup" -p --charset utf-8 ':parent-of(div:contains("universal"))' <<<"$page2")" == "" ]] || arch=universal
 
-[[ "$("$pup" -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<< "$page2")" == "" ]] || arch=noarch
-[[ "$("$pup" -p --charset utf-8 ':parent-of(div:contains("universal"))' <<< "$page2")" == "" ]] || arch=universal
-
-
-readarray -t url1 < <("$pup" -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<< "$page2")
+readarray -t url1 < <("$pup" -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$page2")
 
 [ "${#url1[@]}" -eq 0 ] && echo noapk >&2 && exit 1
 echo 33
