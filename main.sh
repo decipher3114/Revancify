@@ -406,7 +406,7 @@ versionSelector() {
 
 checkPatched() {
     if ls "$appName-Revanced-$appVer"* >/dev/null 2>&1; then
-        "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
+        "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --keep-window --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         if [ "$apkFoundPrompt" -eq 0 ]; then
             rm "$appName-Revanced-$appVer"*
