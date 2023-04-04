@@ -2,9 +2,13 @@
 
 source="$1"
 
-patchesJson=$(cat "$source"-patches-*.json | jq '.')
+patchesJson=$(jq '.' "$source"-patches-*.json)
 
 includedPatches=$(jq '.' "$source-patches.json" 2>/dev/null || jq -n '[]')
+
+if ! jq -n --argjson includedPatches "$includedPatches" '$includedPatches' > /dev/null 2>&1; then
+    includedPatches=$(jq -n '[]')
+fi
 
 allPackages=$(echo "$patchesJson" | jq '[.[].compatiblePackages[].name]')
 
