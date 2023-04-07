@@ -7,10 +7,13 @@ appVer="$3"
 am force-stop "$pkgName"
 stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
 {
+    mkdir -p /data/local/tmp/revancify/
+    mkdir -p /data/adb/post-fs-data.d/
+    mkdir -p /data/adb/service.d/
     rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
+    rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
     rm "/data/local/tmp/revancify/$pkgName.apk"
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
-    rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
     cp "$appName-Revanced-$appVer.apk" "/data/local/tmp/revancify/$pkgName.apk"
     revancedApp="/data/local/tmp/revancify/$pkgName.apk"
     chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
