@@ -21,36 +21,21 @@ generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches
         "pkgName": .,
         "appName": (
             if (($includedPatches | length) != 0) then
-                ($includedPatches[] | select(.pkgName == $pkgName) |
-                    if (.appName != null) then
-                        .appName
-                    else
-                        null
-                    end)
-            else 
+                ($includedPatches[] | select(.pkgName == $pkgName) | .appName) // null
+            else
                 null
             end
         ),
         "apkmirrorAppName": (
             if (($includedPatches | length) != 0) then
-                ($includedPatches[] | select(.pkgName == $pkgName) |
-                    if (.apkmirrorAppName != null) then
-                        .apkmirrorAppName
-                    else 
-                        null
-                    end)
+                ($includedPatches[] | select(.pkgName == $pkgName) | .apkmirrorAppName) // null
             else
                 null
             end
         ),
         "developerName": (
             if (($includedPatches | length) != 0) then
-                ($includedPatches[] | select(.pkgName == $pkgName) |
-                    if (.developerName != null) then
-                        .developerName
-                    else
-                        null
-                    end)
+                ($includedPatches[] | select(.pkgName == $pkgName) | .developerName) // null
             else
                 null
             end
@@ -68,13 +53,11 @@ generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches
             if (($includedPatches | length) != 0) then
                 [
                     (($includedPatches[] | select(.pkgName == $pkgName)) |
-                        if ((.includedPatches | length) == null) then
-                            ($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)
-                        elif ((.includedPatches | length) == 0) then
+                        if ((.includedPatches | length) == 0) then
                             ($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)
                         else
                             .includedPatches[]
-                        end)
+                        end) // ($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)
                 ]
             else
                 [($patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end)]
