@@ -129,7 +129,7 @@ case "$1" in
 esac
 
 checkrevancify
-dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus: Checking..." 10 42
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus      : Checking..." 10 42
 checkdependencies
 status=Offline
 if ping -c 1 google.com >/dev/null 2>&1; then
@@ -140,9 +140,9 @@ if [ "$1" == "-o" ]; then
 fi
 if [ "$status" == "Online" ]; then
     git pull >/dev/null 2>&1 || (git fetch --all >/dev/null 2>&1 && git reset --hard @{u} >/dev/null 2>&1)
-    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: $status" 10 42
+    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus      : $status" 10 42
 else
-    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus: $status" 10 42
+    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus      : $status" 10 42
 fi
 cd "$DATA" >/dev/null 2>&1 || :
 bash "$path/main.sh" "$flag"

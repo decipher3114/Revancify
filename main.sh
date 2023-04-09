@@ -2,7 +2,7 @@
 terminate() {
     pkill -9 java >/dev/null 2>&1
     clear
-    exit ${1:-1}
+    exit "${1:-1}"
 }
 trap terminate SIGTERM SIGINT SIGABRT
 
@@ -33,8 +33,11 @@ setup() {
         tmp=$(mktemp) && jq --arg selectedSource "$selectedSource" '.source |= $selectedSource' settings.json >"$tmp" && mv "$tmp" settings.json
     fi
 
+    cliSource="" patchesSource="" integrationsSource="" patchesLatest="" cliLatest="" integrationsLatest="" patchesSize="" cliSize="" integrationsSize="" patchesUrl="" jsonUrl="" cliUrl="" integrationsUrl=""
+
     source=$(jq -r '.source' settings.json)
 
+    # shellcheck source=/dev/null
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
 
@@ -49,7 +52,7 @@ setup() {
 internet() {
     if ! ping -c 1 google.com >/dev/null 2>&1; then
         "${header[@]}" --msgbox "Oops! No Internet Connection available.\n\nConnect to Internet and try again later." 12 40
-        mainmenu
+        mainMenu
     fi
 }
 
@@ -60,10 +63,10 @@ resourcesVars() {
 
     if [ "$(wc -l <".${source}latest")" -lt "11" ]; then
         "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 40
-        mainmenu
+        mainMenu
         return 0
     fi
-
+    # shellcheck source=/dev/null
     source ./".${source}latest"
 
     ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && cliAvailable=$(basename "$cliSource"-cli-*.jar .jar | cut -d '-' -f 3) || cliAvailable="Not found"
@@ -81,11 +84,11 @@ getResources() {
     if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]; then
         if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
             "${header[@]}" --msgbox "Resources are already downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
-            mainmenu
+            mainMenu
             return 0
         fi
         "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 40
-        mainmenu
+        mainMenu
         return 0
     fi
     [ "$patchesLatest" != "$patchesAvailable" ] && rm "$patchesSource"-patches-*.jar >/dev/null 2>&1 && rm "$patchesSource"-patches-*.json >/dev/null 2>&1 && patchesAvailableSize=0
@@ -94,29 +97,29 @@ getResources() {
     [ "$cliSize" != "$cliAvailableSize" ] &&
         wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 $(($(("$cliAvailableSize" * 100)) / "$cliSize")) && tput civis
 
-    [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
     [ "$patchesSize" != "$patchesAvailableSize" ] &&
         wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 $(($(("$patchesAvailableSize" * 100 / "$patchesSize")))) && tput civis
 
     wget -q -c "$jsonUrl" -O "$patchesSource"-patches-"$patchesLatest".json --user-agent="$userAgent"
 
-    [ "$patchesSize" != "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "$patchesSize" != "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
     [ "$integrationsSize" != "$integrationsAvailableSize" ] &&
         wget -q -c "$integrationsUrl" -O "$integrationsSource"-integrations-"$integrationsLatest".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Integrations\nVersion : $integrationsLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$integrationsSize")\n\nDownloading..." -1 -1 $(($(("$integrationsAvailableSize" * 100 / "$integrationsSize")))) && tput civis
 
-    [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainmenu && return 0
+    [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
     if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
         "${header[@]}" --msgbox "Resources are successfully downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
-        mainmenu
+        mainMenu
         return 0
     fi
     patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
     includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
-    mainmenu
+    mainMenu
     return 0
 }
 
@@ -138,11 +141,12 @@ changeSource() {
     if [ "$source" != "$selectedSource" ]; then
         tmp=$(mktemp) && jq --arg selectedSource "$selectedSource" '.source |= $selectedSource' settings.json >"$tmp" && mv "$tmp" settings.json
         source="$selectedSource"
+        # shellcheck source=/dev/null
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
         checkResources
     fi
-    mainmenu
+    mainMenu
 }
 
 checkJson() {
@@ -155,7 +159,7 @@ checkJson() {
         internet
         if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
             "${header[@]}" --msgbox "Patches are not successfully synced.\nRevancify may crash." 12 40
-            mainmenu
+            mainMenu
             return 0
         fi
     fi
@@ -186,7 +190,7 @@ selectApp() {
             appType=normal
         fi
     elif [ $exitstatus -ne 0 ]; then
-        mainmenu
+        mainMenu
     fi
     if [ "$previousAppName" != "$appName" ]; then
         unset appVerList
@@ -254,7 +258,7 @@ editPatchOptions() {
         tmp=$(mktemp) && "${header[@]}" --begin 2 0 --ok-label "Save" --cancel-label "Exit" --title '| Options File Editor |' --editbox "$storagePath/Revancify/$source-options.toml" -1 -1 2>"$tmp" && mv "$tmp" "$storagePath/Revancify/$source-options.toml"
         tput civis
     fi
-    mainmenu
+    mainMenu
 }
 
 rootInstall() {
@@ -267,7 +271,7 @@ rootInstall() {
     if ! su -c "grep -q $pkgName /proc/mounts"; then
         "${header[@]}" --infobox "Mount Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 40
         sleep 1
-        mainmenu
+        mainMenu
     fi
     cat <<EOF >"mount_revanced_$pkgName.sh"
 #!/system/bin/sh
@@ -291,7 +295,7 @@ EOF
     if "${header[@]}" --begin 2 0 --title '| Apk Mounted |' --no-items --yesno "App Mounted Successfully !!\nDo you want to launch app??" -1 -1; then
         su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" >/dev/null 2>&1
     else
-        mainmenu
+        mainMenu
     fi
 }
 
@@ -320,11 +324,12 @@ nonRootInstall() {
     sleep 0.5
     cp "$appName-Revanced"* "$storagePath/Revancify/" >/dev/null 2>&1
     termux-open "$storagePath/Revancify/$appName-Revanced-$appVer.apk"
-    mainmenu
+    mainMenu
 }
 
 checkResources() {
     if ls ".${source}latest" >/dev/null 2>&1; then
+        # shellcheck source=/dev/null
         source ./".${source}latest"
     else
         resourcesVars
@@ -360,7 +365,7 @@ getAppVer() {
         if ! su -c "pm path $pkgName" >/dev/null 2>&1; then
             installedStatus=false
             if ! "${header[@]}" --begin 2 0 --title '| Apk Not Installed |' --no-items --yesno "$appName is not installed on your rooted device. You can choose the version and Revancify will install it before mounting it.\nDo you want to proceed?" -1 -1; then
-                mainmenu
+                mainMenu
             fi
             if [ -z "$appVerList" ]; then
                 internet
@@ -386,7 +391,7 @@ getAppVer() {
 versionSelector() {
     if [ "${appVerList[0]}" = "error" ]; then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
-        mainmenu
+        mainMenu
     fi
     selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName; AppName: $appName" -1 -1 15 "${appVerList[@]}" 2>&1 >/dev/tty)
     exitstatus=$?
@@ -413,7 +418,7 @@ checkPatched() {
         elif [ "$apkFoundPrompt" -eq 1 ]; then
             ${variant}Install
         elif [ "$apkFoundPrompt" -eq 2 ]; then
-            mainmenu
+            mainMenu
             return 0
         fi
     else
@@ -446,7 +451,7 @@ selectFile() {
     pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
     exitstatus=$?
     if [ $exitstatus -eq 1 ]; then
-        mainmenu
+        mainMenu
         return 0
     fi
     if [ "$currentPath" != "$storagePath" ] && [ "$pathIndex" -eq 1 ]; then
@@ -477,12 +482,12 @@ fetchCustomApk() {
     "${header[@]}" --infobox "Please Wait !!\nExtracting data from \"$(basename "$newPath")\"" 12 40
     if ! aaptData=$("$path/binaries/aapt2_$arch" dump badging "$newPath"); then
         "${header[@]}" --msgbox "The apkfile you selected is not an valid app. Download the apk again and retry." 12 40
-        mainmenu
+        mainMenu
     fi
     pkgName=$(grep "package:" <<<"$aaptData" | sed -e 's/package: name='\''//' -e 's/'\'' versionCode.*//')
     if [ "$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '$includedPatches[] | select(.pkgName == $pkgName) | .patches')" == "" ]; then
         "${header[@]}" --msgbox "The app you selected is not supported for patching by $sourceName patches !!" 12 40
-        mainmenu
+        mainMenu
     fi
     fileAppName=$(grep "application-label:" <<<"$aaptData" | sed -e 's/application-label://' -e 's/'\''//g')
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
@@ -495,25 +500,25 @@ fetchCustomApk() {
                 return 0
             else
                 termux-open-url "https://play.google.com/store/apps/details?id=$pkgName"
-                mainmenu
+                mainMenu
             fi
         fi
     fi
     cp "$newPath" "$appName-$appVer.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
-            mainmenu
+            mainMenu
             return 0
         fi
     else
         if [ "$(jq -n -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | index($selectedVer)')" != "null" ]; then
             if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
-                mainmenu
+                mainMenu
                 return 0
             fi
         else
             if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\n\nThe version $selectedVer is not supported. Supported versions are: \n$(jq -n -r --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '$includedPatches[] | select(.pkgName == $pkgName).versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end')\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1; then
-                mainmenu
+                mainMenu
                 return 0
             fi
         fi
@@ -524,18 +529,18 @@ fetchCustomApk() {
 fetchApk() {
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1; then
-            mainmenu
+            mainMenu
             return 0
         fi
     else
         if [ "$(jq -n -r --arg selectedVer "$selectedVer" --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | index($selectedVer)')" != "null" ]; then
             if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1; then
-                mainmenu
+                mainMenu
                 return 0
             fi
         else
             if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The version $selectedVer is not supported. Supported versions are: \n$(jq -n -r --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '$includedPatches[] | select(.pkgName == $pkgName).versions | length as $array_length | to_entries[] | if .key != ($array_length - 1) then .value + "," else .value end')\n\nDo you still want to proceed with version $selectedVer for $appName?" -1 -1; then
-                mainmenu
+                mainMenu
                 return 0
             fi
         fi
@@ -558,7 +563,7 @@ downloadApp() {
     curl -sLI "$appUrl" -A "$userAgent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r' >".${appName}size"
     if [ "$appUrl" = "error" ]; then
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 40
-        mainmenu
+        mainMenu
         return 0
     elif [ "$appUrl" = "noapk" ]; then
         if [ "$variant" == "nonRoot" ]; then
@@ -566,12 +571,12 @@ downloadApp() {
             getAppVer
         else
             "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 15 40
-            mainmenu
+            mainMenu
         fi
         return 0
     elif [ "$appUrl" = "noversion" ]; then
         "${header[@]}" --msgbox "This version is not uploaded on apkmirror.com!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 15 40
-        mainmenu
+        mainMenu
         return 0
     fi
     wget -q -c "$appUrl" -O "$appName"-"$appVer".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" <".${appName}size")\n\nDownloading..." -1 -1
@@ -579,7 +584,7 @@ downloadApp() {
     sleep 0.5s
     if [ "$(cat ".${appName}size")" != "$(du -b "$appName"-"$appVer".apk | cut -d $'\t' -f 1)" ]; then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 40
-        mainmenu
+        mainMenu
     fi
 }
 
@@ -607,7 +612,7 @@ patchApp() {
     sleep 1
     if ! grep -q "Finished" "$storagePath/Revancify/patchlog.txt"; then
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 40
-        mainmenu
+        mainMenu
     fi
 }
 
@@ -652,7 +657,7 @@ extrasMenu() {
     extrasPrompt=$("${header[@]}" --begin 2 0 --title '| Extras Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "$misc" 2 "Delete Resources" 3 "Delete Apps" 4 "Delete Options.toml" 5 "Riplibs after patching" 6 "Resources Update on startup" 7 "Switch Theme" 2>&1 >/dev/tty)
     extrasExitStatus=$?
     if [ "$extrasExitStatus" -ne 0 ]; then
-        mainmenu
+        mainMenu
     fi
     if [ "$extrasPrompt" -eq 1 ]; then
         if [ "$variant" = "root" ]; then
@@ -718,29 +723,29 @@ buildApk() {
 checkSU
 setup
 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-mainmenu() {
-    mainmenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" 6 "Extras Menu" 2>&1 >/dev/tty)
+mainMenu() {
+    mainMenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" 6 "Extras Menu" 2>&1 >/dev/tty)
     exitstatus=$?
     if [ $exitstatus -ne 0 ]; then
         terminate 0
     fi
-    if [ "$mainmenu" -eq 1 ]; then
+    if [ "$mainMenu" -eq 1 ]; then
         selectApp extra
         if [ "$appType" == "normal" ]; then
             buildApk
         else
             buildCustomApk
         fi
-    elif [ "$mainmenu" -eq 2 ]; then
+    elif [ "$mainMenu" -eq 2 ]; then
         selectApp normal
         selectPatches
-    elif [ "$mainmenu" -eq 3 ]; then
+    elif [ "$mainMenu" -eq 3 ]; then
         changeSource
-    elif [ "$mainmenu" -eq 4 ]; then
+    elif [ "$mainMenu" -eq 4 ]; then
         getResources
-    elif [ "$mainmenu" -eq 5 ]; then
+    elif [ "$mainMenu" -eq 5 ]; then
         editPatchOptions
-    elif [ "$mainmenu" -eq 6 ]; then
+    elif [ "$mainMenu" -eq 6 ]; then
         extrasMenu
     fi
 }
@@ -750,4 +755,4 @@ if [ "$(jq -r '.forceUpdateCheckStatus' settings.json)" == "true" ]; then
     getResources
 fi
 
-mainmenu
+mainMenu
