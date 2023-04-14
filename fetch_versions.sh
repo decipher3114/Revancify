@@ -20,4 +20,14 @@ if [ "${supportedVers[*]}" != "[]" ]; then
     echo "Auto Select"
     echo "[RECOMMENDED]"
 fi
-jq -r -n --argjson supportedVers "$supportedVers" '$ARGS.positional[] | (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string as $version | if (. | test("beta|Beta|BETA")) then ($version, "[BETA]") elif (. | test("alpha|Alpha|ALPHA")) then ($version, "[ALPHA]") elif (($supportedVers | index($version)) != null) then ($version, "[SUPPORTED]") else ($version, "[STABLE]") end' --args "${versions[@]}"
+jq -r -n --argjson supportedVers "$supportedVers" '$ARGS.positional[] |
+    (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string as $version |
+    if (($supportedVers | index($version)) != null) then
+        ($version, "[SUPPORTED]")
+    elif (. | test("beta|Beta|BETA")) then
+        ($version, "[BETA]")
+    elif (. | test("alpha|Alpha|ALPHA")) then
+        ($version, "[ALPHA]")
+    else
+        ($version, "[STABLE]") 
+    end' --args "${versions[@]}"
