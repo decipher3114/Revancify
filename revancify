@@ -5,90 +5,6 @@ BIN=/data/data/com.termux/files/usr/bin
 
 path=$(find "$HOME" -type d -name "Revancify")
 cp "$path/revancify" "$BIN/revancify" >/dev/null 2>&1
-DATA=$HOME/revancify-data
-mkdir -p "$DATA"
-
-terminate() {
-    clear
-    echo "Script terminated !!"
-    tput cnorm
-    exit 1
-}
-trap terminate SIGTERM SIGINT SIGABRT
-
-if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]; then
-    echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
-    echo "You may get build errors."
-    read -N 1 -s -r -p $'Press ENTER to CONTINUE or SPACE to EXIT...\n' key
-    if [ "$key" = " " ]; then
-        echo "Script terminated"
-        exit
-    fi
-fi
-
-theme=$(jq -r '.theme' "$DATA/settings.json" 2>/dev/null)
-export DIALOGRC=$DATA/.dialogrc$theme
-
-checkdependencies() {
-
-    if bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q jq <<<"$bins" && ls "$DATA/.dialogrcLight" >/dev/null 2>&1 && ls "$DATA/.dialogrcDark" >/dev/null 2>&1 && ls "$DATA/.dialogrcDefault" >/dev/null 2>&1 && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
-        return 0
-    else
-        if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies
-            checkdependencies
-        else
-            cp revancify "$BIN/revancify"
-            echo "Dependencies not installed. Run again with internet connection."
-            exit 1
-        fi
-    fi
-}
-
-installdependencies() {
-    clear
-    echo "Installing dependencies..."
-    sleep 1
-    termux-setup-storage
-    pkg update -y &&
-        pkg install openjdk-17 wget ncurses-utils dialog jq -y &&
-        cp revancify "$BIN/revancify"
-    git config --global pull.rebase true
-    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_dark" -O "$DATA/.dialogrcDark"
-    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_light" -O "$DATA/.dialogrcLight"
-    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_default" -O "$DATA/.dialogrcDefault"
-    sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties" &&
-        echo "Dependencies installed successfully."
-    return 0
-}
-
-checkrevancify() {
-    if cd "$path" >/dev/null 2>&1; then
-        tput civis
-        rm -rf ./*cache*
-        return 0
-    else
-        echo -e "\e[1;31mDo you want to install again?\e[0m"
-        read -r -p "[Y/N]: " choice
-        case "$choice" in
-        y | Y)
-            rm -rf "$path"
-            git clone https://github.com/decipher3114/Revancify.git && revancify && exit
-            ;;
-        n | N)
-            echo "Removing revancify completely !!"
-            sleep 0.5s
-            rm "$BIN/revancify"
-            echo "Successfully Uninstalled revancify."
-            exit 0
-            ;;
-        ?)
-            echo "Invalid option !!"
-            exit 1
-            ;;
-        esac
-    fi
-}
 
 help() {
     echo -e "\e[1;34mrevancify\n\e[0m"
@@ -128,9 +44,92 @@ case "$1" in
     ;;
 esac
 
+if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]; then
+    echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
+    echo "You may get build errors."
+    read -N 1 -s -r -p $'Press ENTER to CONTINUE or SPACE to EXIT...\n' key
+    if [ "$key" = " " ]; then
+        echo "Script terminated"
+        exit
+    fi
+fi
+
+terminate() {
+    clear
+    echo "Script terminated !!"
+    tput cnorm
+    exit 1
+}
+trap terminate SIGTERM SIGINT SIGABRT
+
+DATA="$HOME/revancify-data"
+[ ! -d $DATA ] && mkdir -p "$DATA"
+theme=$(jq -r '.theme' "$DATA/settings.json" 2>/dev/null)
+export DIALOGRC=$DATA/.dialogrc$theme
+
+checkdependencies() {
+    if bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q jq <<<"$bins" && ls "$DATA/.dialogrcLight" >/dev/null 2>&1 && ls "$DATA/.dialogrcDark" >/dev/null 2>&1 && ls "$DATA/.dialogrcDefault" >/dev/null 2>&1 && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
+        return 0
+    else
+        if ping -c 1 google.com >/dev/null 2>&1; then
+            installdependencies
+            checkdependencies
+        else
+            cp revancify "$BIN/revancify"
+            echo "Dependencies not installed. Run again with internet connection."
+            exit 1
+        fi
+    fi
+}
+
+installdependencies() {
+    clear
+    echo "Installing dependencies..."
+    sleep 1
+    termux-setup-storage
+    pkg update -y
+    pkg install openjdk-17 wget ncurses-utils dialog jq -y
+    cp revancify "$BIN/revancify"
+    git config --global pull.rebase true
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_dark" -O "$DATA/.dialogrcDark"
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_light" -O "$DATA/.dialogrcLight"
+    wget -q "https://raw.githubusercontent.com/decipher3114/MyConfigs/main/.dialogrc_default" -O "$DATA/.dialogrcDefault"
+    sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
+    echo "Dependencies installed successfully."
+    return 0
+}
+
+checkrevancify() {
+    if cd "$path" >/dev/null 2>&1; then
+        tput civis
+        rm -rf ./*cache*
+        return 0
+    else
+        echo -e "\e[1;31mDo you want to install again?\e[0m"
+        read -r -p "[Y/N]: " choice
+        case "$choice" in
+        y | Y)
+            rm -rf "$path"
+            git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+            ;;
+        n | N)
+            echo "Removing revancify completely !!"
+            sleep 0.5s
+            rm "$BIN/revancify"
+            echo "Successfully Uninstalled revancify."
+            exit 0
+            ;;
+        ?)
+            echo "Invalid option !!"
+            exit 1
+            ;;
+        esac
+    fi
+}
+
 checkrevancify
-dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus      : Checking..." 10 42
 checkdependencies
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: Checking...\nStatus      : Checking..." 10 42
 status=Offline
 if ping -c 1 google.com >/dev/null 2>&1; then
     status=Online
@@ -139,7 +138,7 @@ if [ "$1" == "-o" ]; then
     status="Offline [forced]"
 fi
 if [ "$status" == "Online" ]; then
-    git pull >/dev/null 2>&1 || (git fetch --all >/dev/null 2>&1 && git reset --hard @{u} >/dev/null 2>&1)
+    git pull >/dev/null 2>&1 || (git fetch --all >/dev/null 2>&1 && git reset --hard "@{u}" >/dev/null 2>&1)
     dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus      : $status" 10 42
 else
     dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper   : decipher\nLast Updated: $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus      : $status" 10 42

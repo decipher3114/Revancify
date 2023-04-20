@@ -42,5 +42,27 @@
                 "repo": "revanced-integrations"
             }
         }
+    },
+    "kitadai31": 
+    {
+        "projectName": "RVX (Android 6-7)",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "kitadai31",
+                "repo": "revanced-patches-android6-7"
+            },
+            "integrations":
+            {
+                "org": "kitadai31",
+                "repo": "revanced-integrations"
+            }
+        }
     }
 }

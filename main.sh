@@ -601,12 +601,19 @@ downloadMicrog() {
 
 patchApp() {
     checkJson
+    riplibArgs=""
     if [ "$source" == "inotia00" ] && [ "$(jq -r '.riplibStatus' settings.json)" == "true" ]; then
         riplibArgs=$(sed "s/--rip-lib=$arch //" <<<"--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a ")
     fi
+    if ls "$storagePath/Revancify/custom.keystore" > /dev/null 2>&1
+    then
+        keystore=$(ls "$storagePath/Revancify/custom.keystore")
+    else
+        keystore="$path"/revanced.keystore
+    fi
     includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$path"/revanced.keystore --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.toml" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.toml" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patchlog.txt"
     tput civis
     sleep 1
@@ -642,8 +649,9 @@ checkMicrogPatch() {
 switchTheme() {
     allThemes=(Default off Dark off Light off)
     for i in "${!allThemes[@]}"; do
-        if [ "${allThemes[$i]}" == "$(jq -r '.theme' settings.json)" ]; then
+        if [ "${allThemes[$i]}" == "${DIALOGRC/.dialogrc/}" ]; then
             allThemes["$(("$i" + 1))"]="on"
+            break
         fi
     done
     selectedTheme=$("${header[@]}" --begin 2 0 --title '| Theme Selection Menu |' --no-items --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allThemes[@]}" 2>&1 >/dev/tty)
