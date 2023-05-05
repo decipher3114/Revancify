@@ -100,7 +100,7 @@ getResources() {
     [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
     [ "$patchesSize" != "$patchesAvailableSize" ] &&
-        wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 $(($(("$patchesAvailableSize" * 100 / "$patchesSize")))) && tput civis
+        wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 $(($(("$patchesAvailableSize" * 100 / "$patchesSize")))) && tput civis && patchesUpdated=true
 
     wget -q -c "$jsonUrl" -O "$patchesSource"-patches-"$patchesLatest".json --user-agent="$userAgent"
 
@@ -111,14 +111,20 @@ getResources() {
 
     [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
-    if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
-        "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 40
-        mainMenu
-        return 0
+    if [ "$patchesUpdated" == "true" ]; then
+        "${header[@]}" --infobox "Updating patches and options file..." 12 40
+        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+
+        if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
+            "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 40
+            mainMenu
+            return 0
+        fi
+
+        patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
+        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     fi
-    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
-    appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     mainMenu
     return 0
 }
@@ -249,8 +255,10 @@ patchSaver() {
 
 editPatchOptions() {
     checkResources
-    "${header[@]}" --infobox "Please Wait !!\nGenerating options file for $sourceName patches..." 12 40
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+    if ! ls "$storagePath/Revancify/$source-options.json" > /dev/null 2>&1;then
+        "${header[@]}" --infobox "Please Wait !!\nGenerating options file..." 12 40
+        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+    fi
     currentPatch="none"
     optionsJson=$(jq '.' "$storagePath/Revancify/$source-options.json")
     readarray -t patchNames < <(jq -n -r --argjson optionsJson "$optionsJson" '$optionsJson[].patchName')
