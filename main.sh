@@ -25,7 +25,7 @@ setup() {
         tmp=$(mktemp) && jq '.riplibStatus |= true' settings.json >"$tmp" && mv "$tmp" settings.json
     fi
     theme=$(jq -r '.theme' settings.json)
-    export DIALOGRC=.dialogrc$theme
+    export DIALOGRC="$path/configs/.dialogrc$theme"
 
     if [ "$(jq -r '.source' settings.json)" == "null" ]; then
         readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | .key,"["+.value.projectName+"]","on"' "$path"/sources.json)
@@ -83,7 +83,7 @@ getResources() {
     resourcesVars
     if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]; then
         if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
-            "${header[@]}" --msgbox "Resources are already downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
+            "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 40
             mainMenu
             return 0
         fi
@@ -112,7 +112,7 @@ getResources() {
     [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 40 && mainMenu && return 0
 
     if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
-        "${header[@]}" --msgbox "Resources are successfully downloaded but patches are not successfully synced.\nRevancify may crash." 12 40
+        "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 40
         mainMenu
         return 0
     fi
@@ -157,17 +157,20 @@ checkJson() {
     fi
     if ! ls "$patchesSource-patches.json" >/dev/null 2>&1; then
         internet
+        "${header[@]}" --infobox "Please Wait !!" 12 40
         if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
-            "${header[@]}" --msgbox "Patches are not successfully synced.\nRevancify may crash." 12 40
+            "${header[@]}" --msgbox "Oops !! Apkmirror API is not accessible. Patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 40
             mainMenu
             return 0
         fi
+        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     fi
 }
 
 selectApp() {
     if [ "$1" == "extra" ]; then
-        customOpt=(1 "From Apk File" "Choose apk from storage.")
+        customOpt=(1 "Use Apk File" "Choose apk from storage.")
         incrementVal=1
     elif [ "$1" == "normal" ]; then
         unset customOpt
@@ -181,6 +184,7 @@ selectApp() {
     if [ $exitstatus -eq 0 ]; then
         if [ "$1" == "extra" ] && [ "$appIndex" -eq 1 ]; then
             appType=custom
+            unset appName appVer
         else
             readarray -t appSelectedResult < <(jq -n -r --arg incrementVal "$incrementVal" --arg appIndex "$appIndex" --argjson appsArray "$appsArray" '$appsArray[] | select(.index == (($appIndex | tonumber) - ($incrementVal | tonumber))) | .appName, .pkgName, .developerName, .apkmirrorAppName')
             appName="${appSelectedResult[0]}"
@@ -246,18 +250,27 @@ patchSaver() {
 editPatchOptions() {
     checkResources
     "${header[@]}" --infobox "Please Wait !!\nGenerating options file for $sourceName patches..." 12 40
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.toml" >/dev/null 2>&1
-    "${header[@]}" --begin 2 0 --title '| Open Options File |' --no-items --defaultno --yes-label "Text Editor" --no-label "Termux Dialog" --help-button --help-label "Cancel" --yesno "How do you want to open editor the options file?" -1 -1
-    optionsExitStatus=$?
-    if [ "$optionsExitStatus" -eq 0 ]; then
-        "${header[@]}" --infobox "Please Wait !!\nOpening File..." 12 40
-        termux-open "$storagePath/Revancify/$source-options.toml" --content-type text
-        "${header[@]}" --msgbox "Command to open the editor for options file was successfully executed.\nIf the editor is not opened, then you may need to install any text editor app in your device or You can edit the file in Termux Dialog." 14 40
-    elif [ "$optionsExitStatus" -eq 1 ]; then
-        tput cnorm
-        tmp=$(mktemp) && "${header[@]}" --begin 2 0 --ok-label "Save" --cancel-label "Exit" --title '| Options File Editor |' --editbox "$storagePath/Revancify/$source-options.toml" -1 -1 2>"$tmp" && mv "$tmp" "$storagePath/Revancify/$source-options.toml"
-        tput civis
-    fi
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+    currentPatch="none"
+    optionsJson=$(jq '.' "$storagePath/Revancify/$source-options.json")
+    readarray -t patchNames < <(jq -n -r --argjson optionsJson "$optionsJson" '$optionsJson[].patchName')
+    while true; do
+        if [ "$currentPatch" == "none" ]; then
+            if ! currentPatch=$("${header[@]}" --begin 2 0 --title '| Patch Options Menu |' --no-items --ok-label "Select" --cancel-label "Back" --menu "Select Patch to edit options" -1 -1 15 "${patchNames[@]}" 2>&1 >/dev/tty); then
+                jq -n --argjson optionsJson "$optionsJson" '$optionsJson' > "$storagePath/Revancify/$source-options.json"
+                break
+            fi
+        else
+            tput cnorm
+            readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100, 0)')
+            readarray -t newValues < <("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --mixedform "Edit patch options for \"$currentPatch\" patch" -1 -1 20 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
+            if [ "${newValues[*]}" != "" ]; then
+                optionsJson=$(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then null elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
+            fi
+            currentPatch="none"
+            tput civis
+        fi
+    done
     mainMenu
 }
 
@@ -404,8 +417,11 @@ versionSelector() {
     appVer="$(sed 's/\./-/g;s/ /-/g' <<<"$selectedVer")"
     if [ $exitstatus -ne 0 ]; then
         selectApp extra
-        getAppVer
-        return 0
+        if [ "$appType" == "normal" ]; then
+            buildApk
+        else
+            buildCustomApk
+        fi
     fi
 }
 
@@ -589,7 +605,6 @@ downloadApp() {
 }
 
 downloadMicrog() {
-
     if "${header[@]}" --begin 2 0 --title '| MicroG Prompt |' --no-items --defaultno --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YouTube Music won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" -1 -1; then
         internet
         readarray -t microgheaders < <(curl -s "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest" | jq -r '(.assets[] | .browser_download_url, .size), .tag_name')
@@ -613,7 +628,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.toml" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
     echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patchlog.txt"
     tput civis
     sleep 1
@@ -628,7 +643,7 @@ checkMicrogPatch() {
     if [ "$microgPatch" == "" ]; then
         return 0
     fi
-    microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch $microgPatch '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
+    microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch "$microgPatch" '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
     if [ "$microgStatus" != "null" ] && [ "$variant" = "root" ]; then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
             return 0
@@ -649,20 +664,20 @@ checkMicrogPatch() {
 switchTheme() {
     allThemes=(Default off Dark off Light off)
     for i in "${!allThemes[@]}"; do
-        if [ "${allThemes[$i]}" == "${DIALOGRC/.dialogrc/}" ]; then
+        if [ "${allThemes[$i]}" == "${DIALOGRC##*/.dialogrc}" ]; then
             allThemes["$(("$i" + 1))"]="on"
             break
         fi
     done
     selectedTheme=$("${header[@]}" --begin 2 0 --title '| Theme Selection Menu |' --no-items --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allThemes[@]}" 2>&1 >/dev/tty)
     tmp=$(mktemp) && jq --arg selectedTheme "$selectedTheme" '.theme |= $selectedTheme' settings.json >"$tmp" && mv "$tmp" settings.json
-    export DIALOGRC=.dialogrc$selectedTheme
+    export DIALOGRC="$path/configs/.dialogrc$selectedTheme"
     extrasMenu
 }
 
 extrasMenu() {
     [ "$variant" = "root" ] && misc="Uninstall Revanced app" || misc="Download Vanced Microg"
-    extrasPrompt=$("${header[@]}" --begin 2 0 --title '| Extras Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "$misc" 2 "Delete Resources" 3 "Delete Apps" 4 "Delete Options.toml" 5 "Riplibs after patching" 6 "Resources Update on startup" 7 "Switch Theme" 2>&1 >/dev/tty)
+    extrasPrompt=$("${header[@]}" --begin 2 0 --title '| Extras Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "$misc" 2 "Delete Resources" 3 "Delete Apps" 4 "Delete Patch Options File" 5 "Riplibs after patching" 6 "Resources Update on startup" 7 "Switch Theme" 2>&1 >/dev/tty)
     extrasExitStatus=$?
     if [ "$extrasExitStatus" -ne 0 ]; then
         mainMenu
@@ -687,8 +702,8 @@ extrasMenu() {
             "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 40
         fi
     elif [ "$extrasPrompt" -eq 4 ]; then
-        if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --yesno "Please confirm to delete the options file for $sourceName patches." -1 -1; then
-            rm "$storagePath/Revancify/$source-options.toml" >/dev/null 2>&1
+        if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --yesno "Please confirm to delete the patch options file for $sourceName patches." -1 -1; then
+            rm "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
             "${header[@]}" --msgbox "Options file successfully deleted for current source !!" 12 40
         fi
     elif [ "$extrasPrompt" -eq 5 ]; then
