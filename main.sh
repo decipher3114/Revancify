@@ -647,6 +647,9 @@ patchApp() {
 }
 
 checkMicrogPatch() {
+    if [[ "$pkgName" != *"youtube"* ]];then
+        return 0
+    fi
     microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" --argjson patchesJson "$patchesJson" '$patchesJson | (map(.name)[] | match(".*microg.*").string) as $microgPatch | .[] | select(.name == $microgPatch) | .compatiblePackages | if ((map(.name) | index($pkgName)) != null) then $microgPatch else empty end')
     if [ "$microgPatch" == "" ]; then
         return 0
