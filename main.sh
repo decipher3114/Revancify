@@ -341,10 +341,10 @@ rootUninstall() {
 }
 
 nonRootInstall() {
-    "${header[@]}" --infobox "Copying $appName-Revanced $selectedVer to Internal Storage..." 12 40
+    "${header[@]}" --infobox "Copying $appName-$sourceName $selectedVer to Internal Storage..." 12 40
     sleep 0.5
-    cp "$appName-Revanced"* "$storagePath/Revancify/" >/dev/null 2>&1
-    termux-open "$storagePath/Revancify/$appName-Revanced-$appVer.apk"
+    cp "$appName-$sourceName"* "$storagePath/Revancify/" >/dev/null 2>&1
+    termux-open "$storagePath/Revancify/$appName-$sourceName-$appVer.apk"
     mainMenu
 }
 
@@ -356,7 +356,6 @@ checkResources() {
         resourcesVars
         getResources
     fi
-
     if [ "$cliSize" = "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" = "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" = "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$patchesSource-patches.json" >/dev/null 2>&1; then
         patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
         includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
@@ -434,11 +433,11 @@ versionSelector() {
 }
 
 checkPatched() {
-    if ls "$appName-Revanced-$appVer"* >/dev/null 2>&1; then
+    if ls "$appName-$sourceName-$appVer"* >/dev/null 2>&1; then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         if [ "$apkFoundPrompt" -eq 0 ]; then
-            rm "$appName-Revanced-$appVer"*
+            rm "$appName-$sourceName-$appVer"*
         elif [ "$apkFoundPrompt" -eq 1 ]; then
             ${variant}Install
         elif [ "$apkFoundPrompt" -eq 2 ]; then
@@ -446,7 +445,7 @@ checkPatched() {
             return 0
         fi
     else
-        rm "$appName-Revanced-"* >/dev/null 2>&1
+        rm "$appName-$sourceName-"* >/dev/null 2>&1
     fi
 }
 
@@ -636,7 +635,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-Revanced-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName-$appVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-$sourceName-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patchlog.txt"
     tput civis
     sleep 1
