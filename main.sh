@@ -337,12 +337,11 @@ getAppVer() {
     if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$hasCorePatch" == "false" ]; then
         selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         appVer="${selectedVer// /.}"
-        return 0
     fi
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path")
+        readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path" "$selectedVer")
     fi
     versionSelector || return 1
 }
@@ -463,6 +462,7 @@ fetchCustomApk() {
 }
 
 fetchApk() {
+    selectedVer="" appVer=""
     getAppVer || return 1
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "Do you want to proceed with version $selectedVer for $appName?" -1 -1; then

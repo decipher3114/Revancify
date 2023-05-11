@@ -7,6 +7,7 @@ apkmirrorAppName="$1"
 patchesSource="$2"
 path="$3"
 pup="$path/binaries/pup_$arch"
+currentVersion="$4"
 
 page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "https://www.apkmirror.com/uploads/?appcategory=$apkmirrorAppName" 2>&1)
 
@@ -16,18 +17,35 @@ readarray -t versions < <("$pup" -p 'div.widget_appmanager_recentpostswidget h5 
 
 supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions' "$patchesSource-patches.json")
 
-if [ "${supportedVers[*]}" != "[]" ]; then
+finalList=$(jq -r -n --arg currentVersion "$currentVersion" --argjson supportedVers "$supportedVers" '$ARGS.positional | sort | reverse as $versionsList |
+    [ $versionsList[] | (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string] |
+    if $currentVersion != "" then
+        if (. | index($currentVersion)) != null then
+            .
+        else
+            (. += [$currentVersion])
+        end | .
+    else . end | unique |
+    reverse as $array |
+    $array[:($array | index($currentVersion))][] |
+    . as $item |
+    ($array | index($item)) as $index |
+    ($versionsList[$index]) as $version |
+    if (($supportedVers | index($item)) != null) then
+        ($item, "[SUPPORTED]")
+    elif ($version | test("beta|Beta|BETA")) then
+        ($item, "[BETA]")
+    elif ($version | test("alpha|Alpha|ALPHA")) then
+        ($item, "[ALPHA]")
+    else
+        ($item, "[STABLE]")
+    end
+    ' --args "${versions[@]}")
+
+if [ "${supportedVers[*]}" != "[]" ] && [ "$currentVersion" != "" ] && grep -q "SUPPORTED" <<< "${finalList[*]}"; then
     echo "Auto Select"
     echo "[RECOMMENDED]"
 fi
-jq -r -n --argjson supportedVers "$supportedVers" '$ARGS.positional[] |
-    (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string as $version |
-    if (($supportedVers | index($version)) != null) then
-        ($version, "[SUPPORTED]")
-    elif (. | test("beta|Beta|BETA")) then
-        ($version, "[BETA]")
-    elif (. | test("alpha|Alpha|ALPHA")) then
-        ($version, "[ALPHA]")
-    else
-        ($version, "[STABLE]") 
-    end' --args "${versions[@]}"
+
+[ "${finalList[*]}" != "" ] && echo "${finalList[@]}"
+[ "$currentVersion" != "" ] && echo -e "$currentVersion\n[INSTALLED]"
