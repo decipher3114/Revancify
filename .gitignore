@@ -4,7 +4,7 @@
 *.apk
 *.sh
 !main.sh
-!mount_apk.sh
+!root_util.sh
 !fetch*.sh
 *.txt
 pup

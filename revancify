@@ -64,8 +64,9 @@ trap terminate SIGTERM SIGINT SIGABRT
 
 DATA="$HOME/revancify-data"
 [ ! -d $DATA ] && mkdir -p "$DATA"
-theme=$(jq -r '.theme' "$DATA/settings.json" 2>/dev/null)
-theme=${theme:-Dark}
+# shellcheck source=/dev/null
+source "$DATA/.envVars" > /dev/null 2>&1
+[ "${lightTheme:-false}" == "true" ] && theme=Light || theme=Dark
 export DIALOGRC="$path/configs/.dialogrc$theme"
 
 checkdependencies() {
@@ -86,7 +87,7 @@ checkdependencies() {
 installdependencies() {
     clear
     echo "Installing dependencies..."
-    cp ./revancify "$BIN/revancify"
+    cp "$path./revancify" "$BIN/revancify"
     sleep 1
     [ ! -d "$HOME/storage" ] && termux-setup-storage
     pkg update -y
@@ -99,7 +100,6 @@ installdependencies() {
 
 checkrevancify() {
     if [ -d "$path" ]; then
-        tput civis
         cd "$path" >/dev/null 2>&1 || true
         rm -rf ./*cache*
         return 0
@@ -127,8 +127,9 @@ checkrevancify() {
     fi
 }
 
-checkrevancify
 checkdependencies
+checkrevancify
+tput civis
 dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nStatus       : Checking..." 10 42
 status=Offline
 if ping -c 1 google.com >/dev/null 2>&1; then

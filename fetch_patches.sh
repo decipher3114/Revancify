@@ -75,7 +75,7 @@ if [ "$2" == "online" ]; then
         -d "$(jq -n --argjson pkgs "$pkgs" '{"pnames": $pkgs}')")
 
     if ! responseJson=$(
-        jq -n --argjson response "$response" '[$response.data[] |
+        echo "$response" | jq '[.data[] |
             if .exists then
                 ({
                     "key": (.pname),
