@@ -20,19 +20,20 @@ setEnv() {
 
 initialize() {
     storagePath=/storage/emulated/0
+    [ ! -d "$storagePath/Revancify" ] && mkdir -p "$storagePath/Revancify"
     arch=$(getprop ro.product.cpu.abi)
-    mkdir -p "$storagePath/Revancify"
     path=$(find "$HOME" -type d -name "Revancify")
-    header=(dialog --backtitle "Revancify | [Arch: $arch, SU: $variant]" --no-shadow)
+    header=(dialog --backtitle "Revancify | [Arch: $arch, SU: $rootStatus]" --no-shadow)
     envFile=.envVars
     [ ! -f .appSizeVars ] && : > .appSizeVars
 
-    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount=""
+    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" hasCorePatch=""
     setEnv forceUpdateCheckStatus false init "$envFile"
     setEnv riplibsRVX true init "$envFile"
     setEnv lightTheme false init "$envFile"
     setEnv patchMenuBeforePatching false init "$envFile"
     setEnv launchAppAfterMount true init "$envFile"
+    setEnv hasCorePatch false init "$envFile"
     # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
@@ -40,7 +41,7 @@ initialize() {
         source=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1 >/dev/tty)
         setEnv source "$source" update "$envFile"
     fi
-    [ "$variant" = "root" ] && menuEntry="Uninstall Revanced app" || menuEntry="Download Vanced Microg"
+    [ "$rootStatus" = "root" ] && menuEntry="Uninstall Patched app" || menuEntry="Download Microg"
 
     [ "$lightTheme" == "true" ] && theme=light || theme=Dark
     export DIALOGRC="$path/configs/.dialogrc$theme"
@@ -265,16 +266,12 @@ editPatchOptions() {
 }
 
 rootInstall() {
-    if [ "$installedStatus" == "false" ]; then
-        "${header[@]}" --infobox "Installing stock $appName app..." 12 45
-        su -c pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk >/dev/null 2>&1
-    fi
-    "${header[@]}" --infobox "Mounting $appName Revanced on stock app..." 12 45
-    if ! su -mm -c "/system/bin/sh $path/root_util.sh mount $pkgName $appName $appVer" >/dev/null 2>&1; then
-        "${header[@]}" --msgbox "Mount Failed !!\nLogs saved to Revancify folder. Share the Mountlog to developer." 12 45
+    "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
+    if ! su -mm -c "/system/bin/sh $path/root_util.sh mount $pkgName $appName $appVer $sourceName" > "$storagePath/Revancify/install_log.txt" 2>&1; then
+        "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal Storage > Revancify \> install_log.txt\". Share the Install logs to developer." 12 45
         return 1
     else
-        "${header[@]}" --msgbox "$appName mounted Successfully !!" 12 45
+        "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
     fi
     if [ "$launchAppAfterMount" == "true" ]; then
         su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" >/dev/null 2>&1
@@ -286,10 +283,10 @@ rootUninstall() {
     su -mm -c "/system/bin/sh $path/root_util.sh unmount $pkgName" >/dev/null 2>&1
     unmountStatus=$?
     if [ "$unmountStatus" -eq "2" ]; then
-        "${header[@]}" --msgbox "$appName Revanced is not installed(mounted) in your device." 12 45
+        "${header[@]}" --msgbox "Patched $appName is not installed(mounted) in your device." 12 45
         return 1
     else
-        "${header[@]}" --infobox "Uninstalling $appName Revanced by Unmounting..." 12 45
+        "${header[@]}" --infobox "Uninstalling Patched $appName by Unmounting..." 12 45
         [ "$unmountStatus" -ne "0" ] && "${header[@]}" --msgbox "Unmount failed !! Something went wrong." 12 45 && sleep 1 && return 1
     fi
     "${header[@]}" --msgbox "Unmount Successful !!" 12 45
@@ -297,7 +294,7 @@ rootUninstall() {
 }
 
 nonRootInstall() {
-    "${header[@]}" --infobox "Copying $appName-$sourceName $selectedVer to Internal Storage..." 12 45
+    "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
     sleep 0.5
     cp "$appName-$sourceName"* "$storagePath/Revancify/" >/dev/null 2>&1
     termux-open "$storagePath/Revancify/$appName-$sourceName-$appVer.apk"
@@ -336,45 +333,18 @@ checkResources() {
     fi
 }
 
-flag="$1"
-checkSU() {
-    if su -c exit >/dev/null 2>&1; then
-        if [ "$flag" = '-n' ]; then
-            variant=nonRoot
-        else
-            variant=root
-            su -c "mkdir -p /data/local/tmp/revancify"
-        fi
-    else
-        variant=nonRoot
-    fi
-}
-
 getAppVer() {
-    if [ "$variant" = "root" ]; then
-        if ! su -c "pm list packages | grep $pkgName"  >/dev/null 2>&1; then
-            installedStatus=false
-            if ! "${header[@]}" --begin 2 0 --title '| Apk Not Installed |' --no-items --yesno "$appName is not installed on your rooted device. You can choose the version and Revancify will install it before mounting it.\nDo you want to proceed?" -1 -1; then
-                return 1
-            fi
-            if [ "${#appVerList[@]}" -eq 0 ]; then
-                internet || return 1
-                "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-                readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path")
-            fi
-            versionSelector
-        else
-            selectedVer=$(su -c dumpsys package "$pkgName" | grep versionName | cut -d '=' -f 2 | sed -n '1p')
-            appVer="$(sed 's/\./-/g;s/ /-/g' <<<"$selectedVer")"
-        fi
-    elif [ "$variant" = "nonRoot" ]; then
-        if [ "${#appVerList[@]}" -eq 0 ]; then
-            internet || return 1
-            "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-            readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path")
-        fi
-        versionSelector || return 1
+    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$hasCorePatch" == "false" ]; then
+        selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
+        appVer="${selectedVer// /.}"
+        return 0
     fi
+    if [ "${#appVerList[@]}" -lt 2 ]; then
+        internet || return 1
+        "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
+        readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path")
+    fi
+    versionSelector || return 1
 }
 
 versionSelector() {
@@ -386,19 +356,19 @@ versionSelector() {
     if [ "$selectedVer" == "Auto Select" ]; then
         selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
     fi
-    appVer="$(sed 's/\./-/g;s/ /-/g' <<<"$selectedVer")"
+    appVer="${selectedVer// /.}"
 }
 
 checkPatched() {
     if ls "$appName-$sourceName-$appVer"* >/dev/null 2>&1; then
-        "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains $appName Revanced version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
+        "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
         0 )
             rm "$appName-$sourceName-$appVer"*
             ;;
         1 )
-            ${variant}Install && return 1
+            "${rootStatus}Install" && return 1
             ;;
         2 )
             return 1
@@ -472,17 +442,7 @@ fetchCustomApk() {
     fileAppName=$(grep "application-label:" <<<"$aaptData" | sed -e 's/application-label://' -e 's/'\''//g')
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
-    appVer="$(sed 's/\./-/g;s/ /-/g' <<<"$selectedVer")"
-    if [ "$variant" = "root" ]; then
-        if ! su -c "pm path $pkgName" >/dev/null 2>&1; then
-            if "${header[@]}" --begin 2 0 --title '| Apk Not Installed |' --no-items --defaultno --yes-label "Non-Root" --no-label "Play Store" --yesno "$appName is not installed on your rooted device.\nYou have to install it from Play Store or you can proceed with Non-Root installation?\n\nWhich method do you want to proceed with?" -1 -1; then
-                variant="nonRoot"
-            else
-                termux-open-url "https://play.google.com/store/apps/details?id=$pkgName"
-                return 1
-            fi
-        fi
-    fi
+    appVer="${selectedVer// /.}"
     cp "$newPath" "$appName-$appVer.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
@@ -543,7 +503,7 @@ downloadApp() {
         return 1
         ;;
     "noapk" )
-        if [ "$variant" == "nonRoot" ]; then
+        if [ "$rootStatus" == "nonRoot" ]; then
             "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nTry selecting other version." 12 45
             getAppVer
         else
@@ -566,32 +526,34 @@ downloadApp() {
 }
 
 downloadMicrog() {
-    if "${header[@]}" --begin 2 0 --title '| MicroG Prompt |' --no-items --defaultno --yesno "Vanced MicroG is used to run MicroG services without root.\nYouTube and YouTube Music won't work without it.\nIf you already have MicroG, You don't need to download it.\n\n\n\n\n\nDo you want to download Vanced MicroG app?" -1 -1; then
+    microgName=mMicroG microgRepo=inotia00
+    if "${header[@]}" --begin 2 0 --title '| MicroG Prompt |' --no-items --defaultno --yesno "$microgName is used to run MicroG services without root.\nYouTube and YouTube Music won't work without it.\nIf you already have $microgName, You don't need to download it.\n\n\n\n\n\nDo you want to download $microgName app?" -1 -1; then
         internet || return 1
-        readarray -t microgheaders < <(curl -s "https://api.github.com/repos/inotia00/VancedMicroG/releases/latest" | jq -r '(.assets[] | .browser_download_url, .size), .tag_name')
-        wget -q -c "${microgheaders[0]}" -O "VancedMicroG-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : Vanced MicroG\nVersion : ${microgheaders[2]}\nSize    : $(numfmt --to=iec --format="%0.1f" "${microgheaders[1]}")\n\nDownloading..." -1 -1 && tput civis
-        ls VancedMicroG* >/dev/null 2>&1 && mv VancedMicroG* "$storagePath/Revancify/" && termux-open "$storagePath/Revancify/VancedMicroG-${microgheaders[2]}.apk"
+        readarray -t microgheaders < <(curl -s "https://api.github.com/repos/$microgRepo/$microgName/releases/latest" | jq -r '(.assets[] | .browser_download_url, .size), .tag_name')
+        wget -q -c "${microgheaders[0]}" -O "$microgName-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : $microgName \nVersion : ${microgheaders[2]}\nSize    : $(numfmt --to=iec --format="%0.1f" "${microgheaders[1]}")\n\nDownloading..." -1 -1 && tput civis
+        ls $microgName* >/dev/null 2>&1 && mv $microgName* "$storagePath/Revancify/" && termux-open "$storagePath/Revancify/$microgName-${microgheaders[2]}.apk"
     fi
 }
 
 patchApp() {
     if [ "$source" == "inotia00" ] && [ "$riplibsRVX" == "true" ]; then
-        riplibArgs=$(sed "s/--rip-lib=$arch //" <<<"--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a ")
+        riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
+        riplibArgs="${riplibArgs//--rip-lib=$arch /}"
     fi
     if ls "$storagePath/Revancify/custom.keystore" > /dev/null 2>&1
     then
         keystore=$(ls "$storagePath/Revancify/custom.keystore")
     else
-        keystore="$path"/revanced.keystore
+        keystore="$path"/revancify.keystore
     fi
     includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-$sourceName-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patchlog.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
-    echo -e "\n\n\nVariant: $variant\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patchlog.txt"
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-$sourceName-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    echo -e "\n\n\nVariant: $rootStatus\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patch_log.txt"
     tput civis
     sleep 1
-    if ! grep -q "Finished" "$storagePath/Revancify/patchlog.txt"; then
-        "${header[@]}" --msgbox "Oops, Patching failed !!\nLog file saved to Revancify folder. Share the Patchlog to developer." 12 45
+    if ! ls "$appName-$sourceName-$appVer.apk" > /dev/null 2>&1; then
+        "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage > Revancify \> patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
 }
@@ -605,14 +567,14 @@ checkMicrogPatch() {
         return 0
     fi
     microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch "$microgPatch" '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
-    if [ "$microgStatus" != "null" ] && [ "$variant" = "root" ]; then
+    if [ "$microgStatus" != "null" ] && [ "$rootStatus" = "root" ]; then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
             return 0
         else
             jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= del(.[(. | index($microgPatch))])]' >"$patchesSource-patches.json"
             return 0
         fi
-    elif [ "$microgStatus" == "null" ] && [ "$variant" = "nonRoot" ]; then
+    elif [ "$microgStatus" == "null" ] && [ "$rootStatus" = "nonRoot" ]; then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1; then
             return 0
         else
@@ -653,7 +615,7 @@ deleteComponents() {
 }
 
 preferences() {
-    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "Removes extra libs from app(RVX only)" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "Launches app automatically after mount")
+    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "[RVX] Removes extra libs from app" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" hasCorePatch "$hasCorePatch" "[Root] Allows choosing version if device has CorePatch")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
@@ -678,11 +640,9 @@ buildApk() {
     fi
     checkMicrogPatch
     patchApp
-    ${variant}Install
+    "${rootStatus}Install"
 }
 
-checkSU
-initialize
 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 mainMenu() {
     mainMenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --default-item "$mainMenu" --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" 6 "$menuEntry" 7 "Delete Components" 8 "Preferences" 2>&1 >/dev/tty) || terminate 0
@@ -709,9 +669,9 @@ mainMenu() {
         editPatchOptions
         ;;
     6 )
-        if [ "$variant" = "root" ]; then
+        if [ "$rootStatus" = "root" ]; then
             rootUninstall
-        elif [ "$variant" = "nonRoot" ]; then
+        elif [ "$rootStatus" = "nonRoot" ]; then
             downloadMicrog
         fi
         ;;
@@ -723,6 +683,14 @@ mainMenu() {
         ;;
     esac
 }
+
+if su -c exit >/dev/null 2>&1; then
+    [ "$1" = '-n' ] && rootStatus=nonRoot || rootStatus=root
+else
+    rootStatus=nonRoot
+fi
+
+initialize
 
 if [ "$forceUpdateCheckStatus" == "true" ]; then
     resourcesVars
