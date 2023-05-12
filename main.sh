@@ -403,7 +403,7 @@ selectFile() {
                 dirList+=("$((++num))" "$itemNameDisplay" "APK: $itemName")
             fi
         done < <(ls -1 --group-directories-first "$currentPath")
-        pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --default-item "$pathIndex" --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
+        pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
         exitstatus=$?
         [ "$exitstatus" -eq 1 ] && break
         if [ "$currentPath" != "$storagePath" ] && [ "$pathIndex" -eq 1 ]; then
@@ -427,6 +427,7 @@ selectFile() {
 }
 
 fetchCustomApk() {
+    selectedVer="" installedVer=""
     selectFile || return 1
     "${header[@]}" --infobox "Please Wait !!\nExtracting data from \"$(basename "$newPath")\"" 12 45
     if ! aaptData=$("$path/binaries/aapt2_$arch" dump badging "$newPath"); then
@@ -442,6 +443,17 @@ fetchCustomApk() {
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
     appVer="${selectedVer// /.}"
+    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$hasCorePatch" == "false" ]; then
+        installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
+        if [ "$installedVer" != "$selectedVer" ]; then
+            compareArray=("$selectedVer" "$installedVer")
+            IFS=$'\n' sorted=($(sort <<<"${compareArray[*]}")); unset IFS
+            if [ "${sorted[0]}" != "$installedVer" ];then
+                "${header[@]}" --msgbox "The selected version $selectedVer is lower then version $installedVer installed on your device.\nPlease Select a higher version !!" 12 45
+                return 1
+            fi
+        fi
+    fi
     cp "$newPath" "$appName-$appVer.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
