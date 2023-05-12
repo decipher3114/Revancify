@@ -1,7 +1,9 @@
 #!/usr/bin/bash
 
 terminate() {
-    pkill -9 java >/dev/null 2>&1
+    killall -9 java >/dev/null 2>&1
+    killall -9 dialog >/dev/null 2>&1
+    killall -9 wget >/dev/null 2>&1
     clear
     exit "${1:-1}"
 }
@@ -287,6 +289,7 @@ rootUninstall() {
         return 1
     else
         "${header[@]}" --infobox "Uninstalling Patched $appName by Unmounting..." 12 45
+        sleep 2
         [ "$unmountStatus" -ne "0" ] && "${header[@]}" --msgbox "Unmount failed !! Something went wrong." 12 45 && sleep 1 && return 1
     fi
     "${header[@]}" --msgbox "Unmount Successful !!" 12 45

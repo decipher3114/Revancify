@@ -19,6 +19,13 @@ if [ "$1" = "unmount" ]; then
     exit 0
 fi
 
+[ -d /data/local/tmp/revancify/ ] || mkdir -p /data/local/tmp/revancify/
+[ -d /data/adb/post-fs-data.d/ ] || mkdir -p /data/adb/post-fs-data.d/
+[ -d /data/adb/service.d/ ] || mkdir -p /data/adb/service.d/
+
+rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
+rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
+rm "/data/local/tmp/revancify/$pkgName.apk"
 
 
 if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/\./-/g;s/ /-/1p')" = "$appVer" ]; then
@@ -27,17 +34,12 @@ else
     pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk
 fi
 
-am force-stop "$pkgName"
+pm list packages | grep -q "$pkgName" || exit 1
+
 stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
 revancedApp="/data/local/tmp/revancify/$pkgName.apk"
 
-[ -d /data/local/tmp/revancify/ ] || mkdir -p /data/local/tmp/revancify/
-[ -d /data/adb/post-fs-data.d/ ] || mkdir -p /data/adb/post-fs-data.d/
-[ -d /data/adb/service.d/ ] || mkdir -p /data/adb/service.d/
-
-rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
-rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
-rm "/data/local/tmp/revancify/$pkgName.apk"
+am force-stop "$pkgName"
 
 {
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
