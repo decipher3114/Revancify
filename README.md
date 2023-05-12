@@ -4,11 +4,14 @@ A TUI wrapper for Revanced patcher.
 
 # Features
 1. Auto updates Patches and CLI
-2. Easy to use and Interactive
+2. Interactive and Easy to use
 3. Inbuilt scrapper for [ApkMirror](https://apkmirror.com)
-4. Contains Patch-options Editor
-4. Saves selected patches
-5. Lightweight and faster than any other tool
+    >Only support apps available on apkmirror. However, you can still download app manually and use the apk file to patch
+4. Contains User-friendly Patch-options Editor
+5. Conserve selected patches
+6. Supports App Version downgrade for devices with Signature Spoof enabled
+7. Convenient Installation and usage
+6. Lightweight and faster than any other tool
 
 # Installation
 1. Open Termux.  
