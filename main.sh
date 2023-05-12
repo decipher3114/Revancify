@@ -27,13 +27,13 @@ initialize() {
     envFile=.envVars
     [ ! -f .appSizeVars ] && : > .appSizeVars
 
-    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" hasCorePatch=""
+    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" allowVersionDowngrade=""
     setEnv forceUpdateCheckStatus false init "$envFile"
     setEnv riplibsRVX true init "$envFile"
     setEnv lightTheme false init "$envFile"
     setEnv patchMenuBeforePatching false init "$envFile"
     setEnv launchAppAfterMount true init "$envFile"
-    setEnv hasCorePatch false init "$envFile"
+    setEnv allowVersionDowngrade false init "$envFile"
     # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
@@ -334,7 +334,7 @@ checkResources() {
 }
 
 getAppVer() {
-    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$hasCorePatch" == "false" ]; then
+    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         appVer="${selectedVer// /.}"
     fi
@@ -443,7 +443,7 @@ fetchCustomApk() {
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
     appVer="${selectedVer// /.}"
-    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$hasCorePatch" == "false" ]; then
+    if [ "$rootStatus" = "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
             compareArray=("$selectedVer" "$installedVer")
@@ -627,7 +627,7 @@ deleteComponents() {
 }
 
 preferences() {
-    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "[RVX] Removes extra libs from app" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" hasCorePatch "$hasCorePatch" "[Root] Allows choosing version if device has CorePatch")
+    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "[RVX] Removes extra libs from app" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" allowVersionDowngrade "$allowVersionDowngrade" "[Root] Allows downgrading version if any such module is present")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
