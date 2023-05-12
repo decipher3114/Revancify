@@ -21,15 +21,15 @@ fi
 
 
 
-if pm list packages | grep -q "$pkgName" &&\
-    [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/\./-/g;s/ /-/1p')" = "$appVer" ]; then
+if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/\./-/g;s/ /-/1p')" = "$appVer" ]; then
     :
 else
-    pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk || exit 0
+    pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk
 fi
 
 am force-stop "$pkgName"
 stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
+revancedApp="/data/local/tmp/revancify/$pkgName.apk"
 
 [ -d /data/local/tmp/revancify/ ] || mkdir -p /data/local/tmp/revancify/
 [ -d /data/adb/post-fs-data.d/ ] || mkdir -p /data/adb/post-fs-data.d/
@@ -39,12 +39,14 @@ rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
 rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
 rm "/data/local/tmp/revancify/$pkgName.apk"
 
-grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
-cp "$appName-$sourceName-$appVer.apk" "/data/local/tmp/revancify/$pkgName.apk"
-revancedApp="/data/local/tmp/revancify/$pkgName.apk"
-chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
-chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
-mount -vo bind "$revancedApp" "$stockApp"
+{
+    grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
+    cp "$appName-$sourceName-$appVer.apk" "/data/local/tmp/revancify/$pkgName.apk"
+    chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
+    chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
+    mount -vo bind "$revancedApp" "$stockApp"
+} > /storage/emulated/0/Revancify/install_log.txt 2>&1
+
 am force-stop "$pkgName"
 
 grep -q "$pkgName" /proc/mounts || exit 1

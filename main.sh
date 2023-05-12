@@ -267,7 +267,7 @@ editPatchOptions() {
 
 rootInstall() {
     "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
-    if ! su -mm -c "/system/bin/sh $path/root_util.sh mount $pkgName $appName $appVer $sourceName" > "$storagePath/Revancify/install_log.txt" 2>&1; then
+    if ! su -mm -c "/system/bin/sh $path/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
         "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal Storage > Revancify \> install_log.txt\". Share the Install logs to developer." 12 45
         return 1
     else
