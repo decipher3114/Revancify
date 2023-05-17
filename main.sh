@@ -650,7 +650,7 @@ buildApk() {
         fetchCustomApk || return 1
         selectPatches Proceed
     fi
-    if [ "$appType" == "downloaded" ] || [ "$patchMenuBeforePatching" == "true" ]; then
+    if [ "$appType" == "downloaded" ] && [ "$patchMenuBeforePatching" == "true" ]; then
         selectPatches Proceed
     fi
     checkMicrogPatch
@@ -712,5 +712,6 @@ if [ "$forceUpdateCheckStatus" == "true" ]; then
     getResources
 fi
 while true; do
+    unset appVerList appVer appName pkgName
     mainMenu
 done
