@@ -8,6 +8,7 @@ patchesSource="$2"
 path="$3"
 pup="$path/binaries/pup_$arch"
 currentVersion="$4"
+storagePath="$5"
 
 page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "https://www.apkmirror.com/uploads/?appcategory=$apkmirrorAppName" 2>&1)
 
@@ -15,7 +16,7 @@ page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "
 
 readarray -t versions < <("$pup" -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$page1")
 
-supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions' "$patchesSource-patches.json")
+supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions' "$storagePath/$patchesSource-patches.json")
 
 finalList=$(jq -r -n --arg currentVersion "$currentVersion" --argjson supportedVers "$supportedVers" '$ARGS.positional | sort | reverse as $versionsList |
     [ $versionsList[] | (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string] |

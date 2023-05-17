@@ -21,13 +21,15 @@ setEnv() {
 }
 
 initialize() {
-    storagePath=/storage/emulated/0
-    [ ! -d "$storagePath/Revancify" ] && mkdir -p "$storagePath/Revancify"
+    internalStorage="/storage/emulated/0"
+    storagePath="$internalStorage/Revancify"
+    [ ! -d "$storagePath" ] && mkdir -p "$storagePath"
+    [ ! -d apps ] && mkdir -p apps
     arch=$(getprop ro.product.cpu.abi)
-    path=$(find "$HOME" -type d -name "Revancify")
+    repoDir=$(find "$HOME" -type d -name "Revancify")
     header=(dialog --backtitle "Revancify | [Arch: $arch, SU: $rootStatus]" --no-shadow)
-    envFile=.envVars
-    [ ! -f .appSizeVars ] && : > .appSizeVars
+    envFile=config.cfg
+    [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
 
     forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" allowVersionDowngrade=""
     setEnv forceUpdateCheckStatus false init "$envFile"
@@ -39,29 +41,32 @@ initialize() {
     # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
-        readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | .key,"["+.value.projectName+"]","on"' "$path"/sources.json)
+        readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | .key,"["+.value.projectName+"]","on"' "$repoDir"/sources.json)
         source=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1 >/dev/tty)
         setEnv source "$source" update "$envFile"
     fi
     [ "$rootStatus" = "root" ] && menuEntry="Uninstall Patched app" || menuEntry="Download Microg"
 
     [ "$lightTheme" == "true" ] && theme=light || theme=Dark
-    export DIALOGRC="$path/configs/.dialogrc$theme"
+    export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 
 
     cliSource="" patchesSource="" integrationsSource="" patchesLatest="" cliLatest="" integrationsLatest="" patchesSize="" cliSize="" integrationsSize="" patchesUrl="" jsonUrl="" cliUrl="" integrationsUrl=""
 
     # shellcheck source=/dev/null
-    source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
-    sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
+    source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
+    sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
+    [ -d "$cliSource" ] && mkdir -p "$cliSource"
+    [ -d "$patchesSource" ] && mkdir -p "$patchesSource"
+    [ -d "$integrationsSource" ] && mkdir -p "$integrationsSource"
 
     checkResources || terminate 1
     checkJson
 
-    if ls "$patchesSource-patches.json" >/dev/null 2>&1; then
-        bash "$path/fetch_patches.sh" "$source" >/dev/null 2>&1
+    if [ -f "$storagePath/$source-patches.json" ]; then
+        bash "$repoDir/fetch_patches.sh" "$source" offline "$storagePath" >/dev/null 2>&1
         patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
         appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     fi
 }
@@ -76,14 +81,21 @@ internet() {
 resourcesVars() {
     internet || return 1
 
-    fetchResources
+    "${header[@]}" --infobox "Please Wait !!\nFetching resources data from github API..." 12 45
+    readarray -t resources < <(jq -r --arg source "$source" '.[$source].sources | keys_unsorted[]' "$repoDir"/sources.json)
+    readarray -t links < <(jq -r --arg source "$source" '.[$source].sources[] | .org+"/"+.repo' "$repoDir"/sources.json)
+    : >".${source}-data"
+    i=0 && for resource in "${resources[@]}"; do
+        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases/latest" | jq -r --arg resource "$resource" '$resource+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $resource+"Url="+.browser_download_url, $resource+"Size="+(.size|tostring) end)' >>".${source}-data"
+        i=$(("$i" + 1))
+    done
 
-    if [ "$(wc -l <".${source}latest")" -lt "11" ]; then
+    if [ "$(wc -l <".${source}-data")" -lt "11" ]; then
         "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 45
         return 1
     fi
     # shellcheck source=/dev/null
-    source ./".${source}latest"
+    source ./".${source}-data"
 
     ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && cliAvailable=$(basename "$cliSource"-cli-*.jar .jar | cut -d '-' -f 3) || cliAvailable="Not found"
     ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && patchesAvailable=$(basename "$patchesSource"-patches-*.jar .jar | cut -d '-' -f 3) || patchesAvailable="Not found"
@@ -98,7 +110,7 @@ resourcesVars() {
 getResources() {
     resourcesVars || return 1
     if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]; then
-        if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -127,41 +139,30 @@ getResources() {
 
     if [ "$patchesUpdated" == "true" ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
-        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" >/dev/null 2>&1
     fi
 
-    if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
+    if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
         "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
         return 1
     fi
 
     patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+    includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
-}
-
-fetchResources() {
-    "${header[@]}" --infobox "Please Wait !!\nFetching resources data from github API..." 12 45
-    readarray -t resources < <(jq -r --arg source "$source" '.[$source].sources | keys_unsorted[]' "$path"/sources.json)
-    readarray -t links < <(jq -r --arg source "$source" '.[$source].sources[] | .org+"/"+.repo' "$path"/sources.json)
-    : >".${source}latest"
-    i=0 && for resource in "${resources[@]}"; do
-        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases/latest" | jq -r --arg resource "$resource" '$resource+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $resource+"Url="+.browser_download_url, $resource+"Size="+(.size|tostring) end)' >>".${source}latest"
-        i=$(("$i" + 1))
-    done
 }
 
 changeSource() {
     internet || return 1
-    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key,"["+.value.projectName+"]","on" else .key,"["+.value.projectName+"]","off" end' "$path"/sources.json)
+    readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key,"["+.value.projectName+"]","on" else .key,"["+.value.projectName+"]","off" end' "$repoDir"/sources.json)
     selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1 >/dev/tty)
     if [ "$source" != "$selectedSource" ]; then
         source="$selectedSource"
         # shellcheck source=/dev/null
-        source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$path"/sources.json)
-        sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$path"/sources.json)
+        source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
+        sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
         patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
-        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
         appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
         setEnv source "$selectedSource" update "$envFile"
         checkResources || return 1
@@ -224,7 +225,7 @@ patchSaver() {
     case "$selectPatchStatus" in 
     0 )
         includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = $ARGS.positional]' --args "${choices[@]}")
-        echo "$includedPatches" >"$patchesSource-patches.json" && return 1
+        echo "$includedPatches" >"$storagePath/$source-patches.json" && return 1
         ;;
     1 )
         if [ "$toogleName" == "Include All" ]; then
@@ -241,17 +242,17 @@ patchSaver() {
 
 editPatchOptions() {
     checkResources || return 1
-    if ! ls "$storagePath/Revancify/$source-options.json" > /dev/null 2>&1; then
+    if [ ! -f "$storagePath/$source-options.json" ]; then
         "${header[@]}" --infobox "Please Wait !!\nGenerating options file..." 12 45
-        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" >/dev/null 2>&1
     fi
     currentPatch="none"
-    optionsJson=$(jq '.' "$storagePath/Revancify/$source-options.json")
+    optionsJson=$(jq '.' "$storagePath/$source-options.json")
     readarray -t patchNames < <(jq -n -r --argjson optionsJson "$optionsJson" '$optionsJson[].patchName')
     while true; do
         if [ "$currentPatch" == "none" ]; then
             if ! currentPatch=$("${header[@]}" --begin 2 0 --title '| Patch Options Menu |' --no-items --ok-label "Select" --cancel-label "Back" --menu "Select Patch to edit options" -1 -1 15 "${patchNames[@]}" 2>&1 >/dev/tty); then
-                jq -n --argjson optionsJson "$optionsJson" '$optionsJson' > "$storagePath/Revancify/$source-options.json"
+                jq -n --argjson optionsJson "$optionsJson" '$optionsJson' > "$storagePath/$source-options.json"
                 break
             fi
         else
@@ -269,8 +270,8 @@ editPatchOptions() {
 
 rootInstall() {
     "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
-    if ! su -mm -c "/system/bin/sh $path/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
-        "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal Storage > Revancify \> install_log.txt\". Share the Install logs to developer." 12 45
+    if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
+        "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal-Storage/Revancify/install_log.txt\". Share the Install logs to developer." 12 45
         return 1
     else
         "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
@@ -282,7 +283,7 @@ rootInstall() {
 
 rootUninstall() {
     selectApp normal || return 1
-    su -mm -c "/system/bin/sh $path/root_util.sh unmount $pkgName" >/dev/null 2>&1
+    su -mm -c "/system/bin/sh $repoDir/root_util.sh unmount $pkgName" >/dev/null 2>&1
     unmountStatus=$?
     if [ "$unmountStatus" -eq "2" ]; then
         "${header[@]}" --msgbox "Patched $appName is not installed(mounted) in your device." 12 45
@@ -299,8 +300,8 @@ rootUninstall() {
 nonRootInstall() {
     "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
     sleep 0.5
-    cp "$appName-$sourceName"* "$storagePath/Revancify/" >/dev/null 2>&1
-    termux-open "$storagePath/Revancify/$appName-$sourceName-$appVer.apk"
+    cp -r "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer/base-$sourceName.apk" >/dev/null 2>&1
+    termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
     return 1
 }
 
@@ -309,27 +310,27 @@ checkJson() {
         getResources || return 1
         return 0
     fi
-    if ! ls "$patchesSource-patches.json" >/dev/null 2>&1; then
+    if [ ! -f "$storagePath/$source-patches.json" ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!" 12 45
-        if [ "$(bash "$path/fetch_patches.sh" "$source" online)" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Oops !! Apkmirror API is not accessible. Patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
-        includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+        includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
         appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
     fi
 }
 
 checkResources() {
-    if ls ".${source}latest" >/dev/null 2>&1; then
+    if [ -f ".${source}-data" ]; then
         # shellcheck source=/dev/null
-        source ./".${source}latest"
+        source ./".${source}-data"
     else
         resourcesVars
         getResources || return 1
     fi
-    if [ "$cliSize" = "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" = "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" = "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$patchesSource-patches.json" >/dev/null 2>&1; then
+    if [ "$cliSize" = "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" = "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" = "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$storagePath/$source-patches.json" >/dev/null 2>&1; then
         :
     else
         getResources || return 1
@@ -344,7 +345,7 @@ getAppVer() {
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$path/fetch_versions.sh" "$apkmirrorAppName" "$source" "$path" "$selectedVer")
+        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$apkmirrorAppName" "$source" "$repoDir" "$selectedVer" "$storagePath")
     fi
     versionSelector || return 1
 }
@@ -362,12 +363,12 @@ versionSelector() {
 }
 
 checkPatched() {
-    if ls "$appName-$sourceName-$appVer"* >/dev/null 2>&1; then
+    if [ -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
         0 )
-            rm "$appName-$sourceName-$appVer"*
+            rm "apps/$appName-$appVer/base-$sourceName.apk"
             ;;
         1 )
             "${rootStatus}Install" && return 1
@@ -377,7 +378,7 @@ checkPatched() {
             ;;
         esac
     else
-        rm "$appName-$sourceName-"* >/dev/null 2>&1
+        rm "apps/$appName-$appVer/base-$sourceName.apk" >/dev/null 2>&1
         return 0
     fi
 }
@@ -385,10 +386,10 @@ checkPatched() {
 selectFile() {
     newPath=""
     while [ ! -f "$newPath" ]; do
-        currentPath=${currentPath:-$storagePath}
+        currentPath=${currentPath:-$internalStorage}
         dirList=()
         files=()
-        if [ "$currentPath" != "$storagePath" ]; then
+        if [ "$currentPath" != "$internalStorage" ]; then
             dirUp=(1 ".." "GO BACK TO PREVIOUS DIRECTORY")
             num=1
         else
@@ -409,9 +410,9 @@ selectFile() {
         pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
         exitstatus=$?
         [ "$exitstatus" -eq 1 ] && break
-        if [ "$currentPath" != "$storagePath" ] && [ "$pathIndex" -eq 1 ]; then
+        if [ "$currentPath" != "$internalStorage" ] && [ "$pathIndex" -eq 1 ]; then
             newPath=".."
-        elif [ "$currentPath" != "$storagePath" ] && [ "$pathIndex" -ne 1 ]; then
+        elif [ "$currentPath" != "$internalStorage" ] && [ "$pathIndex" -ne 1 ]; then
             newPath=${files[$pathIndex - 2]}
         else
             newPath=${files[$pathIndex - 1]}
@@ -433,7 +434,7 @@ fetchCustomApk() {
     selectedVer="" installedVer=""
     selectFile || return 1
     "${header[@]}" --infobox "Please Wait !!\nExtracting data from \"$(basename "$newPath")\"" 12 45
-    if ! aaptData=$("$path/binaries/aapt2_$arch" dump badging "$newPath"); then
+    if ! aaptData=$("$repoDir/binaries/aapt2_$arch" dump badging "$newPath"); then
         "${header[@]}" --msgbox "The apkfile you selected is not an valid app. Download the apk again and retry." 12 45
         return 1
     fi
@@ -457,7 +458,11 @@ fetchCustomApk() {
             fi
         fi
     fi
-    cp "$newPath" "$appName-$appVer.apk"
+    [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
+    if [ "$rootStatus" == "nonRoot" ] && [ -d "apps/$appName-$appVer" ];then
+        mkdir -p "$storagePath/$appName-$appVer"
+    fi
+    cp "$newPath" "apps/$appName-$appVer/base.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
             return 1
@@ -495,23 +500,23 @@ fetchApk() {
         fi
     fi
     checkPatched || return 1
-    if ls "$appName"-"$appVer"* >/dev/null 2>&1; then
+    if [ -f "apps/$appName-$appVer/base.apk" ]; then
         # shellcheck source=/dev/null
-        if [ "$(source ".appSizeVars"; eval echo \$"${appName//-/_}"Size)" != "$([ -f "$appName"-"$appVer".apk ] && du -b "$appName"-"$appVer".apk | cut -d $'\t' -f 1 || echo 0)" ]; then
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" != "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             downloadApp
         fi
     else
-        rm "$appName"*.apk >/dev/null 2>&1
+        rm -rf "apps/$appName"* >/dev/null 2>&1
         downloadApp
     fi
 }
 
 downloadApp() {
     internet || return 1
-    appUrl=$( (bash "$path/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" "$path" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
+    appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" "$repoDir" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
     appSize="$(curl -sLI "$appUrl" -A "$userAgent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r')"
-    setEnv "${appName//-/_}Size" "$appSize" update .appSizeVars
+    setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
     case $appUrl in
     "error" )
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 45
@@ -531,10 +536,14 @@ downloadApp() {
         return 1
         ;;
     esac
-    wget -q -c "$appUrl" -O "$appName"-"$appVer".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1
+    [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
+    if [ "$rootStatus" == "nonRoot" ] && [ -d "apps/$appName-$appVer" ];then
+        mkdir -p "$storagePath/$appName-$appVer"
+    fi
+    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1
     tput civis
     sleep 0.5s
-    if [ "$appSize" != "$(du -b "$appName"-"$appVer".apk | cut -d $'\t' -f 1)" ]; then
+    if [ "$appSize" != "$(du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1)" ]; then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 45
         return 1
     fi
@@ -546,7 +555,7 @@ downloadMicrog() {
         internet || return 1
         readarray -t microgheaders < <(curl -s "https://api.github.com/repos/$microgRepo/$microgName/releases/latest" | jq -r --arg regex ".*$arch.*" '(.assets[] | if .name | test($regex) then .browser_download_url, .size else empty end), .tag_name')
         wget -q -c "${microgheaders[0]}" -O "$microgName-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : $microgName \nVersion : ${microgheaders[2]}\nSize    : $(numfmt --to=iec --format="%0.1f" "${microgheaders[1]}")\n\nDownloading..." -1 -1 && tput civis
-        ls $microgName* >/dev/null 2>&1 && mv $microgName* "$storagePath/Revancify/" && termux-open "$storagePath/Revancify/$microgName-${microgheaders[2]}.apk"
+        ls $microgName* >/dev/null 2>&1 && mv $microgName* "$storagePath/" && termux-open "$storagePath/$microgName-${microgheaders[2]}.apk"
     fi
 }
 
@@ -555,19 +564,19 @@ patchApp() {
         riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
         riplibArgs="${riplibArgs//--rip-lib=$arch /}"
     fi
-    if ls "$storagePath/Revancify/custom.keystore" > /dev/null 2>&1
+    if [ -f "$storagePath/custom.keystore" ] > /dev/null 2>&1
     then
-        keystore=$(ls "$storagePath/Revancify/custom.keystore")
+        keystore="$storagePath/custom.keystore"
     else
-        keystore="$path"/revancify.keystore
+        keystore="$repoDir"/revancify.keystore
     fi
-    includedPatches=$(jq '.' "$patchesSource-patches.json" 2>/dev/null || jq -n '[]')
+    includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "$appName-$appVer.apk" -o "$appName-$sourceName-$appVer.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$path/binaries/aapt2_$arch" --options "$storagePath/Revancify/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/Revancify/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
-    echo -e "\n\n\nVariant: $rootStatus\nArch: $arch\nApp: $appName-$appVer.apk\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/Revancify/patch_log.txt"
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$repoDir/binaries/aapt2_$arch" --options "$storagePath/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    echo -e "\n\n\nVariant: $rootStatus\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
-    if ! ls "$appName-$sourceName-$appVer.apk" > /dev/null 2>&1; then
+    if [ ! -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage > Revancify \> patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
@@ -586,14 +595,14 @@ checkMicrogPatch() {
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
             return 0
         else
-            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= del(.[(. | index($microgPatch))])]' >"$patchesSource-patches.json"
+            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= del(.[(. | index($microgPatch))])]' >"$storagePath/$source-patches.json"
             return 0
         fi
     elif [ "$microgStatus" == "null" ] && [ "$rootStatus" = "nonRoot" ]; then
         if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1; then
             return 0
         else
-            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= . + [$microgPatch]]' >"$patchesSource-patches.json"
+            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= . + [$microgPatch]]' >"$storagePath/$source-patches.json"
             return 0
         fi
     fi
@@ -613,15 +622,14 @@ deleteComponents() {
             fi
             ;;
         2 )
-            if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1; then
-                ls -1 *.apk | grep -v integrations | xargs rm >/dev/null 2>&1
-                rm .appSizeVars >/dev/null 2>&1
+            if "${header[@]}" --begin 2 0 --title '| Delete Apps |' --no-items --defaultno --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1; then
+                rm -rf "apps"/*
                 "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 45
             fi
             ;;
         3 )
-            if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --yesno "Please confirm to delete the patch options file for $sourceName patches." -1 -1; then
-                rm "$storagePath/Revancify/$source-options.json" >/dev/null 2>&1
+            if "${header[@]}" --begin 2 0 --title '| Delete Patch Options |' --no-items --defaultno --yesno "Please confirm to delete the patch options file for $sourceName patches." -1 -1; then
+                rm "$storagePath/$source-options.json" >/dev/null 2>&1
                 "${header[@]}" --msgbox "Options file successfully deleted for current source !!" 12 45
             fi
             ;;
@@ -640,7 +648,7 @@ preferences() {
     # shellcheck source=/dev/null
     source "$envFile"
     [ "$lightTheme" == "true" ] && theme=Light || theme=Dark
-    export DIALOGRC="$path/configs/.dialogrc$theme"
+    export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 }
 
 buildApk() {

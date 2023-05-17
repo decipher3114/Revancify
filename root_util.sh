@@ -28,10 +28,10 @@ rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
 rm "/data/local/tmp/revancify/$pkgName.apk"
 
 
-if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/\./-/g;s/ /-/1p')" = "$appVer" ]; then
+if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]; then
     :
 else
-    pm install --user 0 -i com.android.vending -r -d "$appName-$appVer".apk || exit 1
+    pm install --user 0 -i com.android.vending -r -d "apps/$appName-$appVer/base.apk" || exit 1
 fi
 
 pm list packages | grep -q "$pkgName" || exit 1
@@ -43,7 +43,7 @@ am force-stop "$pkgName"
 
 {
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
-    cp "$appName-$sourceName-$appVer.apk" "/data/local/tmp/revancify/$pkgName.apk"
+    cp "apps/$appName-$appVer/base-$sourceName.apk" "/data/local/tmp/revancify/$pkgName.apk"
     chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
     chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
     mount -vo bind "$revancedApp" "$stockApp"

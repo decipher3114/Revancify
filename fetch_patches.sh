@@ -1,10 +1,11 @@
 #!/bin/bash
 
 source="$1"
+storagePath="$3"
 
 patchesJson=$(jq '.' "$source"-patches-*.json)
 
-includedPatches=$(jq '.' "$source-patches.json" 2>/dev/null || jq -n '[]')
+includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
 
 if ! jq -n --argjson includedPatches "$includedPatches" '$includedPatches' > /dev/null 2>&1; then
     includedPatches=$(jq -n '[]')
@@ -98,4 +99,4 @@ if [ "$2" == "online" ]; then
     )
 fi
 
-echo "$generatedJson" | jq '.' >"$source-patches.json"
+echo "$generatedJson" | jq '.' >"$storagePath/$source-patches.json"
