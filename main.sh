@@ -31,13 +31,14 @@ initialize() {
     envFile=config.cfg
     [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
 
-    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" allowVersionDowngrade=""
+    forceUpdateCheckStatus="" riplibsRVX="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" allowVersionDowngrade="" fetchPreRelease=""
     setEnv forceUpdateCheckStatus false init "$envFile"
     setEnv riplibsRVX true init "$envFile"
     setEnv lightTheme false init "$envFile"
     setEnv patchMenuBeforePatching false init "$envFile"
     setEnv launchAppAfterMount true init "$envFile"
     setEnv allowVersionDowngrade false init "$envFile"
+    setEnv fetchPreRelease false init "$envFile"
     # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
@@ -85,8 +86,9 @@ resourcesVars() {
     readarray -t resources < <(jq -r --arg source "$source" '.[$source].sources | keys_unsorted[]' "$repoDir"/sources.json)
     readarray -t links < <(jq -r --arg source "$source" '.[$source].sources[] | .org+"/"+.repo' "$repoDir"/sources.json)
     : >".${source}-data"
+    [ "$fetchPreRelease" == "false" ] && stableRelease="/latest" || stableRelease=""
     i=0 && for resource in "${resources[@]}"; do
-        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases/latest" | jq -r --arg resource "$resource" '$resource+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $resource+"Url="+.browser_download_url, $resource+"Size="+(.size|tostring) end)' >>".${source}-data"
+        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases$stableRelease" | jq -r --arg resource "$resource" 'if type == "array" then .[0] else . end | $resource+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $resource+"Url="+.browser_download_url, $resource+"Size="+(.size|tostring) end)' >>".${source}-data"
         i=$(("$i" + 1))
     done
 
@@ -97,11 +99,6 @@ resourcesVars() {
     # shellcheck source=/dev/null
     source ./".${source}-data"
 
-    ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && cliAvailable=$(basename "$cliSource"-cli-*.jar .jar | cut -d '-' -f 3) || cliAvailable="Not found"
-    ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && patchesAvailable=$(basename "$patchesSource"-patches-*.jar .jar | cut -d '-' -f 3) || patchesAvailable="Not found"
-    ls "$patchesSource"-patches-*.json >/dev/null 2>&1 && jsonAvailable=$(basename "$patchesSource"-patches-*.json .json | cut -d '-' -f 3) || jsonAvailable="Not found"
-    ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && integrationsAvailable=$(basename "$integrationsSource"-integrations-*.apk .apk | cut -d '-' -f 3) || integrationsAvailable="Not found"
-
     cliAvailableSize=$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)
     patchesAvailableSize=$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)
     integrationsAvailableSize=$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)
@@ -109,7 +106,7 @@ resourcesVars() {
 
 getResources() {
     resourcesVars || return 1
-    if [ "$patchesLatest" = "$patchesAvailable" ] && [ "$patchesLatest" = "$jsonAvailable" ] && [ "$cliLatest" = "$cliAvailable" ] && [ "$integrationsLatest" = "$integrationsAvailable" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]; then
+    if [ -f "$patchesSource-patches-$patchesLatest.jar" ] && [ -f "$patchesSource-patches-$patchesLatest.json" ] && [ -f "$cliSource-cli-$cliLatest.jar" ] && [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] && [ "$cliSize" = "$cliAvailableSize" ] && [ "$patchesSize" = "$patchesAvailableSize" ] && [ "$integrationsSize" = "$integrationsAvailableSize" ]; then
         if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Resources are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
@@ -117,9 +114,9 @@ getResources() {
         "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 45
         return 1
     fi
-    [ "$patchesLatest" != "$patchesAvailable" ] && rm "$patchesSource"-patches-*.jar >/dev/null 2>&1 && rm "$patchesSource"-patches-*.json >/dev/null 2>&1 && patchesAvailableSize=0
-    [ "$cliLatest" != "$cliAvailable" ] && rm "$cliSource"-cli-*.jar >/dev/null 2>&1 && cliAvailableSize=0
-    [ "$integrationsLatest" != "$integrationsAvailable" ] && rm "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && integrationsAvailableSize=0
+    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || rm "$patchesSource"-patches-*.jar >/dev/null 2>&1 && rm "$patchesSource"-patches-*.json >/dev/null 2>&1 && patchesAvailableSize=0
+    [ -f "$cliSource-cli-$cliLatest.jar" ] || rm "$cliSource"-cli-*.jar >/dev/null 2>&1 && cliAvailableSize=0
+    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || rm "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && integrationsAvailableSize=0
     [ "$cliSize" != "$cliAvailableSize" ] &&
         wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 $(($(("$cliAvailableSize" * 100)) / "$cliSize")) && tput civis
 
@@ -327,7 +324,6 @@ checkResources() {
         # shellcheck source=/dev/null
         source ./".${source}-data"
     else
-        resourcesVars
         getResources || return 1
     fi
     if [ "$cliSize" = "$(ls "$cliSource"-cli-*.jar >/dev/null 2>&1 && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" = "$(ls "$patchesSource"-patches-*.jar >/dev/null 2>&1 && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" = "$(ls "$integrationsSource"-integrations-*.apk >/dev/null 2>&1 && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$storagePath/$source-patches.json" >/dev/null 2>&1; then
@@ -638,7 +634,7 @@ deleteComponents() {
 }
 
 preferences() {
-    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "[RVX] Removes extra libs from app" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" allowVersionDowngrade "$allowVersionDowngrade" "[Root] Allows downgrading version if any such module is present")
+    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "riplibsRVX" "$riplibsRVX" "[RVX] Removes extra libs from app" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for resources update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" allowVersionDowngrade "$allowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "fetchPreRelease" "$fetchPreRelease" "Fetches the pre-release version of resources")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
@@ -716,7 +712,6 @@ fi
 initialize
 
 if [ "$forceUpdateCheckStatus" == "true" ]; then
-    resourcesVars
     getResources
 fi
 while true; do
