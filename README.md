@@ -1,6 +1,8 @@
 # Revancify
-A TUI wrapper for Revanced patcher.  
-> Note: Download Termux from Github or FDroid. Termux app available on playstore is not maintained. 
+A TUI wrapper for Revanced CLI with amazing features. 
+> Note: Download Termux from Github or FDroid. Termux app available on playstore is not maintained.
+
+### For Announcements and Support, Join [Telegram Channel](https://t.me/revancify)  & [Telegram Group](https://t.me/revancifychat).  
 
 # Features
 1. Auto updates Patches and CLI
@@ -26,5 +28,5 @@ After installation, type `revancify` in termux and press enter.
 Or use with arguments. Check them with `revancify -h` or `revancify --help`
   
 # Thanks & Credits
-[Revanced Team](https://github.com/revanced)  
-[Revanced Extended Team](https://github.com/inotia00)  
+[Revanced](https://github.com/revanced)  
+[Revanced Extended](https://github.com/inotia00)  
