@@ -21,7 +21,7 @@ setEnv() {
 }
 
 initialize() {
-    internalStorage="/storage/emulated/0"
+    internalStorage="$HOME/storage/shared"
     storagePath="$internalStorage/Revancify"
     [ ! -d "$storagePath" ] && mkdir -p "$storagePath"
     [ ! -d apps ] && mkdir -p apps
@@ -57,9 +57,6 @@ initialize() {
     # shellcheck source=/dev/null
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
-    [ -d "$cliSource" ] && mkdir -p "$cliSource"
-    [ -d "$patchesSource" ] && mkdir -p "$patchesSource"
-    [ -d "$integrationsSource" ] && mkdir -p "$integrationsSource"
 
     checkResources || terminate 1
     checkJson
@@ -296,8 +293,9 @@ rootUninstall() {
 
 nonRootInstall() {
     "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
+    [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
     sleep 0.5
-    cp -r "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer/base-$sourceName.apk" >/dev/null 2>&1
+    cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" >/dev/null 2>&1
     termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
     return 1
 }
@@ -455,9 +453,6 @@ fetchCustomApk() {
         fi
     fi
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    if [ "$rootStatus" == "nonRoot" ] && [ -d "apps/$appName-$appVer" ];then
-        mkdir -p "$storagePath/$appName-$appVer"
-    fi
     cp "$newPath" "apps/$appName-$appVer/base.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
@@ -533,9 +528,6 @@ downloadApp() {
         ;;
     esac
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    if [ "$rootStatus" == "nonRoot" ] && [ -d "apps/$appName-$appVer" ];then
-        mkdir -p "$storagePath/$appName-$appVer"
-    fi
     wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1
     tput civis
     sleep 0.5s
