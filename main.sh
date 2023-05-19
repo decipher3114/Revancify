@@ -43,7 +43,7 @@ initialize() {
     source "$envFile"
     if [ -z "$source" ]; then
         readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | .key,"["+.value.projectName+"]","on"' "$repoDir"/sources.json)
-        source=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1 >/dev/tty)
+        source=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 0 "${allSources[@]}" 2>&1 >/dev/tty)
         setEnv source "$source" update "$envFile"
     fi
     [ "$rootStatus" = "root" ] && menuEntry="Uninstall Patched app" || menuEntry="Download Microg"
@@ -152,7 +152,7 @@ getResources() {
 changeSource() {
     internet || return 1
     readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | if .key == $source then .key,"["+.value.projectName+"]","on" else .key,"["+.value.projectName+"]","off" end' "$repoDir"/sources.json)
-    selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 15 "${allSources[@]}" 2>&1 >/dev/tty)
+    selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 0 "${allSources[@]}" 2>&1 >/dev/tty)
     if [ "$source" != "$selectedSource" ]; then
         source="$selectedSource"
         # shellcheck source=/dev/null
@@ -248,14 +248,14 @@ editPatchOptions() {
     readarray -t patchNames < <(jq -n -r --argjson optionsJson "$optionsJson" '$optionsJson[].patchName')
     while true; do
         if [ "$currentPatch" == "none" ]; then
-            if ! currentPatch=$("${header[@]}" --begin 2 0 --title '| Patch Options Menu |' --no-items --ok-label "Select" --cancel-label "Back" --menu "Select Patch to edit options" -1 -1 15 "${patchNames[@]}" 2>&1 >/dev/tty); then
+            if ! currentPatch=$("${header[@]}" --begin 2 0 --title '| Patch Options Menu |' --no-items --ok-label "Select" --cancel-label "Back" --menu "Select Patch to edit options" -1 -1 0 "${patchNames[@]}" 2>&1 >/dev/tty); then
                 jq -n --argjson optionsJson "$optionsJson" '$optionsJson' > "$storagePath/$source-options.json"
                 break
             fi
         else
             tput cnorm
             readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100, 0)')
-            readarray -t newValues < <("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --mixedform "Edit patch options for \"$currentPatch\" patch" -1 -1 20 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
+            readarray -t newValues < <("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --mixedform "Edit patch options for \"$currentPatch\" patch" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
             if [ "${newValues[*]}" != "" ]; then
                 optionsJson=$(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then null elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
             fi
@@ -351,7 +351,7 @@ versionSelector() {
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 45
         return 1
     fi
-    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --default-item "$selectedVer" --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName; AppName: $appName" -1 -1 15 "${appVerList[@]}" 2>&1 >/dev/tty) || return 1
+    selectedVer=$("${header[@]}" --begin 2 0 --title '| Version Selection Menu |' --default-item "$selectedVer" --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName; AppName: $appName" -1 -1 0 "${appVerList[@]}" 2>&1 >/dev/tty) || return 1
     if [ "$selectedVer" == "Auto Select" ]; then
         selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
     fi
@@ -403,7 +403,7 @@ selectFile() {
                 dirList+=("$((++num))" "$itemNameDisplay" "APK: $itemName")
             fi
         done < <(ls -1 --group-directories-first "$currentPath")
-        pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 20 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
+        pathIndex=$("${header[@]}" --begin 2 0 --title '| Apk File Selection Menu |' --item-help --ok-label "Select" --menu "Use arrow keys to navigate\nCurrent Path: $currentPath/" $(($(tput lines) - 3)) -1 15 "${dirUp[@]}" "${dirList[@]}" 2>&1 >/dev/tty)
         exitstatus=$?
         [ "$exitstatus" -eq 1 ] && break
         if [ "$currentPath" != "$internalStorage" ] && [ "$pathIndex" -eq 1 ]; then
@@ -523,12 +523,12 @@ downloadApp() {
             "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nTry selecting other version." 12 45
             getAppVer
         else
-            "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 15 40
+            "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 12 45
             return 1
         fi
         ;;
     "noversion" )
-        "${header[@]}" --msgbox "This version is not uploaded on apkmirror.com!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 15 40
+        "${header[@]}" --msgbox "This version is not uploaded on apkmirror.com!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 12 45
         return 1
         ;;
     esac
@@ -606,7 +606,7 @@ checkMicrogPatch() {
 
 deleteComponents() {
     while true; do
-        delComponentPrompt=$("${header[@]}" --begin 2 0 --title '| Delete Components Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Resources" 2 "Apps" 3 "Patch Options" 2>&1 >/dev/tty) || break
+        delComponentPrompt=$("${header[@]}" --begin 2 0 --title '| Delete Components Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 0 1 "Resources" 2 "Apps" 3 "Patch Options" 2>&1 >/dev/tty) || break
         case "$delComponentPrompt" in
         1 )
             if "${header[@]}" --begin 2 0 --title '| Delete Resources |' --no-items --defaultno --yesno "Please confirm to delete the resources.\nIt will delete the $sourceName CLI, patches and integrations." -1 -1; then
@@ -664,7 +664,7 @@ buildApk() {
 
 userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 mainMenu() {
-    mainMenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --default-item "$mainMenu" --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 15 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" 6 "$menuEntry" 7 "Delete Components" 8 "Preferences" 2>&1 >/dev/tty) || terminate 0
+    mainMenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --default-item "$mainMenu" --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 0 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Update Resources" 5 "Edit Patch Options" 6 "$menuEntry" 7 "Delete Components" 8 "Preferences" 2>&1 >/dev/tty) || terminate 0
     case "$mainMenu" in
     1 )
         while true; do
