@@ -7,42 +7,50 @@ path=$(find "$HOME" -type d -name "Revancify")
 cp "$path/revancify" "$BIN/revancify" >/dev/null 2>&1
 
 help() {
-    echo -e "\e[1;34mrevancify\n\e[0m"
-    echo -e "\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m"
-    echo -e "\e[1;33mOptions:\e[0m"
-    echo -e "\e[1;33m-n               \e[1;34mRun revancify as non root\e[0m"
-    echo -e "\e[1;33m                 \e[1;34min rooted device"
-    echo -e "\e[1;33m-o               \e[1;34mRun revancify offline (no update)\e[0m"
-    echo -e "\e[1;33m-r               \e[1;34mReinstall revancify\e[0m"
-    echo -e "\e[1;33m-h,--help        \e[1;34mPrints help statement\e[0m"
-    echo -e "\n\e[1;35mGithub repo: https://github.com/decipher3114/Revancify\nTelegram channel: https://t.me/revancify\nTelegram support group: https://t.me/revancifychat\e[0m"
+    [ "$1" == "1" ] && echo -e "\e[1;31mInvalid Option(s) Passed!!\n\e[0m\n"
+    echo -e "\e[1;34mrevancify\n\e[0m
+\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m
+\e[1;33mOptions:\e[0m
+\e[1;33m-n,--no-root     \e[1;34mRun without SU permissions\e[0m
+\e[1;33m-o,--offline     \e[1;34mRun without updating revancify\e[0m
+\e[1;33m-r,--reinstall   \e[1;34mReinstall revancify\e[0m
+\e[1;33m-h,--help        \e[1;34mPrints help statement\e[0m
+
+\e[1;35mGithub repo: https://github.com/decipher3114/Revancify\nTelegram channel: https://t.me/revancify\nTelegram support group: https://t.me/revancifychat\e[0m"
+    exit "$1"
 }
 
-case "$1" in
-"-h" | "--help")
-    help
-    exit 0
-    ;;
-"-n")
-    flag="$1"
-    ;;
-"-r")
-    if ping -c 1 google.com >/dev/null 2>&1; then
-        cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
-    fi
-    ;;
-"-o")
-    :
-    ;;
-"")
-    :
-    ;;
-*)
-    echo -e "\e[1;31mInvalid option: $1\n\e[0m"
-    help
-    exit 1
-    ;;
-esac
+VALID_ARGS=$(getopt -q -o nohr -l no-root,offline,help,reinstall -- "$@") || help 1
+eval set -- "$VALID_ARGS"
+while [ $# -gt 0 ]
+do
+    case "$1" in
+    "-h" | "--help")
+                        help 0
+                        ;;
+    "-n" | "--no-root")
+                        flag="nonRoot"
+                        shift
+                        ;;
+    "-r" | "--reinstall")
+                        if ping -c 1 google.com >/dev/null 2>&1; then
+                            cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+                        else
+                            echo "No internet Connection !!"
+                            exit 1
+                        fi
+                        ;;
+    "-o" | "--offline")
+                        status="Offline [forced]"
+                        shift
+                        ;;
+    "--")
+        shift
+        break
+        ;;
+    esac
+    shift
+done
 
 if [ "$(getprop ro.product.cpu.abi)" = "armeabi-v7a" ]; then
     echo "CPU architecture \"armeabi-v7a\" of your device is not supported for patching."
@@ -74,11 +82,10 @@ checkdependencies() {
         return 0
     else
         if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies
-            checkdependencies
+            installdependencies || echo "Dependencies not installed !!" && exit 1
         else
-            cp ./revancify "$BIN/revancify"
-            echo "Dependencies not installed. Run again with internet connection."
+            cp "$path/revancify" "$BIN/revancify"
+            echo -e "Dependencies not installed !!\nRun again with internet connection."
             exit 1
         fi
     fi
@@ -87,11 +94,11 @@ checkdependencies() {
 installdependencies() {
     clear
     echo "Installing dependencies..."
-    cp "$path./revancify" "$BIN/revancify"
+    cp "$path/revancify" "$BIN/revancify"
     sleep 1
     [ ! -d "$HOME/storage" ] && termux-setup-storage
-    pkg update -y
-    pkg install openjdk-17 wget ncurses-utils dialog jq -y
+    pkg update -y || return 1
+    pkg install openjdk-17 wget ncurses-utils dialog jq -y || return 1
     git config --global pull.rebase true
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
     echo "Dependencies installed successfully."
@@ -131,12 +138,11 @@ checkdependencies
 checkrevancify
 tput civis
 dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nStatus       : Checking..." 10 42
-status=Offline
+
 if ping -c 1 google.com >/dev/null 2>&1; then
-    status=Online
-fi
-if [ "$1" == "-o" ]; then
-    status="Offline [forced]"
+    status=${status:-Online}
+else
+    status=Offline
 fi
 if [ "$status" == "Online" ]; then
     git pull >/dev/null 2>&1 || (git fetch --all >/dev/null 2>&1 && git reset --hard "@{u}" >/dev/null 2>&1)
