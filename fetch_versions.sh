@@ -19,7 +19,7 @@ readarray -t versions < <("$pup" -p 'div.widget_appmanager_recentpostswidget h5 
 supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions' "$storagePath/$patchesSource-patches.json")
 
 finalList=$(jq -r -n --arg currentVersion "$currentVersion" --argjson supportedVers "$supportedVers" '$ARGS.positional | sort | reverse as $versionsList |
-    [ $versionsList[] | (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9]\\w*")).string] |
+    [ $versionsList[] | (. | match("(?<=\\s)\\w*[0-9].*\\w*[0-9][a-zA-Z0-9-_]*")).string] |
     if $currentVersion != "" then
         if (. | index($currentVersion)) != null then
             .
