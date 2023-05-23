@@ -31,7 +31,7 @@ rm "/data/local/tmp/revancify/$pkgName.apk"
 if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]; then
     :
 else
-    pm install --user 0 -i com.android.vending -r -d "apps/$appName-$appVer/base.apk" || exit 1
+    pm install "apps/$appName-$appVer/base.apk"
 fi
 
 pm list packages | grep -q "$pkgName" || exit 1
