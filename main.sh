@@ -334,12 +334,12 @@ checkResources() {
 getAppVer() {
     if [ "$rootStatus" == "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
-        appVer="$(sed 's/ /./g;s/-/./g;s/\://g' <<< "$selectedVer")"
+        appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
     fi
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$apkmirrorAppName" "$source" "$repoDir" "$selectedVer" "$storagePath")
+        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$source" "$repoDir" "$selectedVer" "$storagePath")
     fi
     versionSelector || return 1
 }
@@ -353,7 +353,7 @@ versionSelector() {
     if [ "$selectedVer" == "Auto Select" ]; then
         selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
     fi
-    appVer="$(sed 's/ /./g;s/-/./g;s/\://g' <<< "$selectedVer")"
+    appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
 }
 
 checkPatched() {
@@ -440,7 +440,7 @@ fetchCustomApk() {
     fileAppName=$(grep "application-label:" <<<"$aaptData" | sed -e 's/application-label://' -e 's/'\''//g')
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
-    appVer="$(sed 's/ /./g;s/-/./g;s/\://g' <<< "$selectedVer")"
+    appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
     if [ "$rootStatus" == "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
