@@ -17,46 +17,44 @@ page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "
 
 readarray -t versions < <("$pup" -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$page1")
 
-supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '[.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions[] | sub(" *[-:, ] *"; "-"; "g")]' "$storagePath/$patchesSource-patches.json")
+supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '[.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions[] | sub(" *[-, ] *"; "-"; "g")]' "$storagePath/$patchesSource-patches.json")
 
 jq -r -n --arg appName "$appName-"\
     --arg currentVersion "$currentVersion"\
     --argjson supportedVers "$supportedVers"\
-    '($currentVersion | sub(" *[-:, ] *"; "-"; "g")) as $installedVer |
+    '($currentVersion | sub(" *[-, ] *"; "-"; "g")) as $installedVer |
     [
-        [$ARGS.positional |
-        sort |
-        reverse[] |
-        sub(" *[-:, ] *"; "-"; "g") |
-        sub($appName; "")
+        [
+            $ARGS.positional | . |= . + $supportedVers |
+            sort |
+            reverse[] |
+            sub(" *[-, ] *"; "-"; "g") |
+            sub($appName; "")
         ] |
-    index($installedVer) as $index |
-    if $index == null then
-        .[]
-    else
-        .[0:($index + 1)][]
-    end | . as $version |
-    if (($supportedVers | index($version)) != null) then
-        $version, "[SUPPORTED]"
-    elif ($version | test("beta|Beta|BETA")) then
-        $version | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[BETA]"
-    elif ($version | test("alpha|Alpha|ALPHA")) then
-        $version | sub("(?<=[0-9])-[a-zA-Z]$"; ""), "[ALPHA]"
-    else
-        $version, "[STABLE]"
-    end] |
-    if (. | index("[SUPPORTED]")) != null then
-        if (. | index($installedVer)) != null then
-            .[-1] |= "[INSTALLED]"
+        index($installedVer) as $index |
+        if $index == null then
+            .[]
         else
-            .
-        end |
-        "Auto Select", "[RECOMMENDED]", .[]
-    else
-        if (. | index($installedVer)) != null then
-            .[-1] |= "[INSTALLED]"
+            .[0:($index + 1)][]
+        end | . as $version |
+        if (($supportedVers | index($version)) != null) then
+            $version, "[SUPPORTED]"
+        elif ($version | test("beta|Beta|BETA")) then
+            $version | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[BETA]"
+        elif ($version | test("alpha|Alpha|ALPHA")) then
+            $version | sub("(?<=[0-9])-[a-zA-Z]$"; ""), "[ALPHA]"
         else
-            .
-        end |
-        .[]
-    end' --args "${versions[@]}" 2> /dev/null
+            $version, "[STABLE]"
+        end
+    ] |
+    if (. | index($installedVer)) != null then
+        .[-1] |= "[INSTALLED]"
+    else
+        .
+    end |
+     if ((. | index("[SUPPORTED]")) != null) then
+        . |= ["Auto Select", "[RECOMMENDED]"] + .
+    else
+        .
+    end | 
+    .[]' --args "${versions[@]}"
