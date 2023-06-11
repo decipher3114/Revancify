@@ -47,7 +47,7 @@ do
                         ;;
     "-r" | "--reinstall")
                         if ping -c 1 google.com >/dev/null 2>&1; then
-                            cd "$path"/.. && rm -rf "$path" && git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+                            cd "$path"/.. && rm -rf "$path" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && revancify && exit
                         else
                             echo "No internet Connection !!"
                             exit 1
@@ -95,7 +95,7 @@ checkdependencies() {
         return 0
     else
         if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies || echo "Dependencies not installed !!" && exit 1
+            installdependencies || (echo "Dependencies not installed !!" && exit 1)
         else
             cp "$path/revancify" "$BIN/revancify"
             echo -e "Dependencies not installed !!\nRun again with internet connection."

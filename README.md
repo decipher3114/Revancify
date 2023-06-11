@@ -1,8 +1,12 @@
 # Revancify
-A TUI wrapper for Revanced CLI with amazing features. 
-> Note: Download Termux from Github or FDroid. Termux app available on playstore is not maintained.
+A TUI wrapper for Revanced CLI with amazing features.
+> Note: Only for Termux  
 
-### For Announcements and Support, Join [Telegram Channel](https://t.me/revancify)  & [Telegram Group](https://t.me/revancifychat).  
+### For Announcements and Support, Join [Telegram Channel](https://t.me/revancify)  & [Group](https://t.me/revancifychat).  
+
+### Termux
+For Android 8+ devices, Download [Termux Monet](https://github.com/HardcodedCat/termux-monet/releases) (Strictly Recommended)  
+For other devices, Download [Termux](https://github.com/termux/termux-app/releases)
 
 # Features
 1. Auto updates Patches and CLI
@@ -15,18 +19,20 @@ A TUI wrapper for Revanced CLI with amazing features.
 7. Convenient Installation and usage
 6. Lightweight and faster than any other tool
 
+### [Video Guide](https://youtu.be/3e4OJ88I2pA)
+
 # Installation
 1. Open Termux.  
 2. Copy and paste this command.  
 ```
-pkg update -y && pkg install git -y && git clone https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
+pkg update -y && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
 ```
 
 # Usage
 After installation, type `revancify` in termux and press enter.  
 
 Or use with arguments. Check them with `revancify -h` or `revancify --help`
-  
+
 # Thanks & Credits
 [Revanced](https://github.com/revanced)  
 [Revanced Extended](https://github.com/inotia00)  

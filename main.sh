@@ -565,7 +565,7 @@ patchApp() {
     tput civis
     sleep 1
     if [ ! -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
-        "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage > Revancify \> patch_log.txt\". Share the Patchlog to developer." 12 45
+        "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage > Revancify > patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
 }
