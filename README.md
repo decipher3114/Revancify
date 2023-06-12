@@ -29,7 +29,7 @@ A TUI wrapper for Revanced CLI with amazing features.
 1. Open Termux.  
 2. Copy and paste this command.  
 ```
-pkg update -y && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
+curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
 ```
 ## Usage
 After installation, type `revancify` in termux and press enter.  

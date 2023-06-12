@@ -3,7 +3,7 @@
 HOME=/data/data/com.termux/files/home
 BIN=/data/data/com.termux/files/usr/bin
 
-path=$(find "$HOME" -type d -name "Revancify")
+path="$HOME/Revancify"
 cp "$path/revancify" "$BIN/revancify" >/dev/null 2>&1
 
 help() {
