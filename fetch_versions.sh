@@ -25,12 +25,13 @@ jq -r -n --arg appName "$appName-"\
     '($currentVersion | sub(" *[-, ] *"; "-"; "g")) as $installedVer |
     [
         [
-            $ARGS.positional | . |= . + $supportedVers |
-            sort |
-            reverse[] |
+            $ARGS.positional[] |
             sub(" *[-, ] *"; "-"; "g") |
             sub($appName; "")
         ] |
+        . |= . + $supportedVers |
+        unique |
+        reverse |
         index($installedVer) as $index |
         if $index == null then
             .[]
