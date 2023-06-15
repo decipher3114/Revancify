@@ -493,13 +493,13 @@ fetchApk() {
     checkPatched || return 1
     if [ -f "apps/$appName-$appVer/base.apk" ]; then
         # shellcheck source=/dev/null
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" != "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
-            downloadApp
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
+            return 0
         fi
     else
         rm -rf "apps/$appName"* &> /dev/null
-        downloadApp
     fi
+    downloadApp
 }
 
 downloadApp() {
@@ -528,7 +528,7 @@ downloadApp() {
         ;;
     esac
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1
+    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 $(($(( "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" * 100)) / "$appSize"))
     tput civis
     sleep 0.5s
     if [ "$appSize" != "$(du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1)" ]; then
@@ -565,7 +565,7 @@ patchApp() {
     tput civis
     sleep 1
     if [ ! -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
-        "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage > Revancify > patch_log.txt\". Share the Patchlog to developer." 12 45
+        "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage/Revancify/patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
 }
