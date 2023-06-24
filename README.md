@@ -1,8 +1,7 @@
-# Revancify
-A TUI wrapper for Revanced CLI with amazing features.
-> Note: Only for Termux  
+# Revancify 🛠️ ![Hi](https://img.shields.io/github/stars/decipher3114/Revancify?style=flat-square)
+### A TUI wrapper for Revanced CLI with amazing features.
 
-### For Announcements and Support, Join [Telegram Channel](https://t.me/revancify)  & [Group](https://t.me/revancifychat).  
+[![TelegramChannel](https://img.shields.io/badge/Telegram_Channel-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancify) [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
 
 ## Termux
 | Android Version | Download Link|
@@ -31,6 +30,15 @@ A TUI wrapper for Revanced CLI with amazing features.
 ```
 curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
 ```
+
+<details>
+  <summary>If the above one doesn't work, use this.</summary>
+
+  ```
+pkg update -y && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
+```
+</details>
+
 ## Usage
 After installation, type `revancify` in termux and press enter.  
 
