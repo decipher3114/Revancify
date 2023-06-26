@@ -110,8 +110,8 @@ installdependencies() {
     cp "$path/revancify" "$BIN/revancify"
     sleep 1
     [ ! -d "$HOME/storage" ] && termux-setup-storage
-    pkg update -y || return 1
-    pkg install openjdk-17 wget ncurses-utils dialog jq -y || return 1
+    pkg update -y -o Dpkg::Options::="--force-confnew" || return 1
+    pkg install openjdk-17 wget ncurses-utils dialog jq -y -o Dpkg::Options::="--force-confnew" || return 1
     git config --global pull.rebase true
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
     echo "Dependencies installed successfully."
