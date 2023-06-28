@@ -154,12 +154,12 @@ changeSource() {
         source="$selectedSource"
         # shellcheck source=/dev/null
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
+        checkResources || return 1
+        setEnv source "$selectedSource" update "$envFile"
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
         patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
         includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
         appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
-        setEnv source "$selectedSource" update "$envFile"
-        checkResources || return 1
     fi
 }
 
@@ -334,7 +334,7 @@ checkResources() {
 getAppVer() {
     if [ "$rootStatus" == "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
-        appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
+        appVer="${selectedVer// /-}"
     fi
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
@@ -353,7 +353,7 @@ versionSelector() {
     if [ "$selectedVer" == "Auto Select" ]; then
         selectedVer=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions[-1]')
     fi
-    appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
+    appVer="${selectedVer// /-}"
 }
 
 checkPatched() {
@@ -440,7 +440,7 @@ fetchCustomApk() {
     fileAppName=$(grep "application-label:" <<<"$aaptData" | sed -e 's/application-label://' -e 's/'\''//g')
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
-    appVer="$(sed 's/ /-/g;s/\://g' <<< "$selectedVer")"
+    appVer="${selectedVer// /-}"
     if [ "$rootStatus" == "root" ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == "false" ]; then
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
@@ -571,25 +571,17 @@ patchApp() {
 }
 
 checkMicrogPatch() {
-    if [[ "$pkgName" != *"youtube"* ]]; then
-        return 0
-    fi
-    microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" --argjson patchesJson "$patchesJson" '$patchesJson | (map(.name)[] | match(".*microg.*").string) as $microgPatch | .[] | select(.name == $microgPatch) | .compatiblePackages | if ((map(.name) | index($pkgName)) != null) then $microgPatch else empty end')
-    if [ "$microgPatch" == "" ]; then
-        return 0
-    fi
+    [[ "$pkgName" != *"youtube"* ]] && return 0
+    microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | if (.name | test(".*microg.*")) then if (.compatiblePackages | (map(.name) | index($pkgName)) != null) then .name else empty end else empty end)')
+    [ "$microgPatch" == "" ] && return 0
     microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch "$microgPatch" '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
     if [ "$microgStatus" != "null" ] && [ "$rootStatus" == "root" ]; then
-        if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
-            return 0
-        else
+        if ! "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included \"$microgPatch\" patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
             jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= del(.[(. | index($microgPatch))])]' >"$storagePath/$source-patches.json"
             return 0
         fi
     elif [ "$microgStatus" == "null" ] && [ "$rootStatus" == "nonRoot" ]; then
-        if "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included microg-support patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1; then
-            return 0
-        else
+        if ! "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included \"$microgPatch\" patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1; then
             jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= . + [$microgPatch]]' >"$storagePath/$source-patches.json"
             return 0
         fi

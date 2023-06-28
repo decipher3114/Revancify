@@ -27,6 +27,7 @@ jq -r -n --arg appName "$appName-"\
         [
             $ARGS.positional[] |
             sub(" *[-, ] *"; "-"; "g") |
+            sub(":"; "") |
             sub($appName; "")
         ] |
         . |= . + $supportedVers |
