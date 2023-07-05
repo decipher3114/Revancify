@@ -1,5 +1,13 @@
 #!/usr/bin/bash
 
+servers=("google.com" "raw.githubusercontent.com")
+
+for server in "${servers[@]}"; do
+    if ! ping -c 1 -W 3 "$server"&> /dev/null; then
+        echo -e "\e[1;31m$server is not reachable with your current network.\nChange your network configuration.\e[0m"
+    fi
+done
+
 if [ -z "$TERMUX_VERSION" ]; then
     echo -e "\e[1;31mTermux not detected !!\e[0m\n\e[1;31mInstall aborted !!\e[0m"
     exit 1
