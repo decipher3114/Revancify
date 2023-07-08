@@ -21,7 +21,7 @@ setEnv() {
 }
 
 initialize() {
-    internalStorage="$HOME/storage/shared"
+    internalStorage="/storage/emulated/0"
     storagePath="$internalStorage/Revancify"
     [ ! -d "$storagePath" ] && mkdir -p "$storagePath"
     [ ! -d apps ] && mkdir -p apps
@@ -339,7 +339,7 @@ getAppVer() {
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$source" "$repoDir" "$selectedVer" "$storagePath")
+        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$source" "$selectedVer" "$storagePath")
     fi
     versionSelector || return 1
 }
@@ -428,7 +428,7 @@ fetchCustomApk() {
     selectedVer="" installedVer=""
     selectFile || return 1
     "${header[@]}" --infobox "Please Wait !!\nExtracting data from \"$(basename "$newPath")\"" 12 45
-    if ! aaptData=$("$repoDir/binaries/aapt2_$arch" dump badging "$newPath"); then
+    if ! aaptData=$(./aapt2 dump badging "$newPath"); then
         "${header[@]}" --msgbox "The apkfile you selected is not an valid app. Download the apk again and retry." 12 45
         return 1
     fi
@@ -504,7 +504,7 @@ fetchApk() {
 
 downloadApp() {
     internet || return 1
-    appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" "$repoDir" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
+    appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
     appSize="$(curl -sLI "$appUrl" -A "$userAgent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r')"
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
@@ -560,7 +560,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + .) else empty end')
-    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary "$repoDir/binaries/aapt2_$arch" --options "$storagePath/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --experimental --exclusive 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nVariant: $rootStatus\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1

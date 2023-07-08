@@ -2,20 +2,17 @@
 
 UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 
-arch=$(getprop ro.product.cpu.abi)
 appName="$1"
 apkmirrorAppName="$2"
 patchesSource="$3"
-path="$4"
-pup="$path/binaries/pup_$arch"
-currentVersion="$5"
-storagePath="$6"
+currentVersion="$4"
+storagePath="$5"
 
 page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "https://www.apkmirror.com/uploads/?appcategory=$apkmirrorAppName" 2>&1)
 
 [ "$page1" == "" ] && echo error && exit 1
 
-readarray -t versions < <("$pup" -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$page1")
+readarray -t versions < <(./pup -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$page1")
 
 supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '[.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions[] | sub(" *[-, ] *"; "-"; "g")]' "$storagePath/$patchesSource-patches.json")
 

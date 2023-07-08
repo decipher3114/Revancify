@@ -91,7 +91,7 @@ source "$DATA/.envVars" > /dev/null 2>&1
 export DIALOGRC="$path/configs/.dialogrc$theme"
 
 checkdependencies() {
-    if bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
+    if [ -f "$DATA/aapt2" ] && [ -f "$DATA/pup" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
         return 0
     else
         if ping -c 1 google.com >/dev/null 2>&1; then
@@ -107,6 +107,7 @@ checkdependencies() {
 installdependencies() {
     clear
     echo "Installing dependencies..."
+    arch=$(getprop ro.product.cpu.abi)
     cp "$path/revancify" "$BIN/revancify"
     sleep 1
     [ ! -d "$HOME/storage" ] && termux-setup-storage
@@ -114,6 +115,8 @@ installdependencies() {
     pkg install openjdk-17 wget ncurses-utils dialog jq -y -o Dpkg::Options::="--force-confnew" || return 1
     git config --global pull.rebase true
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
+    [ ! -f "$DATA/aapt2" ] && wget "https://github.com/decipher3114/termux-aapt/releases/download/v0.1/aapt2_$arch" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
+    [ ! -f "$DATA/pup" ] && wget "https://github.com/decipher3114/pup/releases/download/v0.1/pup_$arch" -O "$DATA/pup" && chmod +x "$DATA/pup"
     echo "Dependencies installed successfully."
     return 0
 }
@@ -130,7 +133,7 @@ checkrevancify() {
         case "$choice" in
         y | Y)
             rm -rf "$path"
-            git clone https://github.com/decipher3114/Revancify.git && revancify && exit
+            git clone --depth=1 https://github.com/decipher3114/Revancify.git && revancify && exit
             ;;
         n | N)
             echo "Removing revancify completely !!"
