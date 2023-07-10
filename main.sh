@@ -111,23 +111,23 @@ getResources() {
         "${header[@]}" --msgbox "Resources are already downloaded !!\n\nPatches are successfully synced." 12 45
         return 1
     fi
-    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || rm "$patchesSource"-patches-*.jar &> /dev/null && rm "$patchesSource"-patches-*.json &> /dev/null && patchesAvailableSize=0
-    [ -f "$cliSource-cli-$cliLatest.jar" ] || rm "$cliSource"-cli-*.jar &> /dev/null && cliAvailableSize=0
-    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || rm "$integrationsSource"-integrations-*.apk &> /dev/null && integrationsAvailableSize=0
+    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || { rm "$patchesSource"-patches-*.jar &> /dev/null && rm "$patchesSource"-patches-*.json &> /dev/null && patchesAvailableSize=0 ;}
+    [ -f "$cliSource-cli-$cliLatest.jar" ] || { rm "$cliSource"-cli-*.jar &> /dev/null && cliAvailableSize=0 ;}
+    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || { rm "$integrationsSource"-integrations-*.apk &> /dev/null && integrationsAvailableSize=0 ;}
     [ "$cliSize" != "$cliAvailableSize" ] &&
-        wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 $(($(("$cliAvailableSize" * 100)) / "$cliSize")) && tput civis
+        wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 "$(($((cliAvailableSize * 100)) / cliSize))" && tput civis
 
     [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar &> /dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
 
     [ "$patchesSize" != "$patchesAvailableSize" ] &&
-        wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 $(($(("$patchesAvailableSize" * 100 / "$patchesSize")))) && tput civis && patchesUpdated=true
+        wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 "$(($((patchesAvailableSize * 100 / patchesSize))))" && tput civis && patchesUpdated=true
 
     wget -q -c "$jsonUrl" -O "$patchesSource"-patches-"$patchesLatest".json --user-agent="$userAgent"
 
     [ "$patchesSize" != "$(ls "$patchesSource"-patches-*.jar &> /dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
 
     [ "$integrationsSize" != "$integrationsAvailableSize" ] &&
-        wget -q -c "$integrationsUrl" -O "$integrationsSource"-integrations-"$integrationsLatest".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Integrations\nVersion : $integrationsLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$integrationsSize")\n\nDownloading..." -1 -1 $(($(("$integrationsAvailableSize" * 100 / "$integrationsSize")))) && tput civis
+        wget -q -c "$integrationsUrl" -O "$integrationsSource"-integrations-"$integrationsLatest".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $sourceName\nResource: Integrations\nVersion : $integrationsLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$integrationsSize")\n\nDownloading..." -1 -1 "$(($((integrationsAvailableSize * 100 / integrationsSize))))" && tput civis
 
     [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk &> /dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 45 && return 1
 
