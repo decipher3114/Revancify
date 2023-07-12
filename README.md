@@ -22,7 +22,8 @@
 
 # Guide
 
-### [Video Guide](https://youtu.be/3e4OJ88I2pA)
+[![VideoGuide](https://img.shields.io/badge/Video_Guide_(Telegram_Channel)-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancify/422)
+
 
 ## Installation
 1. Open Termux.  
