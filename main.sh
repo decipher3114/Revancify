@@ -150,9 +150,9 @@ changeSource() {
         source="$selectedSource"
         # shellcheck source=/dev/null
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
-        checkResources || return 1
         setEnv source "$selectedSource" update "$envFile"
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
+        checkResources || return 1
         refreshJson || return 1
     fi
 }
