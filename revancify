@@ -115,8 +115,8 @@ installdependencies() {
     pkg install openjdk-17 wget ncurses-utils dialog jq -y -o Dpkg::Options::="--force-confnew" || return 1
     git config --global pull.rebase true
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
-    [ ! -f "$DATA/aapt2" ] && wget "https://github.com/decipher3114/termux-aapt/releases/download/v0.1/aapt2_$arch" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
-    [ ! -f "$DATA/pup" ] && wget "https://github.com/decipher3114/pup/releases/download/v0.1/pup_$arch" -O "$DATA/pup" && chmod +x "$DATA/pup"
+    [ ! -f "$DATA/aapt2" ] && wget "https://github.com/decipher3114/binaries/releases/download/v0.1/aapt2_$arch" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
+    [ ! -f "$DATA/pup" ] && wget "https://github.com/decipher3114/binaries/releases/download/v0.1/pup_$arch" -O "$DATA/pup" && chmod +x "$DATA/pup"
     echo "Dependencies installed successfully."
     return 0
 }

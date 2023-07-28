@@ -50,8 +50,8 @@
         {
             "cli":
             {
-                "org": "inotia00",
-                "repo": "revanced-cli"
+                "org": "kitadai31",
+                "repo": "rvcli"
             },
             "patches":
             {
