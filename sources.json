@@ -43,6 +43,28 @@
             }
         }
     },
+    "YT-Advanced": 
+    {
+        "projectName": "ReX",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "YT-Advanced",
+                "repo": "ReX-patches"
+            },
+            "integrations":
+            {
+                "org": "YT-Advanced",
+                "repo": "ReX-integrations"
+            }
+        }
+    },
     "kitadai31": 
     {
         "projectName": "RVX(Android6-7)",

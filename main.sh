@@ -562,7 +562,7 @@ patchApp() {
 
 checkMicrogPatch() {
     [[ "$pkgName" != *"youtube"* ]] && return 0
-    microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | if (.name | test(".*microg.*")) then if (.compatiblePackages | (map(.name) | index($pkgName)) != null) then .name else empty end else empty end)')
+    microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | if (.name | test(".*Microg.*")) then if (.compatiblePackages | (map(.name) | index($pkgName)) != null) then .name else empty end else empty end)')
     [ "$microgPatch" == "" ] && return 0
     microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch "$microgPatch" '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
     if [ "$microgStatus" != "null" ] && [ "$rootStatus" == "root" ]; then
