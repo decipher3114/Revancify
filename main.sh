@@ -560,24 +560,6 @@ patchApp() {
     fi
 }
 
-checkMicrogPatch() {
-    [[ "$pkgName" != *"youtube"* ]] && return 0
-    microgPatch=$(jq -r -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | if (.name | test(".*Microg.*")) then if (.compatiblePackages | (map(.name) | index($pkgName)) != null) then .name else empty end else empty end)')
-    [ "$microgPatch" == "" ] && return 0
-    microgStatus=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" --arg microgPatch "$microgPatch" '$includedPatches[] | select(.pkgName == $pkgName) | .includedPatches | index($microgPatch)')
-    if [ "$microgStatus" != "null" ] && [ "$rootStatus" == "root" ]; then
-        if ! "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Exclude" --yesno "You have a rooted device and you have included \"$microgPatch\" patch. This may result in $appName app crash.\n\n\nDo you want to exclude it or continue?" -1 -1; then
-            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= del(.[(. | index($microgPatch))])]' >"$storagePath/$source-patches.json"
-            return 0
-        fi
-    elif [ "$microgStatus" == "null" ] && [ "$rootStatus" == "nonRoot" ]; then
-        if ! "${header[@]}" --begin 2 0 --title '| MicroG warning |' --no-items --defaultno --yes-label "Continue" --no-label "Include" --yesno "You have a non-rooted device and you have not included \"$microgPatch\" patch. This may result in $appName app crash.\n\n\nDo you want to include it or continue?" -1 -1; then
-            jq -n -r --arg microgPatch "$microgPatch" --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '[$includedPatches[] | (select(.pkgName == $pkgName) | .includedPatches) |= . + [$microgPatch]]' >"$storagePath/$source-patches.json"
-            return 0
-        fi
-    fi
-}
-
 deleteComponents() {
     while true; do
         delComponentPrompt=$("${header[@]}" --begin 2 0 --title '| Delete Components Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 0 1 "Tools" 2 "Apps" 3 "Patch Options" 2>&1 >/dev/tty) || break
@@ -631,7 +613,6 @@ buildApk() {
     if [ "$appType" == "downloaded" ] && [ "$patchMenuBeforePatching" == "true" ]; then
         selectPatches Proceed
     fi
-    checkMicrogPatch
     patchApp || return 1
     "${rootStatus}Install"
 }
