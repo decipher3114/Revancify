@@ -3,8 +3,10 @@
 HOME=/data/data/com.termux/files/home
 BIN=/data/data/com.termux/files/usr/bin
 
-path="$HOME/Revancify"
-cp "$path/revancify" "$BIN/revancify" >/dev/null 2>&1
+repo="$HOME/Revancify"
+cp "$repo/revancify" "$BIN/revancify" >/dev/null 2>&1
+root=default
+online="Checking..."
 
 help() {
     if [ "$1" == "1" ]; then
@@ -16,17 +18,15 @@ help() {
             fi
         done)
         IFS=","
-        echo -e "\e[1;31mInvalid Argument(s) Passed: ${invalidArgs[*]}\n\e[0m"
+        echo -e "\e[1;31mInvalid Argument(s) Passed: ${invalidArgs[*]}\n"
     fi
-    echo -e "\e[1;34mrevancify\n\e[0m
-\e[1;33mUsage:\e[0m \e[1;32mrevancify [OPTION]\n\e[0m
-\e[1;33mOptions:\e[0m
-\e[1;33m-n, --no-root     \e[1;34mRun without SU permissions\e[0m
-\e[1;33m-o, --offline     \e[1;34mRun without updating revancify\e[0m
-\e[1;33m-r, --reinstall   \e[1;34mReinstall revancify\e[0m
-\e[1;33m-h, --help        \e[1;34mPrints help statement\e[0m
-
-\e[1;35mGithub repo: https://github.com/decipher3114/Revancify\nTelegram channel: https://t.me/revancify\nTelegram support group: https://t.me/revancifychat\e[0m"
+    echo -e "revancify\n
+Usage: revancify [OPTION]\n
+Options:
+-n, --no-root     Run without SU permissions
+-o, --offline     Run without updating revancify
+-r, --reinstall   Reinstall revancify
+-h, --help        Prints help statement"
     exit "$1"
 }
 
@@ -42,12 +42,13 @@ do
                         help 0
                         ;;
     "-n" | "--no-root")
-                        flag="nonRoot"
+                        root=false
                         shift
                         ;;
     "-r" | "--reinstall")
                         if ping -c 1 google.com >/dev/null 2>&1; then
-                            cd "$path"/.. && rm -rf "$path" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && "$path/revancify" && exit
+                            rm -rf $DATA
+                            cd "$repo"/.. && rm -rf "$repo" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && "$repo/revancify" && exit
                         else
                             echo "No internet Connection !!"
                             exit 1
@@ -55,6 +56,7 @@ do
                         ;;
     "-o" | "--offline")
                         status="Offline [forced]"
+                        offline="true"
                         shift
                         ;;
     "--")
@@ -88,7 +90,7 @@ DATA="$HOME/revancify-data"
 # shellcheck source=/dev/null
 source "$DATA/.envVars" > /dev/null 2>&1
 [ "${lightTheme:-false}" == "true" ] && theme=Light || theme=Dark
-export DIALOGRC="$path/configs/.dialogrc$theme"
+export DIALOGRC="$repo/configs/.dialogrc$theme"
 
 checkdependencies() {
     if [ -f "$DATA/aapt2" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
@@ -97,7 +99,7 @@ checkdependencies() {
         if ping -c 1 google.com >/dev/null 2>&1; then
             installdependencies || (echo "Dependencies not installed !!" && exit 1)
         else
-            cp "$path/revancify" "$BIN/revancify"
+            cp "$repo/revancify" "$BIN/revancify"
             echo -e "Dependencies not installed !!\nRun again with internet connection."
             exit 1
         fi
@@ -108,7 +110,7 @@ installdependencies() {
     clear
     echo "Installing dependencies..."
     arch=$(getprop ro.product.cpu.abi)
-    cp "$path/revancify" "$BIN/revancify"
+    cp "$repo/revancify" "$BIN/revancify"
     sleep 1
     [ ! -d "$HOME/storage" ] && termux-setup-storage
     pkg update -y -o Dpkg::Options::="--force-confnew" || return 1
@@ -121,18 +123,18 @@ installdependencies() {
 }
 
 checkrevancify() {
-    if [ -d "$path" ]; then
-        cd "$path" >/dev/null 2>&1 || true
+    if [ -d "$repo" ]; then
+        cd "$repo" >/dev/null 2>&1 || true
         rm -rf ./*cache*
         return 0
     else
-        echo -e "\e[1;31mRevancify dir is not found !!\e[0m"
-        echo -e "\e[1;31mDo you want to reinstall Revancify?\e[0m"
+        echo -e "\e[1;31mRevancify dir is not found !!"
+        echo -e "\e[1;31mDo you want to reinstall Revancify?"
         read -r -p "[Y/N]: " choice
         case "$choice" in
         y | Y)
-            rm -rf "$path"
-            git clone --depth=1 https://github.com/decipher3114/Revancify.git && revancify && exit
+            rm -rf "$repo"
+            git clone --depth=1 https://github.com/decipher3114/Revancify.git && $repo/revancify && exit
             ;;
         n | N)
             echo "Removing revancify completely !!"
@@ -152,21 +154,19 @@ checkrevancify() {
 checkdependencies
 checkrevancify
 tput civis
-dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nStatus       : Checking..." 10 42
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nOnline       : $online" 10 42
 
-if ping -c 1 google.com >/dev/null 2>&1; then
-    status=${status:-Online}
-else
-    status=Offline
+ping -c 1 google.com >/dev/null 2>&1 && online=true || online=false
+
+if [ "$online" == true ]; then
+    if ! git pull >/dev/null 2>&1;then
+        git fetch --all >/dev/null 2>&1 &&\
+        git reset --hard "@{u}" >/dev/null 2>&1
+    fi
 fi
-if [ "$status" == "Online" ]; then
-    git pull >/dev/null 2>&1 || (git fetch --all >/dev/null 2>&1 && git reset --hard "@{u}" >/dev/null 2>&1)
-    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus       : $status" 10 42
-else
-    dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nStatus       : $status" 10 42
-fi
+dialog --keep-window --no-shadow --keep-window --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nOnline       : $online" 10 42
 cd "$DATA" >/dev/null 2>&1 || true
-bash "$path/main.sh" "$flag"
+bash "$repo/main.sh" "$root" "$online"
 exitstatus=$?
 clear
 cd "$HOME" || :
