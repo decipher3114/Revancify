@@ -361,7 +361,11 @@ checkPatched() {
             rm "apps/$appName-$appVer/base-$sourceName.apk"
             ;;
         1 )
-            [ "$root" == true ] && rootInstall || nonRootInstall
+            if [ "$root" == true ]; then
+                rootInstall
+            else
+                nonRootInstall
+            fi
             return 1
             ;;
         2 )
@@ -617,7 +621,11 @@ buildApk() {
         selectPatches Proceed
     fi
     patchApp || return 1
-    [ "$root" == true ] && rootInstall || nonRootInstall
+    if [ "$root" == true ]; then
+        rootInstall
+    else
+        nonRootInstall
+    fi
 }
 
 mainMenu() {
@@ -645,7 +653,11 @@ mainMenu() {
         editPatchOptions
         ;;
     6 )
-        [ "$root" == true ] && rootUninstall || downloadMicrog
+        if [ "$root" == true ]; then
+            rootUninstall
+        else
+            downloadMicrog
+        fi
         ;;
     7 )
         deleteComponents
