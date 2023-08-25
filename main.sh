@@ -257,16 +257,26 @@ editPatchOptions() {
     done
 }
 
-rootInstall() {
-    "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
-    if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
-        "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal-Storage/Revancify/install_log.txt\". Share the Install logs to developer." 12 45
-        return 1
+initInstall() {
+    if [ $root == true ];
+    then
+        "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
+        if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
+            "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal-Storage/Revancify/install_log.txt\". Share the Install logs to developer." 12 45
+            return 1
+        else
+            "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
+        fi
+        if [ "$launchAppAfterMount" == true ]; then
+            su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
+        fi
     else
-        "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
-    fi
-    if [ "$launchAppAfterMount" == true ]; then
-        su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
+        "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
+        [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
+        sleep 0.5
+        cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
+        termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
+        return 1
     fi
 }
 
@@ -284,15 +294,6 @@ rootUninstall() {
     fi
     "${header[@]}" --msgbox "Unmount Successful !!" 12 45
     sleep 1
-}
-
-nonRootInstall() {
-    "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
-    [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
-    sleep 0.5
-    cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
-    termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
-    return 1
 }
 
 refreshJson() {
@@ -361,11 +362,7 @@ checkPatched() {
             rm "apps/$appName-$appVer/base-$sourceName.apk"
             ;;
         1 )
-            if [ "$root" == true ]; then
-                rootInstall
-            else
-                nonRootInstall
-            fi
+            initInstall
             return 1
             ;;
         2 )
@@ -621,11 +618,7 @@ buildApk() {
         selectPatches Proceed
     fi
     patchApp || return 1
-    if [ "$root" == true ]; then
-        rootInstall
-    else
-        nonRootInstall
-    fi
+    initInstall
 }
 
 mainMenu() {
