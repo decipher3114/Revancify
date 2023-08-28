@@ -50,7 +50,7 @@
         {
             "cli":
             {
-                "org": "inotia00",
+                "org": "revanced",
                 "repo": "revanced-cli"
             },
             "patches":

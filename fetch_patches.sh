@@ -96,7 +96,7 @@ if [ "$2" == "online" ]; then
     generatedJson=$(
         jq -n --argjson generatedJson "$generatedJson" --argjson responseJson "$responseJson" '[
                 $generatedJson[] | .pkgName as $pkgName | (.appName = ($responseJson[$pkgName].appName)) | (.apkmirrorAppName = ($responseJson[$pkgName].apkmirrorAppName)) | (.developerName = ($responseJson[$pkgName].developerName))]'
-    )
+    2>/dev/null || { echo error && exit 1 ;})
 fi
 
 echo "$generatedJson" | jq '.' >"$storagePath/$source-patches.json"
