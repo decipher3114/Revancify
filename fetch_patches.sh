@@ -81,7 +81,7 @@ if [ "$2" == "online" ]; then
                 ({
                     "key": (.pname),
                     "value": {
-                        "appName": (.app.name | sub("\\s\\(.*\\)"; ""; "x") | sub("&amp;"; "") | sub("[^0-9a-zA-Z]+"; "-"; "sg")),
+                        "appName": (.app.name | sub("( -)|( &amp;)|:"; ""; "g") | sub("[()\\|]"; ""; "g") | sub(" *[-, ] *"; "-"; "g")),
                         "apkmirrorAppName": (.app.link | sub("-wear-os"; "") | match("(?<=\\/)(((?!\\/).)*)(?=\\/$)").string),
                         "developerName": (.app.link | match("(?<=apk\\/).*?(?=\\/)").string)
                     }
