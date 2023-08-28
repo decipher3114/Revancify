@@ -32,14 +32,14 @@ initialize() {
     [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
     userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 
-    forceUpdateCheckStatus="" riplibs="" lightTheme="" patchMenuBeforePatching="" launchAppAfterMount="" allowVersionDowngrade="" fetchPreRelease=""
-    setEnv forceUpdateCheckStatus false init "$envFile"
-    setEnv riplibs true init "$envFile"
-    setEnv lightTheme false init "$envFile"
-    setEnv patchMenuBeforePatching false init "$envFile"
-    setEnv launchAppAfterMount true init "$envFile"
-    setEnv allowVersionDowngrade false init "$envFile"
-    setEnv fetchPreRelease false init "$envFile"
+    AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterMount="" AllowVersionDowngrade="" FetchPreReleasedTools=""
+    setEnv AutocheckToolsUpdate false init "$envFile"
+    setEnv Riplibs true init "$envFile"
+    setEnv LightTheme false init "$envFile"
+    setEnv ShowConfirmPatchesMenu false init "$envFile"
+    setEnv LaunchAppAfterMount true init "$envFile"
+    setEnv AllowVersionDowngrade false init "$envFile"
+    setEnv FetchPreReleasedTools false init "$envFile"
     # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
@@ -49,7 +49,7 @@ initialize() {
     fi
     [ "$root" == true ] && menuEntry="Uninstall Patched app" || menuEntry="Download Microg"
 
-    [ "$lightTheme" == true ] && theme=Light || theme=Dark
+    [ "$LightTheme" == true ] && theme=Light || theme=Dark
     export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 
 
@@ -83,7 +83,7 @@ fetchToolsAPI() {
     readarray -t tools < <(jq -r --arg source "$source" '.[$source].sources | keys_unsorted[]' "$repoDir"/sources.json)
     readarray -t links < <(jq -r --arg source "$source" '.[$source].sources[] | .org+"/"+.repo' "$repoDir"/sources.json)
     : >".${source}-data"
-    [ "$fetchPreRelease" == false ] && stableRelease="/latest" || stableRelease=""
+    [ "$FetchPreReleasedTools" == false ] && stableRelease="/latest" || stableRelease=""
     i=0 && for tool in "${tools[@]}"; do
         curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases$stableRelease" | jq -r --arg tool "$tool" 'if type == "array" then .[0] else . end | $tool+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $tool+"Url="+.browser_download_url, $tool+"Size="+(.size|tostring) end)' >>".${source}-data"
         i=$(("$i" + 1))
@@ -275,7 +275,7 @@ initInstall() {
         else
             "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
         fi
-        if [ "$launchAppAfterMount" == true ]; then
+        if [ "$LaunchAppAfterMount" == true ]; then
             su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
         fi
     else
@@ -337,7 +337,7 @@ checkTools() {
 }
 
 getAppVer() {
-    if [ "$root" == true ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == false ]; then
+    if [ "$root" == true ] && su -c "pm list packages | grep -q $pkgName" && [ "$AllowVersionDowngrade" == false ]; then
         selectedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         appVer="${selectedVer// /-}"
     fi
@@ -447,7 +447,7 @@ fetchCustomApk() {
     appName="$(sed 's/\./-/g;s/ /-/g' <<<"$fileAppName")"
     selectedVer=$(grep "package:" <<<"$aaptData" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
     appVer="${selectedVer// /-}"
-    if [ "$root" == true ] && su -c "pm list packages | grep -q $pkgName" && [ "$allowVersionDowngrade" == false ]; then
+    if [ "$root" == true ] && su -c "pm list packages | grep -q $pkgName" && [ "$AllowVersionDowngrade" == false ]; then
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
             compareArray=("$selectedVer" "$installedVer")
@@ -549,7 +549,7 @@ downloadMicrog() {
 }
 
 patchApp() {
-    if [ "$cliSource" == "inotia00" ] && [ "$riplibs" == true ]; then
+    if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
         riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
         riplibArgs="${riplibArgs//--rip-lib=$arch /}"
     fi
@@ -606,8 +606,8 @@ deleteComponents() {
 }
 
 preferences() {
-    [ "$cliSource" == "inotia00" ] && riplibsPref=("riplibs" "$riplibs" "Removes extra libs from app") || riplibsPref=()
-    prefsArray=("lightTheme" "$lightTheme" "Use Light theme for Revancify" "${riplibsPref[@]}" "forceUpdateCheckStatus" "$forceUpdateCheckStatus" "Check for tools update at startup" "patchMenuBeforePatching" "$patchMenuBeforePatching" "Shows Patches Menu before Patching starts" "launchAppAfterMount" "$launchAppAfterMount" "[Root] Launches app automatically after mount" allowVersionDowngrade "$allowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "fetchPreRelease" "$fetchPreRelease" "Fetches the pre-release version of tools")
+    [ "$cliSource" == "inotia00" ] && RiplibsPref=("Riplibs" "$Riplibs" "Removes extra libs from app") || RiplibsPref=()
+    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterMount" "$LaunchAppAfterMount" "[Root] Launches app automatically after mount" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
@@ -616,7 +616,7 @@ preferences() {
     done
     # shellcheck source=/dev/null
     source "$envFile"
-    [ "$lightTheme" == true ] && theme=Light || theme=Dark
+    [ "$LightTheme" == true ] && theme=Light || theme=Dark
     export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 }
 
@@ -627,7 +627,7 @@ buildApk() {
         fetchCustomApk || return 1
         selectPatches Proceed
     fi
-    if [ "$appType" == "downloaded" ] && [ "$patchMenuBeforePatching" == true ]; then
+    if [ "$appType" == "downloaded" ] && [ "$ShowConfirmPatchesMenu" == true ]; then
         selectPatches Proceed
     fi
     patchApp || return 1
@@ -682,7 +682,7 @@ fi
 
 initialize
 
-[ "$forceUpdateCheckStatus" == true ] && getTools
+[ "$AutocheckToolsUpdate" == true ] && getTools
 
 while true; do
     unset appVerList appVer appName pkgName
