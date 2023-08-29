@@ -133,7 +133,7 @@ getTools() {
 
     if [ "$patchesUpdated" == true ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
-        if [ "$cliSource" == "revanced" ]; then
+        if [ "$cliSource" == "rahulkhatri137" ]; then
             java -jar "$cliSource"-cli-*.jar -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
         else
             java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
@@ -237,7 +237,7 @@ patchSaver() {
 editPatchOptions() {
     if [ ! -f "$storagePath/$source-options.json" ]; then
         "${header[@]}" --infobox "Please Wait !!\nGenerating options file..." 12 45
-        if [ "$cliSource" == "revanced" ]; then
+        if [ "$cliSource" == "rahulkhatri137" ]; then
             java -jar "$cliSource"-cli-*.jar -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
         else
             java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
@@ -561,7 +561,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + (. | ascii_downcase | sub(" "; "-"; "g"))) else empty end')
-    if [ "$cliSource" == "revanced" ]; then
+    if [ "$cliSource" == "rahulkhatri137" ]; then
         cliPatchArgs=(patch -pf -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk")
     else
         cliPatchArgs=(-b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --experimental --exclusive)
