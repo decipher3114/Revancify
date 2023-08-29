@@ -38,7 +38,7 @@ jq -r -n --arg appName "$appName-"\
             .[0:($index + 1)][]
         end | . as $version |
         if (($supportedVers | index($version)) != null) then
-            $version, "[SUPPORTED]"
+            $version, "[RECOMMENDED]"
         elif ($version | test("beta|Beta|BETA")) then
             $version | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[BETA]"
         elif ($version | test("alpha|Alpha|ALPHA")) then
@@ -52,7 +52,7 @@ jq -r -n --arg appName "$appName-"\
     else
         .
     end |
-     if ((. | index("[SUPPORTED]")) != null) then
+     if ((. | index("[RECOMMENDED]")) != null) then
         . |= ["Auto Select", "[RECOMMENDED]"] + .
     else
         .

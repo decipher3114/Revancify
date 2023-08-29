@@ -319,7 +319,7 @@ refreshJson() {
     fi
     patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
-    appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | to_entries | map(select(.value.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.value.appName), "pkgName" :(.value.value.pkgName), "developerName" :(.value.value.developerName), "apkmirrorAppName" :(.value.value.apkmirrorAppName)})')
+    appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | map(select(.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.appName), "pkgName" :(.value.pkgName), "developerName" :(.value.developerName), "apkmirrorAppName" :(.value.apkmirrorAppName)})')
 }
 
 checkTools() {
