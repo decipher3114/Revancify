@@ -562,7 +562,7 @@ patchApp() {
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + (. | ascii_downcase | sub(" "; "-"; "g"))) else empty end')
     if [ "$cliSource" == "rahulkhatri137" ]; then
-        cliPatchArgs=(patch -pf -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk")
+        cliPatchArgs=(patch -pf -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" "apps/$appName-$appVer/base.apk" --force)
     else
         cliPatchArgs=(-b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --experimental --exclusive)
     fi
