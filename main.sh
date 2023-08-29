@@ -133,16 +133,11 @@ getTools() {
 
     if [ "$patchesUpdated" == true ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
-        if [ "$cliSource" == "revanced" ]; then
-            java -jar "$cliSource"-cli-*.jar -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
-        else
-            java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+            "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
+            return 1
         fi
-    fi
-
-    if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
-        "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
-        return 1
+        generatePatchOptions
     fi
 
     refreshJson || return 1
@@ -236,12 +231,7 @@ patchSaver() {
 
 editPatchOptions() {
     if [ ! -f "$storagePath/$source-options.json" ]; then
-        "${header[@]}" --infobox "Please Wait !!\nGenerating options file..." 12 45
-        if [ "$cliSource" == "revanced" ]; then
-            java -jar "$cliSource"-cli-*.jar -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
-        else
-            java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
-        fi
+        generatePatchOptions
     fi
     currentPatch="none"
     optionsJson=$(jq '.' "$storagePath/$source-options.json")
@@ -263,6 +253,18 @@ editPatchOptions() {
             tput civis
         fi
     done
+}
+
+generatePatchOptions() {
+    if [ "$cliSource" == "revanced" ]; then
+        if [ ! -f "$storagePath/$source-options.json" ]; then
+            java -jar "$cliSource"-cli-*.jar options -o -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
+        else
+            java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
+        fi
+    else
+        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
+    fi
 }
 
 initInstall() {
