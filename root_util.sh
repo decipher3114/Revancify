@@ -57,7 +57,7 @@ cat <<EOF >"/data/adb/service.d/mount_revanced_$pkgName.sh"
 #!/system/bin/sh
 while [ "\$(getprop sys.boot_completed | tr -d '\r')" != "1" ]; do sleep 5; done
 
-base_path="/data/local/tmp/revancify/$pkgName.apk"
+base_path="$revancedApp"
 stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
 am force-stop "$pkgName"
 chcon u:object_r:apk_data_file:s0 "\$base_path"
