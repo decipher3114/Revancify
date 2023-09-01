@@ -52,15 +52,16 @@ initialize() {
     [ "$LightTheme" == true ] && theme=Light || theme=Dark
     export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 
-
-    cliSource="" patchesSource="" integrationsSource="" patchesLatest="" cliLatest="" integrationsLatest="" patchesSize="" cliSize="" integrationsSize="" patchesUrl="" jsonUrl="" cliUrl="" integrationsUrl=""
-
     # shellcheck source=/dev/null
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
 
-    if [ "$2" != false ]; then
-        checkTools || terminate 1
+    if [ "$online" != false ]; then
+        if [ "$AutocheckToolsUpdate" == true ]; then
+            getTools || terminate 1
+        else
+            checkTools || terminate 1
+        fi
     fi
 
     if [ -f "$storagePath/$source-patches.json" ]; then
@@ -682,9 +683,9 @@ else
     root=false
 fi
 
-initialize
+online="$2"
 
-[ "$AutocheckToolsUpdate" == true ] && getTools
+initialize
 
 while true; do
     unset appVerList appVer appName pkgName

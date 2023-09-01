@@ -7,6 +7,12 @@ repo="$HOME/Revancify"
 cp "$repo/revancify" "$BIN/revancify" >/dev/null 2>&1
 root=default
 online="Checking..."
+DATA="$HOME/revancify-data"
+[ ! -d $DATA ] && mkdir -p "$DATA"
+# shellcheck source=/dev/null
+source "$DATA/config.cfg" > /dev/null 2>&1
+[ "${LightTheme:-false}" == "true" ] && theme=Light || theme=Dark
+export DIALOGRC="$repo/configs/.dialogrc$theme"
 
 help() {
     if [ "$1" == "1" ]; then
@@ -83,13 +89,6 @@ terminate() {
     exit 1
 }
 trap terminate SIGTERM SIGINT SIGABRT
-
-DATA="$HOME/revancify-data"
-[ ! -d $DATA ] && mkdir -p "$DATA"
-# shellcheck source=/dev/null
-source "$DATA/.envVars" > /dev/null 2>&1
-[ "${lightTheme:-false}" == "true" ] && theme=Light || theme=Dark
-export DIALOGRC="$repo/configs/.dialogrc$theme"
 
 checkdependencies() {
     if [ -f "$DATA/aapt2" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
