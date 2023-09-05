@@ -257,14 +257,10 @@ editPatchOptions() {
 }
 
 generatePatchOptions() {
-    if [ "$cliSource" == "revanced" ]; then
-        if [ ! -f "$storagePath/$source-options.json" ]; then
-            java -jar "$cliSource"-cli-*.jar options -o -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
-        else
-            java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
-        fi
+    if [ ! -f "$storagePath/$source-options.json" ]; then
+        java -jar "$cliSource"-cli-*.jar options -o -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
     else
-        java -jar "$cliSource"-cli-*.jar -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a noinput.apk -o nooutput.apk --options "$storagePath/$source-options.json" &> /dev/null
+        java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
     fi
 }
 
@@ -555,6 +551,8 @@ patchApp() {
     if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
         riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
         riplibArgs="${riplibArgs//--rip-lib=$arch /}"
+    else
+        riplibArgs=""
     fi
     if [ -f "$storagePath/custom.keystore" ] > /dev/null 2>&1
     then
@@ -564,12 +562,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     patchesArg=$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i " + (. | ascii_downcase | sub(" "; "-"; "g"))) else empty end')
-    if [ "$cliSource" == "revanced" ]; then
-        cliPatchArgs=(patch -pf -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk")
-    else
-        cliPatchArgs=(-b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -c -a "apps/$appName-$appVer/base.apk" -o "apps/$appName-$appVer/base-$sourceName.apk" $patchesArg $riplibArgs --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --experimental --exclusive)
-    fi
-    java -jar "$cliSource"-cli-*.jar ${cliPatchArgs[@]} 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -pf -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $riplibArgs $patchesArg --keystore "$keystore" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
