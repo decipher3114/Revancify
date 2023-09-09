@@ -15,8 +15,9 @@ allPackages=$(echo "$patchesJson" | jq '[.[].compatiblePackages[].name]')
 
 pkgs=$(jq -n --argjson allPackages "$allPackages" '[$allPackages | to_entries[] | .value as $pkg | map($allPackages | to_entries[] | select(.value == $pkg).key)[0] as $index | if $index == .key then $pkg else empty end]')
 
-generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches "$includedPatches" --argjson patchesJson "$patchesJson" '
+generatedJson=$(jq --null-input --argjson pkgs "$pkgs" --argjson includedPatches "$includedPatches" --slurpfile patchesFile "$source"-patches-*.json '
 [
+    $patchesFile[] | . as $patchesJson |
     $pkgs[] | . as $pkgName | 
     {
         "pkgName": .,

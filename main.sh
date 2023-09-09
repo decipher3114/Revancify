@@ -190,9 +190,9 @@ selectPatches() {
     while true; do
         readarray -t patchesInfo < <(
             jq -n -r --arg pkgName "$pkgName" \
-                --argjson patchesJson "$patchesJson" \
+                --slurpfile patchesFile "$patchesSource"-patches-*.json \
                 --argjson includedPatches "$includedPatches" \
-                '$patchesJson[] | .name as $patchName | .description as $desc | .compatiblePackages | 
+                '$patchesFile[][] | .name as $patchName | .description as $desc | .compatiblePackages | 
             if (((map(.name) | index($pkgName)) != null) or (length == 0)) then
                 (if ((($includedPatches | length) != 0) and (($includedPatches[] | select(.pkgName == $pkgName).includedPatches | index($patchName)) != null)) then
                     $patchName, "on", $desc
@@ -219,13 +219,13 @@ patchSaver() {
         ;;
     1 )
         if [ "$toogleName" == "Include All" ]; then
-            includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesJson[] | .name as $patchName | .compatiblePackages | if (((map(.name) | index($pkgName)) != null) or (length == 0)) then  $patchName else empty end]]')
+            includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .compatiblePackages | if (((map(.name) | index($pkgName)) != null) or (length == 0)) then  $patchName else empty end]]')
         elif [ "$toogleName" == "Exclude All" ]; then
             includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = []]')
         fi
         ;;
     2 )
-        includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson patchesJson "$patchesJson" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesJson[] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end]]')
+        includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end]]')
         ;;
     esac
 }
@@ -316,7 +316,6 @@ refreshJson() {
             return 1
         fi
     fi
-    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | map(select(.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.appName), "pkgName" :(.value.pkgName), "developerName" :(.value.developerName), "apkmirrorAppName" :(.value.apkmirrorAppName)})')
 }
