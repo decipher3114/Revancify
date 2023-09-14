@@ -225,7 +225,7 @@ patchSaver() {
         fi
         ;;
     2 )
-        includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end]]')
+        includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end]]')
         ;;
     esac
 }
