@@ -192,16 +192,29 @@ selectPatches() {
             jq -n -r --arg pkgName "$pkgName" \
                 --slurpfile patchesFile "$patchesSource"-patches-*.json \
                 --argjson includedPatches "$includedPatches" \
-                '$patchesFile[][] | .name as $patchName | .description as $desc | .compatiblePackages | 
-            if (((map(.name) | index($pkgName)) != null) or (length == 0)) then
-                (if ((($includedPatches | length) != 0) and (($includedPatches[] | select(.pkgName == $pkgName).includedPatches | index($patchName)) != null)) then
-                    $patchName, "on", $desc
+                '$patchesFile[][] |
+                .name as $patchName |
+                .description as $desc |
+                .compatiblePackages |
+                if . != null then
+                    if (((map(.name) | index($pkgName)) != null) or (length == 0)) then
+                        (
+                            if ((($includedPatches | length) != 0) and (($includedPatches[] | select(.pkgName == $pkgName).includedPatches | index($patchName)) != null)) then
+                                $patchName, "on", $desc
+                            else
+                                $patchName, "off", $desc
+                            end
+                        )
+                    else 
+                        empty
+                    end
                 else
-                    $patchName, "off", $desc
-                end)
-            else 
-                empty
-            end'
+                    if ((($includedPatches | length) != 0) and (($includedPatches[] | select(.pkgName == $pkgName).includedPatches | index($patchName)) != null)) then
+                        $patchName, "on", $desc
+                    else
+                        $patchName, "off", $desc
+                    end
+                end'
         )
         grep -qoP "(?<=\s)off(?=\s)" <<< "${patchesInfo[@]}" && toogleName="Include All" || toogleName="Exclude All"
         choices=$("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --separate-output --ok-label "$1" --cancel-label "$toogleName" --help-button --help-label "Recommended" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch\nSource: $sourceName; AppName: $appName" $(($(tput lines) - 3)) -1 15 "${patchesInfo[@]}" 2>&1 >/dev/tty)
@@ -219,13 +232,50 @@ patchSaver() {
         ;;
     1 )
         if [ "$toogleName" == "Include All" ]; then
-            includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .compatiblePackages | if (((map(.name) | index($pkgName)) != null) or (length == 0)) then  $patchName else empty end]]')
+            includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '
+            [
+                $includedPatches[] |
+                select(.pkgName == $pkgName).includedPatches = [
+                    $patchesFile[][] |
+                    .name as $patchName |
+                    .compatiblePackages |
+                    if . != null then
+                        if (((map(.name) | index($pkgName)) != null) or (length == 0)) then
+                            $patchName
+                        else
+                            empty
+                        end
+                    else
+                        empty
+                    end
+                ]
+            ]'
+            )
         elif [ "$toogleName" == "Exclude All" ]; then
             includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = []]')
         fi
         ;;
     2 )
-        includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = [$patchesFile[][] | .name as $patchName | .excluded as $excluded | .compatiblePackages | if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and ($excluded == false)) then $patchName else empty end]]')
+        includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '
+        [
+            $includedPatches[] |
+            select(.pkgName == $pkgName).includedPatches = [
+                $patchesFile[][] |
+                .name as $patchName |
+                .use as $use |
+                .excluded as $excluded |
+                .compatiblePackages |
+                if . != null then
+                    if ((((map(.name) | index($pkgName)) != null) or (length == 0)) and (($use == true) or ($excluded == false))) then
+                        $patchName
+                    else
+                        empty
+                    end
+                else
+                    empty
+                end
+            ]
+        ]')
         ;;
     esac
 }
