@@ -537,7 +537,7 @@ fetchApk() {
             return 0
         fi
     else
-        rm -rf "apps/$appName"* &> /dev/null
+        rm -rf "$DATA/apps/$appName"* &> /dev/null
     fi
     downloadApp || return 1
 }
@@ -628,7 +628,7 @@ deleteComponents() {
             ;;
         2 )
             if "${header[@]}" --begin 2 0 --title '| Delete Apps |' --no-items --defaultno --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1; then
-                rm -rf "apps"/*
+                rm -rf "$DATA/apps"/*
                 "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 45
             fi
             ;;

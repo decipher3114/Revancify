@@ -123,7 +123,7 @@ installdependencies() {
 checkrevancify() {
     if [ -d "$repo" ]; then
         cd "$repo" >/dev/null 2>&1 || true
-        rm -rf ./*cache*
+        rm -rf "$repo"/*cache*
         return 0
     else
         echo -e "\e[1;31mRevancify dir is not found !!"
@@ -174,6 +174,6 @@ if [ $exitstatus -eq 0 ]; then
     echo "Script exited !!"
 else
     echo "Script terminated !!"
-    rm -rf -- *cache >/dev/null 2>&1
+    rm -rf -- "$repo"/*cache >/dev/null 2>&1
 fi
 tput cnorm
