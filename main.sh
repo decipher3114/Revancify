@@ -21,7 +21,7 @@ setEnv() {
 }
 
 initialize() {
-    internalStorage="/storage/emulated/0"
+    : "${internalStorage:=/storage/emulated/0}"
     storagePath="$internalStorage/Revancify"
     [ ! -d "$storagePath" ] && mkdir -p "$storagePath"
     [ ! -d apps ] && mkdir -p apps
