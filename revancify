@@ -91,14 +91,14 @@ terminate() {
 trap terminate SIGTERM SIGINT SIGABRT
 
 checkdependencies() {
-    if [ -f "$DATA/aapt2" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
+    if [ -f "$DATA/aapt2" ] && (for f in java wget tput dialog pup jq revancify; do [ -x "$BIN/$f" ] || exit 1; done) && [ -e "$HOME/storage" ]; then
         return 0
     else
         if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies || (echo "Dependencies not installed !!" && exit 1)
+            installdependencies || { echo "Dependencies not installed !!" && exit 1; }
         else
             cp "$repo/revancify" "$BIN/revancify"
-            echo -e "Dependencies not installed !!\nRun again with internet connection."
+            printf 'Dependencies not installed !!\nRun again with internet connection.'
             exit 1
         fi
     fi
