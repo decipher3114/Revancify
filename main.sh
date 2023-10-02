@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+[ -n "$ping_ok" ] || if ping -c 1 google.com &>/dev/null; then ping_ok=true; else ping_ok=false; fi
+
 terminate() {
     killall -9 java &> /dev/null
     killall -9 dialog &> /dev/null
@@ -71,7 +73,7 @@ initialize() {
 }
 
 internet() {
-    if ! ping -c 1 google.com &> /dev/null; then
+    if ! "$ping_ok"; then
         "${header[@]}" --msgbox "Oops! No Internet Connection available.\n\nConnect to Internet and try again later." 12 45
         return 1
     fi

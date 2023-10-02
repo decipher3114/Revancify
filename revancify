@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+if ping -c 1 google.com &>/dev/null; then ping_ok=true; else ping_ok=false; fi; export ping_ok
+
 HOME=/data/data/com.termux/files/home
 BIN=/data/data/com.termux/files/usr/bin
 
@@ -52,7 +54,7 @@ do
                         shift
                         ;;
     "-r" | "--reinstall")
-                        if ping -c 1 google.com >/dev/null 2>&1; then
+                        if "$ping_ok"; then
                             rm -rf $DATA
                             cd "$repo"/.. && rm -rf "$repo" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && "$repo/revancify" && exit
                         else
@@ -94,7 +96,7 @@ checkdependencies() {
     if [ -f "$DATA/aapt2" ] && (for f in java wget tput dialog pup jq revancify; do [ -x "$BIN/$f" ] || exit 1; done) && [ -e "$HOME/storage" ]; then
         return 0
     else
-        if ping -c 1 google.com >/dev/null 2>&1; then
+        if "$ping_ok"; then
             installdependencies || { echo "Dependencies not installed !!" && exit 1; }
         else
             cp "$repo/revancify" "$BIN/revancify"
@@ -155,7 +157,7 @@ tput civis
 dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nOnline       : $online" 10 42
 
 if [ "$online" != false ]; then
-    ping -c 1 google.com >/dev/null 2>&1 && online=true || online=false
+    "$ping_ok" && online=true || online=false
 fi
 
 if [ "$online" == true ]; then
