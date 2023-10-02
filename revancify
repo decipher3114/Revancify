@@ -167,7 +167,7 @@ if [ "$online" == true ]; then
 fi
 dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nOnline       : $online" 10 42
 cd "$DATA" >/dev/null 2>&1 || true
-bash "$repo/main.sh" "$root" "$online"
+bash $(case $- in (*x*) printf %s -x ;; esac) "$repo/main.sh" "$root" "$online"
 exitstatus=$?
 clear
 cd "$HOME" || :
