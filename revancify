@@ -2,8 +2,7 @@
 
 if ping -c 1 google.com &>/dev/null; then ping_ok=true; else ping_ok=false; fi; export ping_ok
 
-HOME=/data/data/com.termux/files/home
-BIN=/data/data/com.termux/files/usr/bin
+BIN=$PREFIX/bin
 
 repo="$HOME/Revancify"
 cp "$repo/revancify" "$BIN/revancify" >/dev/null 2>&1
