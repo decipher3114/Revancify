@@ -1,47 +1,51 @@
+<a href="https://github.com/olegos2/termux-box">English</a>
+&nbsp;&nbsp;| &nbsp;&nbsp;
+Русский
+
 # Revancify 🛠️
-### A TUI wrapper for Revanced CLI with amazing features.
+### Оболочка TUI для Revanced CLI с невероятными возможностями.
 
 [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
 
 ## Termux
-| Android Version | Download Link|
+| Версия Android | Ссылка на скачивание|
 | ---- | ----- |
-| Android 8+ | [Termux Monet](https://github.com/HardcodedCat/termux-monet/releases/latest) (Strictly Recommended)
+| Android 8+ | [Termux Monet](https://github.com/HardcodedCat/termux-monet/releases/latest) (Строго рекомендовано)
 | Android 4+ | [Termux](https://github.com/termux/termux-app/releases/latest)
 
-# Features
-1. Auto updates Patches and CLI
-2. Interactive and Easy to use
-3. Inbuilt scrapper for [ApkMirror](https://apkmirror.com)
-    > Only support apps available on apkmirror. However, you can still download app manually and use the apk file to patch
-4. Contains User-friendly Patch-options Editor
-5. Conserve selected patches
-6. Supports App Version downgrade for devices with Signature Spoof enabled
-7. Convenient Installation and usage
-6. Lightweight and faster than any other tool
+# Возможности
+1. Автоматически обновляет патчи и CLI
+2. Интерактивный и простой в использовании
+3. Встроенный выниматель для [ApkMirror](https://apkmirror.com)
+    > Поддерживает только приложения, которые доступны на apkmirror. Также вы можете использовать apk файл, скаченный вами для патчинга
+4. Содержит простой в использовании редактор опций патчей
+5. Сохраняет набор выбранных патчей
+6. Поддерживает установку более старой версии для устройств с включенной подменой сигнатуры
+7. Удобная установка и использование
+6. Легче и быстрее любого другого инструмента
 
-# Guide
+# Гайд
 
-## Installation
-1. Open Termux.  
-2. Copy and paste this command.  
+## Установка
+1. Откройте Termux.  
+2. Скопируйте и вставьте эту команду.  
 ```
 curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
 ```
 
 <details>
-  <summary>If the above one doesn't work, use this.</summary>
+  <summary>Если команда выше не работает, пользуйтесь этой.</summary>
 
   ```
 pkg update -y -o Dpkg::Options::="--force-confnew" && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
 ```
 </details>
 
-## Usage
-After installation, type `revancify` in termux and press enter.  
+## Использование
+Вводите `revancify` в termux после установки и нажмите enter.  
 
-Or use with arguments. Check them with `revancify -h` or `revancify --help`
+Или используйте с аргументами. Вы можете увидеть их, введя `revancify -h` или `revancify --help`
 
-# Thanks & Credits
+# Благодарности & Уважение
 [Revanced](https://github.com/revanced)  
 [Revanced Extended](https://github.com/inotia00)  
