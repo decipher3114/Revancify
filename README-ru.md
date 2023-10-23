@@ -1,4 +1,4 @@
-<a href="https://github.com/olegos2/termux-box">English</a>
+<a href="https://github.com/decipher3114/Revancify">English</a>
 &nbsp;&nbsp;| &nbsp;&nbsp;
 Русский
 
