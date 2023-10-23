@@ -1,3 +1,7 @@
+English
+&nbsp;&nbsp;| &nbsp;&nbsp;
+<a href="https://github.com/olegos2/termux-box/blob/main/README-ru.md">Русский</a>
+
 # Revancify 🛠️
 ### A TUI wrapper for Revanced CLI with amazing features.
 
