@@ -246,7 +246,7 @@ patchSaver() {
                             empty
                         end
                     else
-                        empty
+                        $patchName
                     end
                 ]
             ]'
@@ -322,7 +322,6 @@ initInstall() {
     else
         "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
         [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
-        sleep 0.5
         cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
         termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
         return 1
@@ -490,8 +489,7 @@ fetchCustomApk() {
     if [ "$root" == true ] && su -c "pm list packages | grep -q $pkgName" && [ "$AllowVersionDowngrade" == false ]; then
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
-            compareArray=("$selectedVer" "$installedVer")
-            IFS=$'\n' sorted=($(sort <<<"${compareArray[*]}")); unset IFS
+            sorted=$(jq -nr --arg installedVer "$installedVer" --arg selectedVer "$selectedVer" '[$installedVer, $selectedVer] | sort | .[0]')
             if [ "${sorted[0]}" != "$installedVer" ];then
                 "${header[@]}" --msgbox "The selected version $selectedVer is lower then version $installedVer installed on your device.\nPlease Select a higher version !!" 12 45
                 return 1
