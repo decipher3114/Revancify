@@ -64,5 +64,27 @@
                 "repo": "revanced-integrations"
             }
         }
+    },
+    "cvnertnc":
+    {
+        "projectName": "RVX-My",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "cvnertnc",
+                "repo": "revanced-patches"
+            },
+            "integrations":
+            {
+                "org": "inotia00",
+                "repo": "revanced-integrations"
+            }
+        }
     }
 }

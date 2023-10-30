@@ -1,0 +1,11 @@
+*.json
+!sources.json
+*.jar
+*.apk
+*.sh
+!main.sh
+!root_util.sh
+!fetch*.sh
+!install.sh
+*.txt
+pup
