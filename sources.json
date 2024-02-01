@@ -21,6 +21,28 @@
             }
         }
     },
+    "YT-Advanced": 
+    {
+        "projectName": "ReX",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "YT-Advanced",
+                "repo": "ReX-patches"
+            },
+            "integrations":
+            {
+                "org": "YT-Advanced",
+                "repo": "ReX-integrations"
+            }
+        }
+    },
     "inotia00": 
     {
         "projectName": "Revanced-Extended",
@@ -61,6 +83,28 @@
             "integrations":
             {
                 "org": "kitadai31",
+                "repo": "revanced-integrations"
+            }
+        }
+    },
+    "d4n3436": 
+    {
+        "projectName": "RVX-Android-5",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "kitadai31",
+                "repo": "rvcli"
+            },
+            "patches":
+            {
+                "org": "d4n3436",
+                "repo": "revanced-patches-android5"
+            },
+            "integrations":
+            {
+                "org": "d4n3436",
                 "repo": "revanced-integrations"
             }
         }
