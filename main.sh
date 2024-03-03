@@ -86,7 +86,7 @@ fetchToolsAPI() {
     : >".${source}-data"
     [ "$FetchPreReleasedTools" == false ] && stableRelease="/latest" || stableRelease=""
     i=0 && for tool in "${tools[@]}"; do
-        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases$stableRelease" | jq -r --arg tool "$tool" 'if type == "array" then .[0] else . end | $tool+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) else $tool+"Url="+.browser_download_url, $tool+"Size="+(.size|tostring) end)' >>".${source}-data"
+        curl -s --fail-early --connect-timeout 2 --max-time 5 "https://api.github.com/repos/${links[$i]}/releases$stableRelease" | jq -r --arg tool "$tool" 'if type == "array" then .[0] else . end | $tool+"Latest="+.tag_name, (.assets[] | if .content_type == "application/json" then "jsonUrl="+.browser_download_url, "jsonSize="+(.size|tostring) elif .content_type == "application/pgp-keys" then empty else $tool+"Url="+.browser_download_url, $tool+"Size="+(.size|tostring) end)' >>".${source}-data"
         i=$(("$i" + 1))
     done
 
