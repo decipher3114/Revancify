@@ -87,6 +87,50 @@
             }
         }
     },
+    "rufusin": 
+    {
+        "projectName": "RVX-rufusin",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "rufusin",
+                "repo": "revanced-patches"
+            },
+            "integrations":
+            {
+                "org": "rufusin",
+                "repo": "revanced-integrations"
+            }
+        }
+    },
+    "anddea": 
+    {
+        "projectName": "RVX-anddea",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "inotia00",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "anddea",
+                "repo": "revanced-patches"
+            },
+            "integrations":
+            {
+                "org": "anddea",
+                "repo": "revanced-integrations"
+            }
+        }
+    },
     "d4n3436": 
     {
         "projectName": "RVX-Android-5",
