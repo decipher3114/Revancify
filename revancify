@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
-HOME=/data/data/com.termux/files/home
-BIN=/data/data/com.termux/files/usr/bin
+if ping -c 1 google.com &>/dev/null; then ping_ok=true; else ping_ok=false; fi; export ping_ok
+
+BIN=$PREFIX/bin
 
 repo="$HOME/Revancify"
 cp "$repo/revancify" "$BIN/revancify" >/dev/null 2>&1
@@ -52,7 +53,7 @@ do
                         shift
                         ;;
     "-r" | "--reinstall")
-                        if ping -c 1 google.com >/dev/null 2>&1; then
+                        if "$ping_ok"; then
                             rm -rf $DATA
                             cd "$repo"/.. && rm -rf "$repo" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && "$repo/revancify" && exit
                         else
@@ -91,14 +92,14 @@ terminate() {
 trap terminate SIGTERM SIGINT SIGABRT
 
 checkdependencies() {
-    if [ -f "$DATA/aapt2" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
+    if [ -f "$DATA/aapt2" ] && (for f in java wget tput dialog pup jq revancify; do [ -x "$BIN/$f" ] || exit 1; done) && [ -e "$HOME/storage" ]; then
         return 0
     else
-        if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies || (echo "Dependencies not installed !!" && exit 1)
+        if "$ping_ok"; then
+            installdependencies || { echo "Dependencies not installed !!" && exit 1; }
         else
             cp "$repo/revancify" "$BIN/revancify"
-            echo -e "Dependencies not installed !!\nRun again with internet connection."
+            printf 'Dependencies not installed !!\nRun again with internet connection.'
             exit 1
         fi
     fi
@@ -123,7 +124,7 @@ installdependencies() {
 checkrevancify() {
     if [ -d "$repo" ]; then
         cd "$repo" >/dev/null 2>&1 || true
-        rm -rf ./*cache*
+        rm -rf "$repo"/*cache*
         return 0
     else
         echo -e "\e[1;31mRevancify dir is not found !!"
@@ -155,7 +156,7 @@ tput civis
 dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nOnline       : $online" 10 42
 
 if [ "$online" != false ]; then
-    ping -c 1 google.com >/dev/null 2>&1 && online=true || online=false
+    "$ping_ok" && online=true || online=false
 fi
 
 if [ "$online" == true ]; then
@@ -166,7 +167,7 @@ if [ "$online" == true ]; then
 fi
 dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nOnline       : $online" 10 42
 cd "$DATA" >/dev/null 2>&1 || true
-bash "$repo/main.sh" "$root" "$online"
+bash $(case $- in (*x*) printf %s -x ;; esac) "$repo/main.sh" "$root" "$online"
 exitstatus=$?
 clear
 cd "$HOME" || :
@@ -174,6 +175,6 @@ if [ $exitstatus -eq 0 ]; then
     echo "Script exited !!"
 else
     echo "Script terminated !!"
-    rm -rf -- *cache >/dev/null 2>&1
+    rm -rf -- "$repo"/*cache >/dev/null 2>&1
 fi
 tput cnorm
