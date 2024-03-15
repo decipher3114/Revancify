@@ -43,7 +43,7 @@ am force-stop "$pkgName"
 
 {
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
-    cp "apps/$appName-$appVer/base-$sourceName.apk" "/data/local/tmp/revancify/$pkgName.apk"
+    cp "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" "/data/local/tmp/revancify/$pkgName.apk"
     chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
     chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
     mount -vo bind "$revancedApp" "$stockApp"

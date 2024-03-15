@@ -322,8 +322,8 @@ initInstall() {
     else
         "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
         [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
-        cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
-        termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
+        cp "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" "$storagePath/$appName-$appVer" &> /dev/null
+        termux-open "$storagePath/$appName-$appVer/$sourceName_$appName_$appVer.apk"
         return 1
     fi
 }
@@ -401,12 +401,12 @@ versionSelector() {
 }
 
 checkPatched() {
-    if [ -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
+    if [ -f "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" ]; then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
         0 )
-            rm "apps/$appName-$appVer/base-$sourceName.apk"
+            rm "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk"
             ;;
         1 )
             initInstall
@@ -417,7 +417,7 @@ checkPatched() {
             ;;
         esac
     else
-        rm "apps/$appName-$appVer/base-$sourceName.apk" &> /dev/null
+        rm "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" &> /dev/null
         return 0
     fi
 }
@@ -595,11 +595,11 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     readarray -t patchesArg < <(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i", .) else empty end')
-    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
-    if [ ! -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
+    if [ ! -f "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" ]; then
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage/Revancify/patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
