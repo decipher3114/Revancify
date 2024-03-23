@@ -32,12 +32,12 @@ initialize() {
     [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
     userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 
-    AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterMount="" AllowVersionDowngrade="" FetchPreReleasedTools=""
+    AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterLink="" AllowVersionDowngrade="" FetchPreReleasedTools=""
     setEnv AutocheckToolsUpdate false init "$envFile"
     setEnv Riplibs true init "$envFile"
     setEnv LightTheme false init "$envFile"
     setEnv ShowConfirmPatchesMenu false init "$envFile"
-    setEnv LaunchAppAfterMount true init "$envFile"
+    setEnv LaunchAppAfterLink true init "$envFile"
     setEnv AllowVersionDowngrade false init "$envFile"
     setEnv FetchPreReleasedTools false init "$envFile"
     # shellcheck source=/dev/null
@@ -310,13 +310,13 @@ initInstall() {
     if [ "$root" == true ];
     then
         "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
-        if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
+        if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh link $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
             "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal-Storage/Revancify/install_log.txt\". Share the Install logs to developer." 12 45
             return 1
         else
             "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
         fi
-        if [ "$LaunchAppAfterMount" == true ]; then
+        if [ "$LaunchAppAfterLink" == true ]; then
             su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
         fi
     else
@@ -330,17 +330,17 @@ initInstall() {
 
 rootUninstall() {
     selectApp normal || return 1
-    su -mm -c "/system/bin/sh $repoDir/root_util.sh unmount $pkgName" &> /dev/null
-    unmountStatus=$?
-    if [ "$unmountStatus" -eq "2" ]; then
-        "${header[@]}" --msgbox "Patched $appName is not installed(mounted) in your device." 12 45
+    su -mm -c "/system/bin/sh $repoDir/root_util.sh unlink $pkgName" &> /dev/null
+    unlinkStatus=$?
+    if [ "$unlinkStatus" -eq "2" ]; then
+        "${header[@]}" --msgbox "Patched $appName is not installed (linked) in your device." 12 45
         return 1
     else
-        "${header[@]}" --infobox "Uninstalling Patched $appName by Unmounting..." 12 45
+        "${header[@]}" --infobox "Uninstalling Patched $appName by Unlinking..." 12 45
         sleep 2
-        [ "$unmountStatus" -ne "0" ] && "${header[@]}" --msgbox "Unmount failed !! Something went wrong." 12 45 && sleep 1 && return 1
+        [ "$unlinkStatus" -ne "0" ] && "${header[@]}" --msgbox "Unlinking failed !! Something went wrong." 12 45 && sleep 1 && return 1
     fi
-    "${header[@]}" --msgbox "Unmount Successful !!" 12 45
+    "${header[@]}" --msgbox "Unlinking Successful !!" 12 45
     sleep 1
 }
 
@@ -636,7 +636,7 @@ deleteComponents() {
 
 preferences() {
     [ "$cliSource" == "inotia00" ] && RiplibsPref=("Riplibs" "$Riplibs" "Removes extra libs from app") || RiplibsPref=()
-    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterMount" "$LaunchAppAfterMount" "[Root] Launches app automatically after mount" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools")
+    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterLink" "$LaunchAppAfterLink" "[Root] Launches app automatically after linking the patched APK" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
