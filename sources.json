@@ -21,6 +21,28 @@
             }
         }
     },
+    "crimera": 
+    {
+        "projectName": "piko-Twitter",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "revanced",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "crimera",
+                "repo": "piko"
+            },
+            "integrations":
+            {
+                "org": "crimera",
+                "repo": "revanced-integrations"
+            }
+        }
+    },
     "YT-Advanced": 
     {
         "projectName": "ReX",
