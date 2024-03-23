@@ -65,7 +65,7 @@ initialize() {
     fi
 
     if [ -f "$storagePath/$source-patches.json" ]; then
-        bash "$repoDir/fetch_patches.sh" "$source" offline "$storagePath" &> /dev/null
+        bash "$repoDir/fetch_patches.sh" "$patchesSource" offline "$storagePath" &> /dev/null
         refreshJson || return 1
     fi
 }
@@ -105,7 +105,7 @@ fetchToolsAPI() {
 getTools() {
     fetchToolsAPI || return 1
     if [ -f "$patchesSource-patches-$patchesLatest.jar" ] && [ -f "$patchesSource-patches-$patchesLatest.json" ] && [ -f "$cliSource-cli-$cliLatest.jar" ] && [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] && [ "$cliSize" == "$cliAvailableSize" ] && [ "$patchesSize" == "$patchesAvailableSize" ] && [ "$integrationsSize" == "$integrationsAvailableSize" ]; then
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -134,7 +134,7 @@ getTools() {
 
     if [ "$patchesUpdated" == true ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -352,7 +352,7 @@ refreshJson() {
     if [ ! -f "$storagePath/$source-patches.json" ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!" 12 45
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Oops !! Apkmirror API is not accessible. Patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -383,7 +383,7 @@ getAppVer() {
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$source" "$selectedVer" "$storagePath")
+        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$patchesSource" "$selectedVer" "$storagePath")
     fi
     versionSelector || return 1
 }
