@@ -294,14 +294,23 @@ editPatchOptions() {
                 break
             fi
         else
-            tput cnorm
-            readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100)')
-            readarray -t newValues < <("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --form "Edit patch options for \"$currentPatch\" patch" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
-            if [ "${newValues[*]}" != "" ]; then
-                optionsJson=$(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then null elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
-            fi
-            currentPatch="none"
-            tput civis
+            while true; do
+                tput cnorm
+                readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100)')
+                newValues=$("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --help-button --help-label "Info" --form "Edit patch options for \"$currentPatch\" patch\nNote: Leave the field empty to return to default value" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
+                infoStatus=$?
+                if [ "$infoStatus" == 0 ]; then 
+                    readarray -t newValues <<< "$newValues"
+                    optionsJson=$(echo "$patchesJson" | jq -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '. as $patchesJson | $optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then (first($patchesJson[] | select(.name == $currentPatch)) | .options[$key] | .default) elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
+                elif [ "$infoStatus" == 2 ]; then
+                    tput civis
+                    "${header[@]}" --begin 2 0 --title '| Patch Options Form |' --msgbox "$(jq -n -r --arg currentPatch "$currentPatch" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | select(.name == $currentPatch)) | .options[] | ("Title: " + .title + "\nDescription: " + .description + "\nValues: " , (.values | to_entries[] | "\"" + .key + "\": " + .value)), "\n"')" -1 -1
+                    break
+                fi
+                currentPatch="none"
+                tput civis
+                break
+            done
         fi
     done
 }
@@ -358,6 +367,7 @@ refreshJson() {
         fi
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
+    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
     appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | map(select(.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.appName), "pkgName" :(.value.pkgName), "developerName" :(.value.developerName), "apkmirrorAppName" :(.value.apkmirrorAppName)})')
 }
 
