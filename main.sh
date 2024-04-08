@@ -296,7 +296,7 @@ editPatchOptions() {
         else
             while true; do
                 tput cnorm
-                readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100)')
+                readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 500, 500)')
                 newValues=$("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --help-button --help-label "Info" --form "Edit patch options for \"$currentPatch\" patch\nNote: Leave the field empty to return to default value" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
                 infoStatus=$?
                 if [ "$infoStatus" == 0 ]; then 
