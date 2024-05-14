@@ -158,7 +158,7 @@ changeSource() {
     fi
 }
 
-selectApp() {
+selectApk() {
     [ "$1" == "storage" ] && helpTag=(--help-button --help-label "From Storage") || helpTag=()
     previousAppName="$appName"
     readarray -t availableApps < <(jq -n -r --argjson appsArray "$appsArray" '$appsArray[] | .index, .appName, .pkgName')
@@ -338,7 +338,7 @@ initInstall() {
 }
 
 rootUninstall() {
-    selectApp normal || return 1
+    selectApk normal || return 1
     su -mm -c "/system/bin/sh $repoDir/root_util.sh unmount $pkgName" &> /dev/null
     unmountStatus=$?
     if [ "$unmountStatus" -eq "2" ]; then
@@ -547,10 +547,10 @@ fetchApk() {
     else
         rm -rf "apps/$appName"* &> /dev/null
     fi
-    downloadApp || return 1
+    downloadApk || return 1
 }
 
-downloadApp() {
+downloadApk() {
     internet || return 1
     appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
@@ -596,7 +596,7 @@ downloadMicrog() {
     fi
 }
 
-patchApp() {
+patchApk() {
     if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
         riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
         riplibArgs="${riplibArgs//--rip-lib=$arch /}"
@@ -605,7 +605,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     readarray -t patchesArg < <(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i", .) else empty end')
-    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
@@ -669,7 +669,7 @@ buildApk() {
     if [ "$appType" == "downloaded" ] && [ "$ShowConfirmPatchesMenu" == true ]; then
         selectPatches Proceed
     fi
-    patchApp || return 1
+    patchApk || return 1
     initInstall
 }
 
@@ -678,13 +678,13 @@ mainMenu() {
     case "$mainMenu" in
     1 )
         while true; do
-            selectApp storage || break
+            selectApk storage || break
             buildApk
         done
         ;;
     2 )
         while true; do
-            selectApp normal || break
+            selectApk normal || break
             selectPatches Save || break
         done
         ;;
