@@ -65,7 +65,7 @@ initialize() {
     fi
 
     if [ -f "$storagePath/$source-patches.json" ]; then
-        bash "$repoDir/fetch_patches.sh" "$source" offline "$storagePath" &> /dev/null
+        bash "$repoDir/fetch_patches.sh" "$patchesSource" offline "$storagePath" &> /dev/null
         refreshJson || return 1
     fi
 }
@@ -105,7 +105,7 @@ fetchToolsAPI() {
 getTools() {
     fetchToolsAPI || return 1
     if [ -f "$patchesSource-patches-$patchesLatest.jar" ] && [ -f "$patchesSource-patches-$patchesLatest.json" ] && [ -f "$cliSource-cli-$cliLatest.jar" ] && [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] && [ "$cliSize" == "$cliAvailableSize" ] && [ "$patchesSize" == "$patchesAvailableSize" ] && [ "$integrationsSize" == "$integrationsAvailableSize" ]; then
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -134,7 +134,7 @@ getTools() {
 
     if [ "$patchesUpdated" == true ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
@@ -158,7 +158,7 @@ changeSource() {
     fi
 }
 
-selectApp() {
+selectApk() {
     [ "$1" == "storage" ] && helpTag=(--help-button --help-label "From Storage") || helpTag=()
     previousAppName="$appName"
     readarray -t availableApps < <(jq -n -r --argjson appsArray "$appsArray" '$appsArray[] | .index, .appName, .pkgName')
@@ -294,14 +294,23 @@ editPatchOptions() {
                 break
             fi
         else
-            tput cnorm
-            readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 100, 100)')
-            readarray -t newValues < <("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --form "Edit patch options for \"$currentPatch\" patch" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
-            if [ "${newValues[*]}" != "" ]; then
-                optionsJson=$(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then null elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
-            fi
-            currentPatch="none"
-            tput civis
+            while true; do
+                tput cnorm
+                readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 500, 500)')
+                newValues=$("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --help-button --help-label "Info" --form "Edit patch options for \"$currentPatch\" patch\nNote: Leave the field empty to return to default value" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
+                infoStatus=$?
+                if [ "$infoStatus" == 0 ]; then 
+                    readarray -t newValues <<< "$newValues"
+                    optionsJson=$(echo "$patchesJson" | jq -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '. as $patchesJson | $optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then (first($patchesJson[] | select(.name == $currentPatch)) | .options[$key] | .default) elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
+                elif [ "$infoStatus" == 2 ]; then
+                    tput civis
+                    "${header[@]}" --begin 2 0 --title '| Patch Options Form |' --msgbox "$(jq -n -r --arg currentPatch "$currentPatch" --argjson patchesJson "$patchesJson" 'first($patchesJson[] | select(.name == $currentPatch)) | .options[] | ("Title: " + .title + "\nDescription: " + .description + "\nValues: " , (.values | to_entries[] | "\"" + .key + "\": " + .value)), "\n"')" -1 -1
+                    break
+                fi
+                currentPatch="none"
+                tput civis
+                break
+            done
         fi
     done
 }
@@ -329,7 +338,7 @@ initInstall() {
 }
 
 rootUninstall() {
-    selectApp normal || return 1
+    selectApk normal || return 1
     su -mm -c "/system/bin/sh $repoDir/root_util.sh unmount $pkgName" &> /dev/null
     unmountStatus=$?
     if [ "$unmountStatus" -eq "2" ]; then
@@ -352,12 +361,13 @@ refreshJson() {
     if [ ! -f "$storagePath/$source-patches.json" ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!" 12 45
-        if [ "$(bash "$repoDir/fetch_patches.sh" "$source" online "$storagePath")" == "error" ]; then
+        if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Oops !! Apkmirror API is not accessible. Patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
+    patchesJson=$(jq '.' "$patchesSource"-patches-*.json)
     appsArray=$(jq -n --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches | map(select(.appName != null)) | to_entries | map({"index": (.key + 1), "appName": (.value.appName), "pkgName" :(.value.pkgName), "developerName" :(.value.developerName), "apkmirrorAppName" :(.value.apkmirrorAppName)})')
 }
 
@@ -383,7 +393,7 @@ getAppVer() {
     if [ "${#appVerList[@]}" -lt 2 ]; then
         internet || return 1
         "${header[@]}" --infobox "Please Wait !!\nScraping versions list for $appName from apkmirror.com..." 12 45
-        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$source" "$selectedVer" "$storagePath")
+        readarray -t appVerList < <(bash "$repoDir/fetch_versions.sh" "$appName" "$apkmirrorAppName" "$patchesSource" "$selectedVer" "$storagePath")
     fi
     versionSelector || return 1
 }
@@ -537,10 +547,10 @@ fetchApk() {
     else
         rm -rf "apps/$appName"* &> /dev/null
     fi
-    downloadApp || return 1
+    downloadApk || return 1
 }
 
-downloadApp() {
+downloadApk() {
     internet || return 1
     appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
@@ -577,16 +587,16 @@ downloadApp() {
 }
 
 downloadMicrog() {
-    microgName=mMicroG microgRepo=inotia00
+    microgName=GmsCore microgRepo=revanced
     if "${header[@]}" --begin 2 0 --title '| MicroG Prompt |' --no-items --defaultno --yesno "$microgName is used to run MicroG services without root.\nYouTube and YouTube Music won't work without it.\nIf you already have $microgName, You don't need to download it.\n\n\n\n\n\nDo you want to download $microgName app?" -1 -1; then
         internet || return 1
-        readarray -t microgheaders < <(curl -s "https://api.github.com/repos/$microgRepo/$microgName/releases/latest" | jq -r --arg regex ".*$arch.*" '(.assets[] | if .name | test($regex) then .browser_download_url, .size else empty end), .tag_name')
+        readarray -t microgheaders < <(curl -s "https://api.github.com/repos/$microgRepo/$microgName/releases/latest" | jq -r '(.assets[0] | .browser_download_url, .size), .tag_name')
         wget -q -c "${microgheaders[0]}" -O "$microgName-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : $microgName \nVersion : ${microgheaders[2]}\nSize    : $(numfmt --to=iec --format="%0.1f" "${microgheaders[1]}")\n\nDownloading..." -1 -1 && tput civis
         ls $microgName* &> /dev/null && mv $microgName* "$storagePath/" && termux-open "$storagePath/$microgName-${microgheaders[2]}.apk"
     fi
 }
 
-patchApp() {
+patchApk() {
     if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
         riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
         riplibArgs="${riplibArgs//--rip-lib=$arch /}"
@@ -595,7 +605,7 @@ patchApp() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     readarray -t patchesArg < <(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i", .) else empty end')
-    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/$sourceName_$appName_$appVer.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
@@ -659,7 +669,7 @@ buildApk() {
     if [ "$appType" == "downloaded" ] && [ "$ShowConfirmPatchesMenu" == true ]; then
         selectPatches Proceed
     fi
-    patchApp || return 1
+    patchApk || return 1
     initInstall
 }
 
@@ -668,13 +678,13 @@ mainMenu() {
     case "$mainMenu" in
     1 )
         while true; do
-            selectApp storage || break
+            selectApk storage || break
             buildApk
         done
         ;;
     2 )
         while true; do
-            selectApp normal || break
+            selectApk normal || break
             selectPatches Save || break
         done
         ;;
