@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
 arch=$(getprop ro.product.cpu.abi)
 developer="$1"
@@ -26,7 +26,10 @@ else
 fi
 echo 33
 
-url2=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${url1[-1]}" | pup -p --charset utf-8 'a:contains("Download APK") attr{href}')
+page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${url1[-1]}")
+
+url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
+size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | tail -n 1 | sed 's/.*(//;s/ bytes.*//;s/,//g')
 
 [ "$url2" == "" ] && echo error >&2 && exit 1
 echo 66
@@ -37,3 +40,4 @@ url3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com$url2" | pup -p --char
 echo 100
 
 echo "https://www.apkmirror.com$url3" >&2
+echo "$size" >&2

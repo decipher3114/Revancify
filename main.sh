@@ -30,7 +30,7 @@ initialize() {
     header=(dialog --backtitle "Revancify | [Arch: $arch, Root: $root]" --no-shadow)
     envFile=config.cfg
     [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
-    userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+    userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
     AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterMount="" AllowVersionDowngrade="" FetchPreReleasedTools=""
     setEnv AutocheckToolsUpdate false init "$envFile"
@@ -552,9 +552,9 @@ fetchApk() {
 
 downloadApk() {
     internet || return 1
-    appUrl=$( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
+    readarray -t urlResult < <( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
-    case $appUrl in
+    case "${urlResult[0]}" in
     "error" )
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 45
         return 1
@@ -573,8 +573,8 @@ downloadApk() {
         return 1
         ;;
     esac
-    appSize="$(curl -sLI "$appUrl" -A "$userAgent" | sed -n '/Content-Length/s/[^0-9]*//p' | tr -d '\r')"
-    [ "$appSize" == "" ] && return 1
+    appUrl=${urlResult[0]}
+    appSize=${urlResult[1]}
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
     wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
@@ -646,7 +646,7 @@ deleteComponents() {
 
 preferences() {
     [ "$cliSource" == "inotia00" ] && RiplibsPref=("Riplibs" "$Riplibs" "Removes extra libs from app") || RiplibsPref=()
-    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterMount" "$LaunchAppAfterMount" "[Root] Launches app automatically after mount" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools")
+    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterMount" "$LaunchAppAfterMount" "[Root] Launches app automatically after mount" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools" "IgnoreAppSizeCheck" "$IgnoreAppSizeCheck" "Ignore downloaded app size check")
     readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
