@@ -29,7 +29,7 @@ echo 33
 page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${url1[-1]}")
 
 url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
-size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | tail -n 1 | sed 's/.*(//;s/ bytes.*//;s/,//g')
+size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | sed -n 's/.*(//;s/ bytes.*//;s/,//gp')
 
 [ "$url2" == "" ] && echo error >&2 && exit 1
 echo 66
