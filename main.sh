@@ -40,7 +40,6 @@ initialize() {
     setEnv LaunchAppAfterMount true init "$envFile"
     setEnv AllowVersionDowngrade false init "$envFile"
     setEnv FetchPreReleasedTools false init "$envFile"
-    # shellcheck source=/dev/null
     source "$envFile"
     if [ -z "$source" ]; then
         readarray -t allSources < <(jq -r --arg source "$source" 'to_entries | .[] | .key,"["+.value.projectName+"]","on"' "$repoDir"/sources.json)
@@ -52,7 +51,6 @@ initialize() {
     [ "$LightTheme" == true ] && theme=Light || theme=Dark
     export DIALOGRC="$repoDir/configs/.dialogrc$theme"
 
-    # shellcheck source=/dev/null
     source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
     sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
 
@@ -94,7 +92,6 @@ fetchToolsAPI() {
         "${header[@]}" --msgbox "Oops! Unable to connect to Github.\n\nRetry or change your Network." 12 45
         return 1
     fi
-    # shellcheck source=/dev/null
     source ./".${source}-data"
 
     cliAvailableSize=$(ls "$cliSource"-cli-*.jar &> /dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)
@@ -150,7 +147,6 @@ changeSource() {
     selectedSource=$("${header[@]}" --begin 2 0 --title '| Source Selection Menu |' --no-cancel --ok-label "Done" --radiolist "Use arrow keys to navigate; Press Spacebar to select option" -1 -1 0 "${allSources[@]}" 2>&1 >/dev/tty)
     if [ "$source" != "$selectedSource" ]; then
         source="$selectedSource"
-        # shellcheck source=/dev/null
         source <(jq -r --arg source "$source" '.[$source].sources | to_entries[] | .key+"Source="+.value.org' "$repoDir"/sources.json)
         setEnv source "$selectedSource" update "$envFile"
         sourceName=$(jq -r --arg source "$source" '.[$source].projectName' "$repoDir"/sources.json)
@@ -373,7 +369,6 @@ refreshJson() {
 
 checkTools() {
     if [ -f ".${source}-data" ]; then
-        # shellcheck source=/dev/null
         source ./".${source}-data"
     else
         getTools || return 1
@@ -540,7 +535,6 @@ fetchApk() {
     fi
     checkPatched || return 1
     if [ -f "apps/$appName-$appVer/base.apk" ]; then
-        # shellcheck source=/dev/null
         if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
@@ -598,14 +592,14 @@ downloadMicrog() {
 
 patchApk() {
     if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
-        riplibArgs="--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a "
-        riplibArgs="${riplibArgs//--rip-lib=$arch /}"
+        riplibArgs=(--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a)
+        read -ra riplibArgs < <(echo -n -e "${riplibArgs[*]/"--rip-lib=$arch"/}")
     else
-        riplibArgs=""
+        riplibArgs=()
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     readarray -t patchesArg < <(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i", .) else empty end')
-    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" $riplibArgs "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" "${riplibArgs[@]}" "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
@@ -653,7 +647,6 @@ preferences() {
     for newPref in "${newPrefs[@]}"; do
         setEnv "$newPref" true update "$envFile"
     done
-    # shellcheck source=/dev/null
     source "$envFile"
     [ "$LightTheme" == true ] && theme=Light || theme=Dark
     export DIALOGRC="$repoDir/configs/.dialogrc$theme"

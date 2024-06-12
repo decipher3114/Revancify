@@ -31,7 +31,7 @@ Possible causes of error:
 fi
 
 if git clone --depth=1 https://github.com/decipher3114/Revancify.git; then
-    $HOME/Revancify/revancify
+    "$HOME/Revancify/revancify"
 else
     echo -e "\e[1;31mInstall Failed !!\e[0m"
     echo "Please Try again"
