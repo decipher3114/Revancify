@@ -1,9 +1,9 @@
 #!/usr/bin/bash
 
 terminate() {
-    killall -9 java &> /dev/null
-    killall -9 dialog &> /dev/null
-    killall -9 wget &> /dev/null
+    killall -9 java &>/dev/null
+    killall -9 dialog &>/dev/null
+    killall -9 wget &>/dev/null
     clear
     exit "${1:-1}"
 }
@@ -11,10 +11,10 @@ trap terminate SIGTERM SIGINT SIGABRT
 
 setEnv() {
     if [ ! -f "$4" ]; then
-        : > "$4"
+        : >"$4"
     fi
     if ! grep -q "${1}=" "$4"; then
-        echo "$1=$2" >> "$4"
+        echo "$1=$2" >>"$4"
     elif [ "$3" == "update" ]; then
         sed -i "s/$1=.*/$1=$2/" "$4"
     fi
@@ -29,15 +29,15 @@ initialize() {
     repoDir="$HOME/Revancify"
     header=(dialog --backtitle "Revancify | [Arch: $arch, Root: $root]" --no-shadow)
     envFile=config.cfg
-    [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
+    [ ! -f "apps/.appSize" ] && : >"apps/.appSize"
     userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
-    AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterMount="" AllowVersionDowngrade="" FetchPreReleasedTools=""
+    AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterLink="" AllowVersionDowngrade="" FetchPreReleasedTools=""
     setEnv AutocheckToolsUpdate false init "$envFile"
     setEnv Riplibs true init "$envFile"
     setEnv LightTheme false init "$envFile"
     setEnv ShowConfirmPatchesMenu false init "$envFile"
-    setEnv LaunchAppAfterMount true init "$envFile"
+    setEnv LaunchAppAfterLink true init "$envFile"
     setEnv AllowVersionDowngrade false init "$envFile"
     setEnv FetchPreReleasedTools false init "$envFile"
     source "$envFile"
@@ -63,13 +63,13 @@ initialize() {
     fi
 
     if [ -f "$storagePath/$source-patches.json" ]; then
-        bash "$repoDir/fetch_patches.sh" "$patchesSource" offline "$storagePath" &> /dev/null
+        bash "$repoDir/fetch_patches.sh" "$patchesSource" offline "$storagePath" &>/dev/null
         refreshJson || return 1
     fi
 }
 
 internet() {
-    if ! ping -c 1 google.com &> /dev/null; then
+    if ! ping -c 1 google.com &>/dev/null; then
         "${header[@]}" --msgbox "Oops! No Internet Connection available.\n\nConnect to Internet and try again later." 12 45
         return 1
     fi
@@ -94,9 +94,9 @@ fetchToolsAPI() {
     fi
     source ./".${source}-data"
 
-    cliAvailableSize=$(ls "$cliSource"-cli-*.jar &> /dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)
-    patchesAvailableSize=$(ls "$patchesSource"-patches-*.jar &> /dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)
-    integrationsAvailableSize=$(ls "$integrationsSource"-integrations-*.apk &> /dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)
+    cliAvailableSize=$(ls "$cliSource"-cli-*.jar &>/dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)
+    patchesAvailableSize=$(ls "$patchesSource"-patches-*.jar &>/dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)
+    integrationsAvailableSize=$(ls "$integrationsSource"-integrations-*.apk &>/dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)
 }
 
 getTools() {
@@ -109,25 +109,25 @@ getTools() {
         "${header[@]}" --msgbox "Tools are already downloaded !!\n\nPatches are successfully synced." 12 45
         return 0
     fi
-    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || { rm "$patchesSource"-patches-*.jar &> /dev/null && rm "$patchesSource"-patches-*.json &> /dev/null && patchesAvailableSize=0 ;}
-    [ -f "$cliSource-cli-$cliLatest.jar" ] || { rm "$cliSource"-cli-*.jar &> /dev/null && cliAvailableSize=0 ;}
-    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || { rm "$integrationsSource"-integrations-*.apk &> /dev/null && integrationsAvailableSize=0 ;}
+    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || { rm "$patchesSource"-patches-*.jar &>/dev/null && rm "$patchesSource"-patches-*.json &>/dev/null && patchesAvailableSize=0; }
+    [ -f "$cliSource-cli-$cliLatest.jar" ] || { rm "$cliSource"-cli-*.jar &>/dev/null && cliAvailableSize=0; }
+    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || { rm "$integrationsSource"-integrations-*.apk &>/dev/null && integrationsAvailableSize=0; }
     [ "$cliSize" != "$cliAvailableSize" ] &&
         wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $cliSource\nTool    : CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 "$(($((cliAvailableSize * 100)) / cliSize))" && tput civis
 
-    [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar &> /dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
+    [ "$cliSize" != "$(ls "$cliSource"-cli-*.jar &>/dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
 
     [ "$patchesSize" != "$patchesAvailableSize" ] &&
         wget -q -c "$patchesUrl" -O "$patchesSource"-patches-"$patchesLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $patchesSource\nTool    : Patches\nVersion : $patchesLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$patchesSize")\n\nDownloading..." -1 -1 "$(($((patchesAvailableSize * 100 / patchesSize))))" && tput civis && patchesUpdated=true
 
     wget -q -c "$jsonUrl" -O "$patchesSource"-patches-"$patchesLatest".json --user-agent="$userAgent"
 
-    [ "$patchesSize" != "$(ls "$patchesSource"-patches-*.jar &> /dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
+    [ "$patchesSize" != "$(ls "$patchesSource"-patches-*.jar &>/dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! Unable to download completely.\n\nRetry or change your Network." 12 45 && return 1
 
     [ "$integrationsSize" != "$integrationsAvailableSize" ] &&
         wget -q -c "$integrationsUrl" -O "$integrationsSource"-integrations-"$integrationsLatest".apk --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $integrationsSource\nTool    : Integrations\nVersion : $integrationsLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$integrationsSize")\n\nDownloading..." -1 -1 "$(($((integrationsAvailableSize * 100 / integrationsSize))))" && tput civis
 
-    [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk &> /dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 45 && return 1
+    [ "$integrationsSize" != "$(ls "$integrationsSource"-integrations-*.apk &>/dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && "${header[@]}" --msgbox "Oops! File not downloaded.\n\nRetry or change your Network." 12 45 && return 1
 
     if [ "$patchesUpdated" == true ]; then
         "${header[@]}" --infobox "Updating patches and options file..." 12 45
@@ -135,7 +135,7 @@ getTools() {
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
         fi
-        java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
+        java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &>/dev/null
     fi
 
     refreshJson || return 1
@@ -212,23 +212,24 @@ selectPatches() {
                     end
                 end'
         )
-        grep -qoP "(?<=\s)off(?=\s)" <<< "${patchesInfo[@]}" && toogleName="Include All" || toogleName="Exclude All"
+        grep -qoP "(?<=\s)off(?=\s)" <<<"${patchesInfo[@]}" && toogleName="Include All" || toogleName="Exclude All"
         choices=$("${header[@]}" --begin 2 0 --title '| Patch Selection Menu |' --item-help --no-items --separate-output --ok-label "$1" --cancel-label "$toogleName" --help-button --help-label "Recommended" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch\nSource: $sourceName; AppName: $appName" $(($(tput lines) - 3)) -1 15 "${patchesInfo[@]}" 2>&1 >/dev/tty)
         selectPatchStatus=$?
-        readarray -t choices <<< "$choices"
+        readarray -t choices <<<"$choices"
         patchSaver || break
     done
 }
 
 patchSaver() {
     case "$selectPatchStatus" in
-    0 )
+    0)
         includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = $ARGS.positional]' --args "${choices[@]}")
         echo "$includedPatches" >"$storagePath/$source-patches.json" && return 1
         ;;
-    1 )
+    1)
         if [ "$toogleName" == "Include All" ]; then
-            includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '
+            includedPatches=$(
+                jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '
             [
                 $includedPatches[] |
                 select(.pkgName == $pkgName).includedPatches = [
@@ -251,7 +252,7 @@ patchSaver() {
             includedPatches=$(jq -n --arg pkgName "$pkgName" --argjson includedPatches "$includedPatches" '[$includedPatches[] | select(.pkgName == $pkgName).includedPatches = []]')
         fi
         ;;
-    2 )
+    2)
         includedPatches=$(jq -n --arg pkgName "$pkgName" --slurpfile patchesFile "$patchesSource"-patches-*.json --argjson includedPatches "$includedPatches" '
         [
             $includedPatches[] |
@@ -278,7 +279,7 @@ patchSaver() {
 
 editPatchOptions() {
     if [ ! -f "$storagePath/$source-options.json" ]; then
-        java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &> /dev/null
+        java -jar "$cliSource"-cli-*.jar options -ou -p "$storagePath/$source-options.json" "$patchesSource"-patches-*.jar &>/dev/null
     fi
     currentPatch="none"
     optionsJson=$(jq '.' "$storagePath/$source-options.json")
@@ -286,7 +287,7 @@ editPatchOptions() {
     while true; do
         if [ "$currentPatch" == "none" ]; then
             if ! currentPatch=$("${header[@]}" --begin 2 0 --title '| Patch Options Menu |' --no-items --ok-label "Select" --cancel-label "Back" --menu "Select Patch to edit options" -1 -1 0 "${patchNames[@]}" 2>&1 >/dev/tty); then
-                jq -n --argjson optionsJson "$optionsJson" '$optionsJson' > "$storagePath/$source-options.json"
+                jq -n --argjson optionsJson "$optionsJson" '$optionsJson' >"$storagePath/$source-options.json"
                 break
             fi
         else
@@ -295,8 +296,8 @@ editPatchOptions() {
                 readarray -t patchOptionEntries < <(jq -n -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '$optionsJson[] | select(.patchName == $currentPatch) | .options | to_entries[] | .key as $key | (.value | (.key | length) as $wordLength | ((($key+1) | tostring) + ". " + .key + ":"), ($key*2)+1, 0, .value, ($key*2)+1, ($wordLength + 6), 500, 500)')
                 newValues=$("${header[@]}" --begin 2 0 --title '| Patch Options Form |' --ok-label "Save" --cancel-label "Back" --help-button --help-label "Info" --form "Edit patch options for \"$currentPatch\" patch\nNote: Leave the field empty to return to default value" -1 -1 0 "${patchOptionEntries[@]}" 2>&1 >/dev/tty)
                 infoStatus=$?
-                if [ "$infoStatus" == 0 ]; then 
-                    readarray -t newValues <<< "$newValues"
+                if [ "$infoStatus" == 0 ]; then
+                    readarray -t newValues <<<"$newValues"
                     optionsJson=$(echo "$patchesJson" | jq -r --arg currentPatch "$currentPatch" --argjson optionsJson "$optionsJson" '. as $patchesJson | $optionsJson | map((select(.patchName == $currentPatch) | .options) |= [(to_entries[] | .key as $key | .value.value = (if $ARGS.positional[$key] == "" then (first($patchesJson[] | select(.name == $currentPatch)) | .options[$key] | .default) elif $ARGS.positional[$key] == "null" then null elif $ARGS.positional[$key] == "true" then true elif $ARGS.positional[$key] == "false" then false else $ARGS.positional[$key] end)) | .value])' --args "${newValues[@]}")
                 elif [ "$infoStatus" == 2 ]; then
                     tput civis
@@ -312,22 +313,21 @@ editPatchOptions() {
 }
 
 initInstall() {
-    if [ "$root" == true ];
-    then
+    if [ "$root" == true ]; then
         "${header[@]}" --infobox "Please Wait !!\nInstalling Patched $appName..." 12 45
-        if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh mount $pkgName $appName $appVer $sourceName" > /dev/null 2>&1; then
+        if ! su -mm -c "/system/bin/sh $repoDir/root_util.sh link $pkgName $appName $appVer $sourceName" >/dev/null 2>&1; then
             "${header[@]}" --msgbox "Installation Failed !!\nLogs saved to \"Internal-Storage/Revancify/install_log.txt\". Share the Install logs to developer." 12 45
             return 1
         else
             "${header[@]}" --msgbox "$appName installed Successfully !!" 12 45
         fi
-        if [ "$LaunchAppAfterMount" == true ]; then
-            su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
+        if [ "$LaunchAppAfterLink" == true ]; then
+            su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $pkgName | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &>/dev/null
         fi
     else
         "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
         [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
-        cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
+        cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &>/dev/null
         termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
         return 1
     fi
@@ -335,22 +335,22 @@ initInstall() {
 
 rootUninstall() {
     selectApk normal || return 1
-    su -mm -c "/system/bin/sh $repoDir/root_util.sh unmount $pkgName" &> /dev/null
-    unmountStatus=$?
-    if [ "$unmountStatus" -eq "2" ]; then
-        "${header[@]}" --msgbox "Patched $appName is not installed(mounted) in your device." 12 45
+    su -mm -c "/system/bin/sh $repoDir/root_util.sh unlink $pkgName" &>/dev/null
+    unlinkStatus=$?
+    if [ "$unlinkStatus" -eq "2" ]; then
+        "${header[@]}" --msgbox "Patched $appName is not installed (linked) in your device." 12 45
         return 1
     else
-        "${header[@]}" --infobox "Uninstalling Patched $appName by Unmounting..." 12 45
+        "${header[@]}" --infobox "Uninstalling Patched $appName by Unlinking..." 12 45
         sleep 2
-        [ "$unmountStatus" -ne "0" ] && "${header[@]}" --msgbox "Unmount failed !! Something went wrong." 12 45 && sleep 1 && return 1
+        [ "$unlinkStatus" -ne "0" ] && "${header[@]}" --msgbox "Unlinking failed !! Something went wrong." 12 45 && sleep 1 && return 1
     fi
-    "${header[@]}" --msgbox "Unmount Successful !!" 12 45
+    "${header[@]}" --msgbox "Unlinking Successful !!" 12 45
     sleep 1
 }
 
 refreshJson() {
-    if ! ls "$patchesSource"-patches-*.json &> /dev/null; then
+    if ! ls "$patchesSource"-patches-*.json &>/dev/null; then
         getTools || return 1
         return 0
     fi
@@ -373,7 +373,7 @@ checkTools() {
     else
         getTools || return 1
     fi
-    if [ "$cliSize" == "$(ls "$cliSource"-cli-*.jar &> /dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" == "$(ls "$patchesSource"-patches-*.jar &> /dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" == "$(ls "$integrationsSource"-integrations-*.apk &> /dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$storagePath/$source-patches.json" &> /dev/null; then
+    if [ "$cliSize" == "$(ls "$cliSource"-cli-*.jar &>/dev/null && du -b "$cliSource"-cli-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$patchesSize" == "$(ls "$patchesSource"-patches-*.jar &>/dev/null && du -b "$patchesSource"-patches-*.jar | cut -d $'\t' -f 1 || echo 0)" ] && [ "$integrationsSize" == "$(ls "$integrationsSource"-integrations-*.apk &>/dev/null && du -b "$integrationsSource"-integrations-*.apk | cut -d $'\t' -f 1 || echo 0)" ] && ls "$storagePath/$source-patches.json" &>/dev/null; then
         refreshJson || return 1
     else
         getTools || return 1
@@ -410,19 +410,19 @@ checkPatched() {
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
-        0 )
+        0)
             rm "apps/$appName-$appVer/base-$sourceName.apk"
             ;;
-        1 )
+        1)
             initInstall
             return 1
             ;;
-        2 )
+        2)
             return 1
             ;;
         esac
     else
-        rm "apps/$appName-$appVer/base-$sourceName.apk" &> /dev/null
+        rm "apps/$appName-$appVer/base-$sourceName.apk" &>/dev/null
         return 0
     fi
 }
@@ -495,7 +495,7 @@ fetchCustomApk() {
         installedVer=$(su -c dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
         if [ "$installedVer" != "$selectedVer" ]; then
             sorted=$(jq -nr --arg installedVer "$installedVer" --arg selectedVer "$selectedVer" '[$installedVer, $selectedVer] | sort | .[0]')
-            if [ "${sorted[0]}" != "$installedVer" ];then
+            if [ "${sorted[0]}" != "$installedVer" ]; then
                 "${header[@]}" --msgbox "The selected version $selectedVer is lower then version $installedVer installed on your device.\nPlease Select a higher version !!" 12 45
                 return 1
             fi
@@ -535,25 +535,28 @@ fetchApk() {
     fi
     checkPatched || return 1
     if [ -f "apps/$appName-$appVer/base.apk" ]; then
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
+        if [ "$(
+            source "apps/.appSize"
+            eval echo \$"${appName//-/_}"Size
+        )" == "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
     else
-        rm -rf "apps/$appName"* &> /dev/null
+        rm -rf "apps/$appName"* &>/dev/null
     fi
     downloadApk || return 1
 }
 
 downloadApk() {
     internet || return 1
-    readarray -t urlResult < <( (bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
+    readarray -t urlResult < <((bash "$repoDir/fetch_link.sh" "$developerName" "$apkmirrorAppName" "$appVer" 2>&3 | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\n\nScraping Download Link..." -1 -1 0 >&2) 3>&1)
     tput civis
     case "${urlResult[0]}" in
-    "error" )
+    "error")
         "${header[@]}" --msgbox "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network." 12 45
         return 1
         ;;
-    "noapk" )
+    "noapk")
         if [ "$root" == false ]; then
             "${header[@]}" --msgbox "No apk found on apkmirror.com for version $selectedVer !!\nTry selecting other version." 12 45
             return 1
@@ -562,7 +565,7 @@ downloadApk() {
             return 1
         fi
         ;;
-    "noversion" )
+    "noversion")
         "${header[@]}" --msgbox "This version is not uploaded on apkmirror.com!!\nPlease upgrade or degrade the version to patch it.\n\nSuggestion: Download apk manually and use that file to patch." 12 45
         return 1
         ;;
@@ -571,7 +574,7 @@ downloadApk() {
     appSize=${urlResult[1]}
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
+    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(("$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
     tput civis
     sleep 0.5s
     if [ "$appSize" != "$(du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1)" ]; then
@@ -586,7 +589,7 @@ downloadMicrog() {
         internet || return 1
         readarray -t microgheaders < <(curl -s "https://api.github.com/repos/$microgRepo/$microgName/releases/latest" | jq -r '(.assets[0] | .browser_download_url, .size), .tag_name')
         wget -q -c "${microgheaders[0]}" -O "$microgName-${microgheaders[2]}.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App     : $microgName \nVersion : ${microgheaders[2]}\nSize    : $(numfmt --to=iec --format="%0.1f" "${microgheaders[1]}")\n\nDownloading..." -1 -1 && tput civis
-        ls $microgName* &> /dev/null && mv $microgName* "$storagePath/" && termux-open "$storagePath/$microgName-${microgheaders[2]}.apk"
+        ls $microgName* &>/dev/null && mv $microgName* "$storagePath/" && termux-open "$storagePath/$microgName-${microgheaders[2]}.apk"
     fi
 }
 
@@ -613,24 +616,24 @@ deleteComponents() {
     while true; do
         delComponentPrompt=$("${header[@]}" --begin 2 0 --title '| Delete Components Menu |' --ok-label "Select" --cancel-label "Back" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 0 1 "Tools" 2 "Apps" 3 "Patch Options" 2>&1 >/dev/tty) || break
         case "$delComponentPrompt" in
-        1 )
+        1)
             if "${header[@]}" --begin 2 0 --title '| Delete Tools |' --no-items --defaultno --yesno "Please confirm to delete the tools.\nIt will delete the $sourceName CLI, patches and integrations." -1 -1; then
-                rm "$cliSource"-cli-*.jar &> /dev/null
-                rm "$patchesSource"-patches-*.jar &> /dev/null
-                rm "$patchesSource"-patches-*.json &> /dev/null
-                rm "$integrationsSource"-integrations-*.apk &> /dev/null
+                rm "$cliSource"-cli-*.jar &>/dev/null
+                rm "$patchesSource"-patches-*.jar &>/dev/null
+                rm "$patchesSource"-patches-*.json &>/dev/null
+                rm "$integrationsSource"-integrations-*.apk &>/dev/null
                 "${header[@]}" --msgbox "All $sourceName Tools successfully deleted !!" 12 45
             fi
             ;;
-        2 )
+        2)
             if "${header[@]}" --begin 2 0 --title '| Delete Apps |' --no-items --defaultno --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1; then
                 rm -rf "apps"/*
                 "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 45
             fi
             ;;
-        3 )
+        3)
             if "${header[@]}" --begin 2 0 --title '| Delete Patch Options |' --no-items --defaultno --yesno "Please confirm to delete the patch options file for $sourceName patches." -1 -1; then
-                rm "$storagePath/$source-options.json" &> /dev/null
+                rm "$storagePath/$source-options.json" &>/dev/null
                 "${header[@]}" --msgbox "Options file successfully deleted for current source !!" 12 45
             fi
             ;;
@@ -640,8 +643,8 @@ deleteComponents() {
 
 preferences() {
     [ "$cliSource" == "inotia00" ] && RiplibsPref=("Riplibs" "$Riplibs" "Removes extra libs from app") || RiplibsPref=()
-    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterMount" "$LaunchAppAfterMount" "[Root] Launches app automatically after mount" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools" "IgnoreAppSizeCheck" "$IgnoreAppSizeCheck" "Ignore downloaded app size check")
-    readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<< "$pref"; done)
+    prefsArray=("LightTheme" "$LightTheme" "Use Light theme for Revancify" "${RiplibsPref[@]}" "AutocheckToolsUpdate" "$AutocheckToolsUpdate" "Check for tools update at startup" "ShowConfirmPatchesMenu" "$ShowConfirmPatchesMenu" "Shows Patches Menu before Patching starts" "LaunchAppAfterLink" "$LaunchAppAfterLink" "[Root] Launches app automatically after linking in the patched APK" AllowVersionDowngrade "$AllowVersionDowngrade" "[Root] Allows downgrading version if any such module is present" "FetchPreReleasedTools" "$FetchPreReleasedTools" "Fetches the pre-release version of tools" "IgnoreAppSizeCheck" "$IgnoreAppSizeCheck" "Ignore downloaded app size check")
+    readarray -t prefsArray < <(for pref in "${prefsArray[@]}"; do sed 's/false/off/;s/true/on/' <<<"$pref"; done)
     read -ra newPrefs < <("${header[@]}" --begin 2 0 --title '| Preferences Menu |' --item-help --no-items --no-cancel --ok-label "Save" --checklist "Use arrow keys to navigate; Press Spacebar to toogle patch" $(($(tput lines) - 3)) -1 15 "${prefsArray[@]}" 2>&1 >/dev/tty)
     sed -i 's/true/false/' "$envFile"
     for newPref in "${newPrefs[@]}"; do
@@ -669,44 +672,44 @@ buildApk() {
 mainMenu() {
     mainMenu=$("${header[@]}" --begin 2 0 --title '| Main Menu |' --default-item "$mainMenu" --ok-label "Select" --cancel-label "Exit" --menu "Use arrow keys to navigate\nSource: $sourceName" -1 -1 0 1 "Patch App" 2 "Select Patches" 3 "Change Source" 4 "Fetch Tools" 5 "Edit Patch Options" 6 "$menuEntry" 7 "Delete Components" 8 "Preferences" 2>&1 >/dev/tty) || terminate 0
     case "$mainMenu" in
-    1 )
+    1)
         while true; do
             selectApk storage || break
             buildApk
         done
         ;;
-    2 )
+    2)
         while true; do
             selectApk normal || break
             selectPatches Save || break
         done
         ;;
-    3 )
+    3)
         changeSource
         ;;
-    4 )
+    4)
         getTools
         ;;
-    5 )
+    5)
         editPatchOptions
         ;;
-    6 )
+    6)
         if [ "$root" == true ]; then
             rootUninstall
         else
             downloadMicrog
         fi
         ;;
-    7 )
+    7)
         deleteComponents
         ;;
-    8 )
+    8)
         preferences
         ;;
     esac
 }
 
-if su -c exit &> /dev/null; then
+if su -c exit &>/dev/null; then
     [ "$1" == false ] && root=false || root=true
 else
     root=false
