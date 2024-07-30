@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+[ -n "$ping_ok" ] || if ping -c 1 google.com &>/dev/null; then ping_ok=true; else ping_ok=false; fi
+
 terminate() {
     killall -9 java &> /dev/null
     killall -9 dialog &> /dev/null
@@ -21,7 +23,7 @@ setEnv() {
 }
 
 initialize() {
-    internalStorage="/storage/emulated/0"
+    : "${internalStorage:=/storage/emulated/0}"
     storagePath="$internalStorage/Revancify"
     [ ! -d "$storagePath" ] && mkdir -p "$storagePath"
     [ ! -d apps ] && mkdir -p apps
@@ -69,7 +71,7 @@ initialize() {
 }
 
 internet() {
-    if ! ping -c 1 google.com &> /dev/null; then
+    if ! "$ping_ok"; then
         "${header[@]}" --msgbox "Oops! No Internet Connection available.\n\nConnect to Internet and try again later." 12 45
         return 1
     fi
@@ -539,7 +541,7 @@ fetchApk() {
             return 0
         fi
     else
-        rm -rf "apps/$appName"* &> /dev/null
+        rm -rf "$DATA/apps/$appName"* &> /dev/null
     fi
     downloadApk || return 1
 }
@@ -624,7 +626,7 @@ deleteComponents() {
             ;;
         2 )
             if "${header[@]}" --begin 2 0 --title '| Delete Apps |' --no-items --defaultno --yesno "Please confirm to delete all the downloaded and patched apps." -1 -1; then
-                rm -rf "apps"/*
+                rm -rf "$DATA/apps"/*
                 "${header[@]}" --msgbox "All Apps are successfully deleted !!" 12 45
             fi
             ;;
