@@ -6,8 +6,9 @@
 ## Termux
 | Android Version | Download Link|
 | ---- | ----- |
-| Android 8+ | [Termux Monet](https://github.com/HardcodedCat/termux-monet/releases/latest) (Strictly Recommended)
-| Android 4+ | [Termux](https://github.com/termux/termux-app/releases/latest)
+| Android 4+ | [Termux](https://github.com/termux/termux-app/releases/latest) (Recommended)
+| Android 8+ | [Termux Monet](https://github.com/Termux-Monet/termux-monet/releases/latest)
+
 
 # Features
 1. Auto updates Patches and CLI
