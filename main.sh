@@ -30,7 +30,7 @@ initialize() {
     header=(dialog --backtitle "Revancify | [Arch: $arch, Root: $root]" --no-shadow)
     envFile=config.cfg
     [ ! -f "apps/.appSize" ] && : > "apps/.appSize"
-    userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
     AutocheckToolsUpdate="" Riplibs="" LightTheme="" ShowConfirmPatchesMenu="" LaunchAppAfterMount="" AllowVersionDowngrade="" FetchPreReleasedTools=""
     setEnv AutocheckToolsUpdate false init "$envFile"
