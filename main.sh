@@ -535,14 +535,16 @@ fetchApk() {
     fi
     checkPatched || return 1
     if [ -e "apps/$appName-$appVer.apkm" ]; then
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -e "apps/$appName-$appVer.apkm" ] && du -b "apps/$appName-$appVer.apkm" | cut -d $'\t' -f 1 || echo 0)" ]; then
+        if [ "$PreferSplitApk" == "false" ]; then
+            rm -rf "apps/$appName"* &> /dev/null
+        elif [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$(du -b "apps/$appName-$appVer.apkm" | cut -d $'\t' -f 1 || echo 0)" ]; then
             if [ ! -e "apps/$appName-$appVer.apk" ]; then
                 antiSplitApkm
             fi
             return 0
         fi
     elif [ -e "apps/$appName-$appVer.apk" ]; then
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -e "apps/$appName-$appVer.apk" ] && du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$(du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
     else
