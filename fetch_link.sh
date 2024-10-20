@@ -12,34 +12,42 @@ page1=$(curl -vsL -A "$UserAgent" "https://www.apkmirror.com/apk/$developer/$app
 
 canonicalUrl=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<"$page1")
 if [[ "$canonicalUrl" == *"apk-download"* ]]; then
-    urls=("${canonicalUrl/"https://www.apkmirror.com/"//}")
+    url1="${canonicalUrl/"https://www.apkmirror.com/"//}"
 else
     grep -q 'class="error404"' <<<"$page1" && echo noversion >&2 && exit 1
 
-    if [ "$preferSplit" == "true" ]; then
-        page2=$(pup -p --charset utf-8 ':parent-of(span:contains("BUNDLE"))' <<<"$page1")
-    else
-        page2=""
-    fi
+    bundles=$(pup -p --charset utf-8 ':parent-of(span.apkm-badge:contains("BUNDLE"))' <<<"$page1")
+    readarray -t bundleUrls < <(pup -p --charset utf-8 'a.accent_color attr{href}' <<<"$bundles")
 
-    if [ "$page2" != "" ]; then
-        readarray -t urls < <(pup -p --charset utf-8 'a.accent_color attr{href}' <<<"$page2")
-        appType="bundle"
-    else
-        page2=$(pup -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<<"$page1")
+    apks=$(pup -p --charset utf-8 ':parent-of(:parent-of(span.apkm-badge:contains("APK")))' <<<"$page1")
         
-        [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<<"$page2")" == "" ]] || arch=noarch
-        [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("universal"))' <<<"$page2")" == "" ]] || arch=universal
+    [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<<"$apks")" == "" ]] || arch=noarch
+    [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("universal"))' <<<"$apks")" == "" ]] || arch=universal
 
-        readarray -t urls < <(pup -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$page2")
-        [ "${#urls[@]}" -eq 0 ] && echo noapk >&2 && exit 1
-        appType="apk"
-    fi
+    readarray -t apkUrls < <(pup -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$apks")
+
+    if [ "$preferSplit" == "true" ]; then
+        if [ "${#bundleUrls[@]}" -ne 0 ]; then
+            url1=${bundleUrls[-1]}
+            appType=bundle
+        else
+            url1=${apkUrls[-1]}
+            appType=apk
+        fi
+    else
+        if [ "${#apkUrls[@]}" -ne 0 ]; then
+            url1=${apkUrls[-1]}
+            appType=apk
+        else
+            url1=${bundleUrls[-1]}
+            appType=bundle
+        fi
+    fi  
 
 fi
 echo 33
 
-page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${urls[-1]}")
+page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com$url1")
 
 if [ "$appType" == "bundle" ]; then
     url2=$(pup -p --charset utf-8 'a:contains("Download APK Bundle") attr{href}' <<<"$page3")
