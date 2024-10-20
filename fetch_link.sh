@@ -41,7 +41,11 @@ echo 33
 
 page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${urls[-1]}")
 
-url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
+if [ "$appType" == "bundle" ]; then
+    url2=$(pup -p --charset utf-8 'a:contains("Download APK Bundle") attr{href}' <<<"$page3")
+else
+    url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
+fi
 size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | sed -n 's/.*(//;s/ bytes.*//;s/,//gp')
 
 [ "$url2" == "" ] && echo error >&2 && exit 1
