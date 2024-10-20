@@ -31,7 +31,7 @@ rm "/data/local/tmp/revancify/$pkgName.apk"
 if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]; then
     :
 else
-    pm install --user 0 -r "apps/$appName-$appVer/base.apk"
+    pm install --user 0 -r "apps/$appName-$appVer.apk"
 fi
 
 pm list packages | grep -q "$pkgName" || exit 1
@@ -43,7 +43,7 @@ am force-stop "$pkgName"
 
 {
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
-    cp "apps/$appName-$appVer/base-$sourceName.apk" "/data/local/tmp/revancify/$pkgName.apk"
+    cp "apps/$appName-$appVer-$sourceName.apk" "/data/local/tmp/revancify/$pkgName.apk"
     chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
     chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
     mount -vo bind "$revancedApp" "$stockApp"
