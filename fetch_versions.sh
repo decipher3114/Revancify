@@ -14,16 +14,16 @@ page1=$(curl --fail-early --connect-timeout 2 --max-time 5 -sL -A "$UserAgent" "
 
 readarray -t versions < <(pup -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$page1")
 
-supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '[.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions[] | sub(" *[-, ] *"; "-"; "g") | sub(":"; ""; "g")]' "$storagePath/$patchesSource-patches.json")
+supportedVers=$(jq -r --arg apkmirrorAppName "$apkmirrorAppName" '[.[] | select(.apkmirrorAppName == $apkmirrorAppName).versions[] | sub(" *[-, ] *"; "-"; "g")]' "$storagePath/$patchesSource-patches.json")
 
 jq -r -n --arg appName "$appName-"\
     --arg currentVersion "$currentVersion"\
     --argjson supportedVers "$supportedVers"\
-    '($currentVersion | sub(" *[-, ] *"; "-"; "g") | sub(":"; ""; "g")) as $installedVer |
+    '($currentVersion | sub(" *[-, ] *"; "-"; "g")) as $installedVer |
     [
         [
             $ARGS.positional[] |
-            sub("( -)|( &)|:"; ""; "g") |
+            sub("( -)|( &)"; ""; "g") |
             sub("[()\\|]"; ""; "g") |
             sub(" *[-, ] *"; "-"; "g") |
             sub($appName; "")

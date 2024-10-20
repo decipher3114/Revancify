@@ -327,8 +327,10 @@ initInstall() {
         fi
     else
         "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
-        cp "apps/$appName-$appVer-$sourceName.apk" "$storagePath" &> /dev/null
-        termux-open "$storagePath/$appName-$appVer-$sourceName.apk"
+        canonicalAppVer=${appVer//:/}
+        cp "apps/$appName-$appVer-$sourceName.apk" apps/temp.apk &> /dev/null
+        mv "apps/temp.apk" "$storagePath/$appName-$canonicalAppVer-$sourceName.apk" &> /dev/null
+        termux-open "$storagePath/$appName-$canonicalAppVer-$sourceName.apk"
         return 1
     fi
 }
