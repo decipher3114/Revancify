@@ -6,22 +6,25 @@ arch=$(getprop ro.product.cpu.abi)
 developer="$1"
 appName="$2"
 appVer="$3"
+preferSplit="$4"
 
 page1=$(curl -vsL -A "$UserAgent" "https://www.apkmirror.com/apk/$developer/$appName/$appName-$appVer-release" 2>&1)
 
 canonicalUrl=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<"$page1")
 if [[ "$canonicalUrl" == *"apk-download"* ]]; then
     urls=("${canonicalUrl/"https://www.apkmirror.com/"//}")
-    url1=${urls[-1]}
 else
     grep -q 'class="error404"' <<<"$page1" && echo noversion >&2 && exit 1
 
-    page2=$(pup -p --charset utf-8 ':parent-of(span:contains("BUNDLE"))' <<<"$page1")
+    if [ "$preferSplit" == "true" ]; then
+        page2=$(pup -p --charset utf-8 ':parent-of(span:contains("BUNDLE"))' <<<"$page1")
+    else
+        page2=""
+    fi
 
     if [ "$page2" != "" ]; then
         readarray -t urls < <(pup -p --charset utf-8 'a.accent_color attr{href}' <<<"$page2")
         appType="bundle"
-        url1=${urls[0]}
     else
         page2=$(pup -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<<"$page1")
         
@@ -31,13 +34,12 @@ else
         readarray -t urls < <(pup -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$page2")
         [ "${#urls[@]}" -eq 0 ] && echo noapk >&2 && exit 1
         appType="apk"
-        url1="${urls[-1]}"
     fi
 
 fi
 echo 33
 
-page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com$url1")
+page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${urls[-1]}")
 
 url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
 size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | sed -n 's/.*(//;s/ bytes.*//;s/,//gp')
