@@ -609,13 +609,13 @@ antiSplitApkm() {
     appDir="apps/$appName/$appName-$appVer"
     mkdir "$appDir"
     cp "$splits/base.apk" "$appDir"
-    cp "$splits/split_config.${arch//-/_}.apk" "$appDir"
+    cp "$splits/split_config.${arch//-/_}.apk" "$appDir" &> /dev/null
     locale=$(getprop persist.sys.locale | sed 's/-.*//g')
     if [ ! -e "$splits/split_config.${locale}.apk" ]; then
         locale=$(getprop ro.product.locale | sed 's/-.*//g')
     fi
-    cp "$splits/split_config.${locale}.apk" "$appDir"
-    cp "$splits"/split_config.*dpi.apk "$appDir"
+    cp "$splits/split_config.${locale}.apk" "$appDir" &> /dev/null
+    cp "$splits"/split_config.*dpi.apk "$appDir" &> /dev/null
     rm -rf "$splits"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk" &> /dev/null
 }
