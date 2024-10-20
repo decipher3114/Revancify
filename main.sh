@@ -534,7 +534,14 @@ fetchApk() {
         fi
     fi
     checkPatched || return 1
-    if [ -e "apps/$appName/$appName-$appVer.apk" ]; then
+    if [ -e "apps/$appName/$appName-$appVer.apkm" ]; then
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -e "apps/$appName/$appName-$appVer.apkm" ] && du -b "apps/$appName/$appName-$appVer.apkm" | cut -d $'\t' -f 1 || echo 0)" ]; then
+            if [ ! -e "apps/$appName/$appName-$appVer.apk" ]; then
+                antiSplitApkm
+            fi
+            return 0
+        fi
+    elif [ -e "apps/$appName/$appName-$appVer.apk" ]; then
         if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -e "apps/$appName/$appName-$appVer.apk" ] && du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
