@@ -598,7 +598,7 @@ antiSplitApkm() {
     temp="apps/$appName/temp"
     mkdir "$temp"
     unzip -qqo "apps/$appName/$appName-$appVer.apkm" -d "$temp"
-    appDir="apps/$appName-$appVer"
+    appDir="apps/$appName/$appName-$appVer"
     mkdir "$appDir"
     mv "$temp/base.apk" "$appDir"
     mv "$temp/split_config.${arch}.apk" "$appDir"
