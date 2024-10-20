@@ -11,22 +11,33 @@ page1=$(curl -vsL -A "$UserAgent" "https://www.apkmirror.com/apk/$developer/$app
 
 canonicalUrl=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<"$page1")
 if [[ "$canonicalUrl" == *"apk-download"* ]]; then
-    url1=("${canonicalUrl/"https://www.apkmirror.com/"//}")
+    urls=("${canonicalUrl/"https://www.apkmirror.com/"//}")
+    url1=${urls[-1]}
 else
     grep -q 'class="error404"' <<<"$page1" && echo noversion >&2 && exit 1
 
-    page2=$(pup -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<<"$page1")
+    page2=$(pup -p --charset utf-8 ':parent-of(span:contains("BUNDLE"))' <<<"$page1")
 
-    [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<<"$page2")" == "" ]] || arch=noarch
-    [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("universal"))' <<<"$page2")" == "" ]] || arch=universal
+    if [ "$page2" != "" ]; then
+        readarray -t urls < <(pup -p --charset utf-8 'a.accent_color attr{href}' <<<"$page2")
+        appType="bundle"
+        url1=${urls[0]}
+    else
+        page2=$(pup -p --charset utf-8 ':parent-of(:parent-of(span:contains("APK")))' <<<"$page1")
+        
+        [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("noarch"))' <<<"$page2")" == "" ]] || arch=noarch
+        [[ "$(pup -p --charset utf-8 ':parent-of(div:contains("universal"))' <<<"$page2")" == "" ]] || arch=universal
 
-    readarray -t url1 < <(pup -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$page2")
+        readarray -t urls < <(pup -p --charset utf-8 ":parent-of(div:contains(\"$arch\")) a.accent_color attr{href}" <<<"$page2")
+        [ "${#urls[@]}" -eq 0 ] && echo noapk >&2 && exit 1
+        appType="apk"
+        url1="${urls[-1]}"
+    fi
 
-    [ "${#url1[@]}" -eq 0 ] && echo noapk >&2 && exit 1
 fi
 echo 33
 
-page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com${url1[-1]}")
+page3=$(curl -sL -A "$UserAgent" "https://www.apkmirror.com$url1")
 
 url2=$(pup -p --charset utf-8 'a:contains("Download APK") attr{href}' <<<"$page3")
 size=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$page3" | sed -n 's/.*(//;s/ bytes.*//;s/,//gp')
@@ -41,3 +52,4 @@ echo 100
 
 echo "https://www.apkmirror.com$url3" >&2
 echo "$size" >&2
+echo "$appType" >&2

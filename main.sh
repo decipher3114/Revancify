@@ -327,8 +327,8 @@ initInstall() {
     else
         "${header[@]}" --infobox "Copying $appName $sourceName $selectedVer to Internal Storage..." 12 45
         [ -d "$storagePath/$appName-$appVer" ] || mkdir -p "$storagePath/$appName-$appVer"
-        cp "apps/$appName-$appVer/base-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
-        termux-open "$storagePath/$appName-$appVer/base-$sourceName.apk"
+        cp "apps/$appName/$appName-$appVer-$sourceName.apk" "$storagePath/$appName-$appVer" &> /dev/null
+        termux-open "$storagePath/$appName/$appName-$appVer-$sourceName.apk"
         return 1
     fi
 }
@@ -406,12 +406,12 @@ versionSelector() {
 }
 
 checkPatched() {
-    if [ -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
+    if [ -f "apps/$appName/$appName-$appVer-$sourceName.apk" ]; then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
         0 )
-            rm "apps/$appName-$appVer/base-$sourceName.apk"
+            rm "apps/$appName/$appName-$appVer-$sourceName.apk"
             ;;
         1 )
             initInstall
@@ -422,7 +422,7 @@ checkPatched() {
             ;;
         esac
     else
-        rm "apps/$appName-$appVer/base-$sourceName.apk" &> /dev/null
+        rm "apps/$appName/$appName-$appVer-$sourceName.apk" &> /dev/null
         return 0
     fi
 }
@@ -502,7 +502,7 @@ fetchCustomApk() {
         fi
     fi
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    cp "$newPath" "apps/$appName-$appVer/base.apk"
+    cp "$newPath" "apps/$appName/$appName-$appVer.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
             return 1
@@ -534,8 +534,8 @@ fetchApk() {
         fi
     fi
     checkPatched || return 1
-    if [ -f "apps/$appName-$appVer/base.apk" ]; then
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
+    if [ -f "apps/$appName/$appName-$appVer.apk" ]; then
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName/$appName-$appVer.apk" ] && du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
     else
@@ -569,15 +569,18 @@ downloadApk() {
     esac
     appUrl=${urlResult[0]}
     appSize=${urlResult[1]}
+    appType=${urlResult[2]}
+    [ "$appType" == "apk" ] && appExt=apk || appExt=apkm
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
     [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
-    wget -q -c "$appUrl" -O "apps/$appName-$appVer/base.apk" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName-$appVer/base.apk" ] && du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
+    wget -q -c "$appUrl" -O "apps/$appName/$appName-$appVer.$appExt" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName/$appName-$appVer.$appExt" ] && du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
     tput civis
     sleep 0.5s
-    if [ "$appSize" != "$(du -b "apps/$appName-$appVer/base.apk" | cut -d $'\t' -f 1)" ]; then
+    if [ "$appSize" != "$(du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1)" ]; then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 45
         return 1
     fi
+    [ "$appType" == "bundle" ] && antiSplitApkm
 }
 
 downloadMicrog() {
@@ -590,6 +593,24 @@ downloadMicrog() {
     fi
 }
 
+antiSplitApkm() {
+    "${header[@]}" --infobox "Please Wait !!\nReducing app size..." 12 45
+    temp="apps?/$appName/temp"
+    mkdir "$temp"
+    unzip "apps/$appName/$appName-$appVer.apkm" "apps/$appName/temp"
+    appDir="apps/$appName-$appVer"
+    mkdir "$appDir"
+    mv "$temp/base.apk" "$appDir"
+    mv "$temp/split_config.${arch}.apk" "$appDir"
+    locale=$(getprop persist.sys.locale | sed 's/-.*//g')
+    if [ ! -e "$temp/split_config.${locale}.apk" ]; then
+        locale=$(getprop ro.product.locale | sed 's/-.*//g')
+    fi
+    mv "$temp/split_config.${locale}.apk" "$appDir"
+    mv "$temp/split_config.*dpi.apk" "$appDir"
+    java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk"
+}
+
 patchApk() {
     if [ "$cliSource" == "inotia00" ] && [ "$Riplibs" == true ]; then
         riplibArgs=(--rip-lib=x86_64 --rip-lib=x86 --rip-lib=armeabi-v7a --rip-lib=arm64-v8a)
@@ -599,11 +620,11 @@ patchApk() {
     fi
     includedPatches=$(jq '.' "$storagePath/$source-patches.json" 2>/dev/null || jq -n '[]')
     readarray -t patchesArg < <(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName).includedPatches | if ((. | length) != 0) then (.[] | "-i", .) else empty end')
-    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName-$appVer/base-$sourceName.apk" "${riplibArgs[@]}" "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName-$appVer/base.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
+    java -jar "$cliSource"-cli-*.jar patch -fpw -b "$patchesSource"-patches-*.jar -m "$integrationsSource"-integrations-*.apk -o "apps/$appName/$appName-$appVer-$sourceName.apk" "${riplibArgs[@]}" "${patchesArg[@]}" --keystore "$repoDir"/revancify.keystore --keystore-entry-alias "decipher" --signer "decipher" --keystore-entry-password "revancify" --keystore-password "revancify" --custom-aapt2-binary ./aapt2 --options "$storagePath/$source-options.json" --exclusive "apps/$appName/$appName-$appVer.apk" 2>&1 | tee "$storagePath/patch_log.txt" | "${header[@]}" --begin 2 0 --ok-label "Continue" --cursor-off-label --programbox "Patching $appName $selectedVer.apk" -1 -1
     echo -e "\n\n\nRooted: $root\nArch: $arch\nApp: $appName v$appVer\nCLI: $(ls "$cliSource"-cli-*.jar)\nPatches: $(ls "$patchesSource"-patches-*.jar)\nIntegrations: $(ls "$integrationsSource"-integrations-*.apk)\nPatches argument: ${patchesArg[*]}" >>"$storagePath/patch_log.txt"
     tput civis
     sleep 1
-    if [ ! -f "apps/$appName-$appVer/base-$sourceName.apk" ]; then
+    if [ ! -f "apps/$appName/$appName-$appVer-$sourceName.apk" ]; then
         "${header[@]}" --msgbox "Oops, Patching failed !!\nLogs saved to \"Internal Storage/Revancify/patch_log.txt\". Share the Patchlog to developer." 12 45
         return 1
     fi
