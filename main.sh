@@ -602,19 +602,20 @@ downloadMicrog() {
 
 antiSplitApkm() {
     "${header[@]}" --infobox "Please Wait !!\nReducing app size..." 12 45
-    temp="apps/$appName/temp"
-    mkdir "$temp"
-    unzip -qqo "apps/$appName/$appName-$appVer.apkm" -d "$temp"
+    splits="apps/$appName/splits"
+    mkdir "$splits"
+    unzip -qqo "apps/$appName/$appName-$appVer.apkm" -d "$splits"
     appDir="apps/$appName/$appName-$appVer"
     mkdir "$appDir"
-    cp "$temp/base.apk" "$appDir"
-    cp "$temp/split_config.${arch//-/_}.apk" "$appDir"
+    cp "$splits/base.apk" "$appDir"
+    cp "$splits/split_config.${arch//-/_}.apk" "$appDir"
     locale=$(getprop persist.sys.locale | sed 's/-.*//g')
-    if [ ! -e "$temp/split_config.${locale}.apk" ]; then
+    if [ ! -e "$splits/split_config.${locale}.apk" ]; then
         locale=$(getprop ro.product.locale | sed 's/-.*//g')
     fi
-    cp "$temp/split_config.${locale}.apk" "$appDir"
-    cp "$temp"/split_config.*dpi.apk "$appDir"
+    cp "$splits/split_config.${locale}.apk" "$appDir"
+    cp "$splits"/split_config.*dpi.apk "$appDir"
+    rm -rf "$splits"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk" &> /dev/null
 }
 
