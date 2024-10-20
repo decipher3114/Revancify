@@ -576,7 +576,7 @@ downloadApk() {
     wget -q -c "$appUrl" -O "apps/$appName/$appName-$appVer.$appExt" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName/$appName-$appVer.$appExt" ] && du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
     tput civis
     sleep 0.5s
-    if [ "$appSize" != "$(du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1)" ]; then
+    if [ "$appSize" != "$(du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1)" ]; then
         "${header[@]}" --msgbox "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry." 12 45
         return 1
     fi
