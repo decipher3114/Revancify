@@ -618,7 +618,6 @@ antiSplitApkm() {
     cp "$splits"/split_config.*dpi.apk "$appDir" &> /dev/null
     rm -rf "$splits"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName-$appVer.apk" &> /dev/null
-    rm -rf "$appDir"
 }
 
 patchApk() {
