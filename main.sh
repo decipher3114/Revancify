@@ -62,7 +62,7 @@ initialize() {
         fi
     fi
 
-    if [ -f "$storagePath/$source-patches.json" ]; then
+    if [ -e "$storagePath/$source-patches.json" ]; then
         bash "$repoDir/fetch_patches.sh" "$patchesSource" offline "$storagePath" &> /dev/null
         refreshJson || return 1
     fi
@@ -101,7 +101,7 @@ fetchToolsAPI() {
 
 getTools() {
     fetchToolsAPI || return 1
-    if [ -f "$patchesSource-patches-$patchesLatest.jar" ] && [ -f "$patchesSource-patches-$patchesLatest.json" ] && [ -f "$cliSource-cli-$cliLatest.jar" ] && [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] && [ "$cliSize" == "$cliAvailableSize" ] && [ "$patchesSize" == "$patchesAvailableSize" ] && [ "$integrationsSize" == "$integrationsAvailableSize" ]; then
+    if [ -e "$patchesSource-patches-$patchesLatest.jar" ] && [ -e "$patchesSource-patches-$patchesLatest.json" ] && [ -e "$cliSource-cli-$cliLatest.jar" ] && [ -e "$integrationsSource-integrations-$integrationsLatest.apk" ] && [ "$cliSize" == "$cliAvailableSize" ] && [ "$patchesSize" == "$patchesAvailableSize" ] && [ "$integrationsSize" == "$integrationsAvailableSize" ]; then
         if [ "$(bash "$repoDir/fetch_patches.sh" "$patchesSource" online "$storagePath")" == "error" ]; then
             "${header[@]}" --msgbox "Tools are successfully downloaded but Apkmirror API is not accessible. So, patches are not successfully synced.\nRevancify may crash.\n\nChange your network." 12 45
             return 1
@@ -109,9 +109,9 @@ getTools() {
         "${header[@]}" --msgbox "Tools are already downloaded !!\n\nPatches are successfully synced." 12 45
         return 0
     fi
-    [ -f "$patchesSource-patches-$patchesLatest.jar" ] || { rm "$patchesSource"-patches-*.jar &> /dev/null && rm "$patchesSource"-patches-*.json &> /dev/null && patchesAvailableSize=0 ;}
-    [ -f "$cliSource-cli-$cliLatest.jar" ] || { rm "$cliSource"-cli-*.jar &> /dev/null && cliAvailableSize=0 ;}
-    [ -f "$integrationsSource-integrations-$integrationsLatest.apk" ] || { rm "$integrationsSource"-integrations-*.apk &> /dev/null && integrationsAvailableSize=0 ;}
+    [ -e "$patchesSource-patches-$patchesLatest.jar" ] || { rm "$patchesSource"-patches-*.jar &> /dev/null && rm "$patchesSource"-patches-*.json &> /dev/null && patchesAvailableSize=0 ;}
+    [ -e "$cliSource-cli-$cliLatest.jar" ] || { rm "$cliSource"-cli-*.jar &> /dev/null && cliAvailableSize=0 ;}
+    [ -e "$integrationsSource-integrations-$integrationsLatest.apk" ] || { rm "$integrationsSource"-integrations-*.apk &> /dev/null && integrationsAvailableSize=0 ;}
     [ "$cliSize" != "$cliAvailableSize" ] &&
         wget -q -c "$cliUrl" -O "$cliSource"-cli-"$cliLatest".jar --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "Source  : $cliSource\nTool    : CLI\nVersion : $cliLatest\nSize    : $(numfmt --to=iec --format="%0.1f" "$cliSize")\n\nDownloading..." -1 -1 "$(($((cliAvailableSize * 100)) / cliSize))" && tput civis
 
@@ -368,7 +368,7 @@ refreshJson() {
 }
 
 checkTools() {
-    if [ -f ".${source}-data" ]; then
+    if [ -e ".${source}-data" ]; then
         source ./".${source}-data"
     else
         getTools || return 1
@@ -406,7 +406,7 @@ versionSelector() {
 }
 
 checkPatched() {
-    if [ -f "apps/$appName/$appName-$appVer-$sourceName.apk" ]; then
+    if [ -e "apps/$appName/$appName-$appVer-$sourceName.apk" ]; then
         "${header[@]}" --begin 2 0 --title '| Patched apk found |' --no-items --defaultno --yes-label 'Patch' --no-label 'Install' --help-button --help-label 'Back' --yesno "Current directory already contains Patched $appName version $selectedVer.\n\n\nDo you want to patch $appName again?" -1 -1
         apkFoundPrompt=$?
         case "$apkFoundPrompt" in
@@ -534,8 +534,8 @@ fetchApk() {
         fi
     fi
     checkPatched || return 1
-    if [ -f "apps/$appName/$appName-$appVer.apk" ]; then
-        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -f "apps/$appName/$appName-$appVer.apk" ] && du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
+    if [ -e "apps/$appName/$appName-$appVer.apk" ]; then
+        if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$([ -e "apps/$appName/$appName-$appVer.apk" ] && du -b "apps/$appName/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
     else
@@ -573,7 +573,7 @@ downloadApk() {
     [ "$appType" == "apk" ] && appExt=apk || appExt=apkm
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
     [ -d "apps/$appName" ] || mkdir -p "apps/$appName"
-    wget -q -c "$appUrl" -O "apps/$appName/$appName-$appVer.$appExt" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\nAppType: $appExt\n\nDownloading..." -1 -1 "$(($(( "$([ -f "apps/$appName/$appName-$appVer.$appExt" ] && du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
+    wget -q -c "$appUrl" -O "apps/$appName/$appName-$appVer.$appExt" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\nAppType: $appExt\n\nDownloading..." -1 -1 "$(($(( "$([ -e "apps/$appName/$appName-$appVer.$appExt" ] && du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
     tput civis
     sleep 0.5s
     if [ "$appSize" != "$(du -b "apps/$appName/$appName-$appVer.$appExt" | cut -d $'\t' -f 1)" ]; then
