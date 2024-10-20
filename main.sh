@@ -502,7 +502,6 @@ fetchCustomApk() {
             fi
         fi
     fi
-    [ -d "apps/$appName-$appVer" ] || mkdir -p "apps/$appName-$appVer"
     cp "$newPath" "apps/$appName-$appVer.apk"
     if [ "$(jq -n -r --argjson includedPatches "$includedPatches" --arg pkgName "$pkgName" '$includedPatches[] | select(.pkgName == $pkgName) | .versions | length')" -eq 0 ]; then
         if ! "${header[@]}" --begin 2 0 --title '| Proceed |' --no-items --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $fileAppName\nPackage Name: $pkgName\nVersion     : $selectedVer\nDo you want to proceed with this app?" -1 -1; then
@@ -580,7 +579,6 @@ downloadApk() {
     appType=${urlResult[2]}
     [ "$appType" == "apk" ] && appExt=apk || appExt=apkm
     setEnv "${appName//-/_}Size" "$appSize" update "apps/.appSize"
-    [ -d "apps/$appName" ] || mkdir -p "apps/$appName"
     wget -q -c "$appUrl" -O "apps/$appName-$appVer.$appExt" --show-progress --user-agent="$userAgent" 2>&1 | stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' | "${header[@]}" --begin 2 0 --gauge "App    : $appName\nVersion: $selectedVer\nSize   : $(numfmt --to=iec --format="%0.1f" "$appSize")\nAppType: $appExt\n\nDownloading..." -1 -1 "$(($(( "$([ -e "apps/$appName-$appVer.$appExt" ] && du -b "apps/$appName-$appVer.$appExt" | cut -d $'\t' -f 1 || echo 0)" * 100)) / appSize))"
     tput civis
     sleep 0.5s
