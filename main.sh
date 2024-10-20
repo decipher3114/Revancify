@@ -597,7 +597,7 @@ antiSplitApkm() {
     "${header[@]}" --infobox "Please Wait !!\nReducing app size..." 12 45
     temp="apps/$appName/temp"
     mkdir "$temp"
-    unzip "apps/$appName/$appName-$appVer.apkm" "apps/$appName/temp"
+    unzip "apps/$appName/$appName-$appVer.apkm" -d "apps/$appName/temp" -f -qq
     appDir="apps/$appName-$appVer"
     mkdir "$appDir"
     mv "$temp/base.apk" "$appDir"

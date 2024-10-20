@@ -81,7 +81,7 @@ terminate() {
 trap terminate SIGTERM SIGINT SIGABRT
 
 checkdependencies() {
-    if [ -e "$DATA/aapt2" ] && [ -e "$DATA/ApkEditor.jar" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
+    if [ -e "$DATA/aapt2" ] && [ -e "$DATA/ApkEditor.jar" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && grep -q unzip && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
         return 0
     else
         if ping -c 1 google.com >/dev/null 2>&1; then
