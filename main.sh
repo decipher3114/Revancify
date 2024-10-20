@@ -535,16 +535,7 @@ fetchApk() {
         fi
     fi
     checkPatched || return 1
-    if [ -e "apps/$appName-$appVer.apkm" ]; then
-        if [ "$PreferSplitApk" == "false" ]; then
-            rm -rf "apps/$appName"* &> /dev/null
-        elif [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$(du -b "apps/$appName-$appVer.apkm" | cut -d $'\t' -f 1 || echo 0)" ]; then
-            if [ ! -e "apps/$appName-$appVer.apk" ]; then
-                antiSplitApkm
-            fi
-            return 0
-        fi
-    elif [ -e "apps/$appName-$appVer.apk" ]; then
+    if [ -e "apps/$appName-$appVer.apk" ]; then
         if [ "$(source "apps/.appSize"; eval echo \$"${appName//-/_}"Size)" == "$(du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1 || echo 0)" ]; then
             return 0
         fi
@@ -608,6 +599,7 @@ antiSplitApkm() {
     splits="apps/splits"
     mkdir "$splits"
     unzip -qqo "apps/$appName-$appVer.apkm" -d "$splits"
+    rm "apps/$appName-$appVer.apkm"
     appDir="apps/$appName-$appVer"
     mkdir "$appDir"
     cp "$splits/base.apk" "$appDir"
@@ -621,6 +613,7 @@ antiSplitApkm() {
     rm -rf "$splits"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName-$appVer.apk" &> /dev/null
     rm -rf "$appDir"
+    setEnv "${appName//-/_}Size" "$(du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1)" update "apps/.appSize"
 }
 
 patchApk() {
