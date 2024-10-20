@@ -600,14 +600,14 @@ antiSplitApkm() {
     unzip -qqo "apps/$appName/$appName-$appVer.apkm" -d "$temp"
     appDir="apps/$appName/$appName-$appVer"
     mkdir "$appDir"
-    mv "$temp/base.apk" "$appDir"
-    mv "$temp/split_config.${arch}.apk" "$appDir"
+    cp "$temp/base.apk" "$appDir"
+    cp "$temp/split_config.${arch//-/_}.apk" "$appDir"
     locale=$(getprop persist.sys.locale | sed 's/-.*//g')
     if [ ! -e "$temp/split_config.${locale}.apk" ]; then
         locale=$(getprop ro.product.locale | sed 's/-.*//g')
     fi
-    mv "$temp/split_config.${locale}.apk" "$appDir"
-    mv "$temp/split_config.*dpi.apk" "$appDir"
+    cp "$temp/split_config.${locale}.apk" "$appDir"
+    cp "$temp"/split_config.*dpi.apk "$appDir"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk" &> /dev/null
 }
 
