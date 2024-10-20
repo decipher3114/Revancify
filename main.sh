@@ -595,7 +595,7 @@ downloadMicrog() {
 
 antiSplitApkm() {
     "${header[@]}" --infobox "Please Wait !!\nReducing app size..." 12 45
-    temp="apps?/$appName/temp"
+    temp="apps/$appName/temp"
     mkdir "$temp"
     unzip "apps/$appName/$appName-$appVer.apkm" "apps/$appName/temp"
     appDir="apps/$appName-$appVer"
@@ -608,7 +608,7 @@ antiSplitApkm() {
     fi
     mv "$temp/split_config.${locale}.apk" "$appDir"
     mv "$temp/split_config.*dpi.apk" "$appDir"
-    java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk"
+    java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName/$appName-$appVer.apk" &> /dev/null
 }
 
 patchApk() {
