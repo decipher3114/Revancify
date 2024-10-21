@@ -4,10 +4,10 @@
 [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
 
 ## Termux
-| Android Version | Download Link|
+| Variant | Download Link|
 | ---- | ----- |
-| Android 8+ | [Termux Monet](https://github.com/Termux-Monet/termux-monet/releases/latest) (Strictly Recommended)
-| Android 4+ | [Termux](https://github.com/termux/termux-app/releases/latest)
+|  Github | [Link](https://github.com/termux/termux-app/releases/latest)
+| Play Store | [Link](https://play.google.com/store/apps/details?id=com.termux)
 
 # Features
 1. Auto updates Patches and CLI
