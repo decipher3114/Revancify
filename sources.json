@@ -21,50 +21,6 @@
             }
         }
     },
-    "crimera": 
-    {
-        "projectName": "piko-Twitter",
-        "sources": 
-        {
-            "cli":
-            {
-                "org": "revanced",
-                "repo": "revanced-cli"
-            },
-            "patches":
-            {
-                "org": "crimera",
-                "repo": "piko"
-            },
-            "integrations":
-            {
-                "org": "crimera",
-                "repo": "revanced-integrations"
-            }
-        }
-    },
-    "YT-Advanced": 
-    {
-        "projectName": "ReX",
-        "sources": 
-        {
-            "cli":
-            {
-                "org": "inotia00",
-                "repo": "revanced-cli"
-            },
-            "patches":
-            {
-                "org": "YT-Advanced",
-                "repo": "ReX-patches"
-            },
-            "integrations":
-            {
-                "org": "YT-Advanced",
-                "repo": "ReX-integrations"
-            }
-        }
-    },
     "inotia00": 
     {
         "projectName": "Revanced-Extended",
@@ -86,25 +42,25 @@
                 "repo": "revanced-integrations"
             }
         }
-    },
-    "kitadai31": 
+    },            
+    "anddea": 
     {
-        "projectName": "RVX-Android_6-7",
+        "projectName": "RVX-anddea",
         "sources": 
         {
             "cli":
             {
-                "org": "kitadai31",
+                "org": "inotia00",
                 "repo": "revanced-cli"
             },
             "patches":
             {
-                "org": "kitadai31",
-                "repo": "revanced-patches-android6-7"
+                "org": "anddea",
+                "repo": "revanced-patches"
             },
             "integrations":
             {
-                "org": "kitadai31",
+                "org": "anddea",
                 "repo": "revanced-integrations"
             }
         }
@@ -131,24 +87,46 @@
             }
         }
     },
-    "anddea": 
+    "crimera": 
     {
-        "projectName": "RVX-anddea",
+        "projectName": "piko-Twitter",
         "sources": 
         {
             "cli":
             {
-                "org": "inotia00",
+                "org": "revanced",
                 "repo": "revanced-cli"
             },
             "patches":
             {
-                "org": "anddea",
-                "repo": "revanced-patches"
+                "org": "crimera",
+                "repo": "piko"
             },
             "integrations":
             {
-                "org": "anddea",
+                "org": "crimera",
+                "repo": "revanced-integrations"
+            }
+        }
+    },
+    "kitadai31": 
+    {
+        "projectName": "RVX-Android_6-7",
+        "sources": 
+        {
+            "cli":
+            {
+                "org": "kitadai31",
+                "repo": "revanced-cli"
+            },
+            "patches":
+            {
+                "org": "kitadai31",
+                "repo": "revanced-patches-android6-7"
+            },
+            "integrations":
+            {
+                "org": "kitadai31",
                 "repo": "revanced-integrations"
             }
         }
