@@ -7,15 +7,15 @@ sourceName="$5"
 
 
 if [ "$1" = "unmount" ]; then
-    grep -q "$pkgName" /proc/mounts || exit 2
-    am force-stop "$pkgName"
-    grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l
     stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
+    stockAppBackup="/data/local/tmp/revancify/$pkgName.orig.apk"
+    [ -f "$stockAppBackup" ] || exit 2
+    am force-stop "$pkgName"
+    cp -rf "$stockAppBackup" "$stockApp"
+    rm -f "$stockAppBackup"
     am force-stop "$pkgName"
     rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
     rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
-    rm -rf "/data/local/tmp/revancify/$pkgName.apk"
-    grep -q "$pkgName" /proc/mounts && exit 1
     exit 0
 fi
 
@@ -26,9 +26,12 @@ fi
 rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
 rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
 rm "/data/local/tmp/revancify/$pkgName.apk"
+rm "/data/local/tmp/revancify/$pkgName.orig.apk"
 
 
-if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]; then
+if pm list packages | grep -q "$pkgName" &&
+    [ $(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p') = "$appVer" ] &&
+    [ $(pm path "$pkgName" | sed -n "/base/s/package://p" | cut -d '/' -f 2) = "data" ]; then
     :
 else
     pm install --user 0 -r "apps/$appName-$appVer.apk"
@@ -37,21 +40,20 @@ fi
 pm list packages | grep -q "$pkgName" || exit 1
 
 stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
+stockAppBackup="/data/local/tmp/revancify/$pkgName.orig.apk"
 revancedApp="/data/local/tmp/revancify/$pkgName.apk"
 
 am force-stop "$pkgName"
 
 {
-    grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
+    cp -rvf "$stockApp" "$stockAppBackup" 
     cp "apps/$appName-$appVer-$sourceName.apk" "/data/local/tmp/revancify/$pkgName.apk"
     chmod -v 644 "$revancedApp" && chown -v system:system "$revancedApp"
     chcon -v u:object_r:apk_data_file:s0 "$revancedApp"
-    mount -vo bind "$revancedApp" "$stockApp"
+    cp -rvf "$revancedApp" "$stockApp" # Link the patched app in place of the stock app
 } > /storage/emulated/0/Revancify/install_log.txt 2>&1
 
 am force-stop "$pkgName"
-
-grep -q "$pkgName" /proc/mounts || exit 1
 
 cat <<EOF >"/data/adb/service.d/mount_revanced_$pkgName.sh"
 #!/system/bin/sh
@@ -61,14 +63,18 @@ base_path="$revancedApp"
 stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
 am force-stop "$pkgName"
 chcon u:object_r:apk_data_file:s0 "\$base_path"
-[ ! -z "\$stock_path" ] && mount -o bind "\$base_path" "\$stock_path"
+[ ! -z "\$base_path" ] || exit 2
+[ ! -z "\$stock_path" ] || exit 2
+cp -rf "\$base_path" "\$stock_path"
 am force-stop $pkgName
 EOF
-cat <<EOF >"/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
+cat <<EOF >"/data/adb/post-fs-data.d/unmount_revanced_$pkgName.sh"
 #!/system/bin/sh
 stock_path="\$(pm path $pkgName | sed -n '/base/s/package://p')"
-[ ! -z "\$stock_path" ] && umount -l "\$stock_path"
-grep $pkgName /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -l
+stock_backup_path="/data/local/tmp/revancify/$pkgName.orig.apk"
+[ -e "\$stock_backup_path" ] || exit 2
+[ ! -z "\$stock_path" ] && [ -e "\$stock_path" ] || exit 2
+cp -f "\$stock_backup_path" "\$stock_path"
 EOF
 chmod 0744 "/data/adb/service.d/mount_revanced_$pkgName.sh"
 chmod 0744 "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
