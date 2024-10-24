@@ -595,22 +595,11 @@ downloadMicrog() {
 }
 
 antiSplitApkm() {
-    "${header[@]}" --infobox "Please Wait !!\nReducing app size..." 12 45
-    splits="apps/splits"
-    mkdir "$splits"
-    unzip -qqo "apps/$appName-$appVer.apkm" -d "$splits"
-    rm "apps/$appName-$appVer.apkm"
+    "${header[@]}" --infobox "Please Wait !!\nMerging split apks..." 12 45
     appDir="apps/$appName-$appVer"
-    mkdir "$appDir"
-    cp "$splits/base.apk" "$appDir"
-    cp "$splits/split_config.${arch//-/_}.apk" "$appDir" &> /dev/null
-    locale=$(getprop persist.sys.locale | sed 's/-.*//g')
-    if [ ! -e "$splits/split_config.${locale}.apk" ]; then
-        locale=$(getprop ro.product.locale | sed 's/-.*//g')
-    fi
-    cp "$splits/split_config.${locale}.apk" "$appDir" &> /dev/null
-    cp "$splits"/split_config.*dpi.apk "$appDir" &> /dev/null
-    rm -rf "$splits"
+    mkdir -p "$appDir"
+    unzip -qqo "apps/$appName-$appVer.apkm" -d "$appDir"
+    rm "apps/$appName-$appVer.apkm"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName-$appVer.apk" &> /dev/null
     rm -rf "$appDir"
     setEnv "${appName//-/_}Size" "$(du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1)" update "apps/.appSize"
