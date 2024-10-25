@@ -612,7 +612,6 @@ antiSplitApkm() {
     cp "$splits"/split_config.*dpi.apk "$appDir" &> /dev/null
     rm -rf "$splits"
     java -jar ApkEditor.jar m -i "$appDir" -o "apps/$appName-$appVer.apk" &> /dev/null
-    rm -rf "$appDir"
     setEnv "${appName//-/_}Size" "$(du -b "apps/$appName-$appVer.apk" | cut -d $'\t' -f 1)" update "apps/.appSize"
 }
 

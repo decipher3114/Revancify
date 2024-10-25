@@ -28,10 +28,12 @@ rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
 rm "/data/local/tmp/revancify/$pkgName.apk"
 
 
-if pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]; then
-    :
-else
-    pm install --user 0 -r "apps/$appName-$appVer.apk"
+if ! (pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]); then
+    if [ -d "apps/$appName-$appVer" ]; then
+        pm install --user 0 -rp "apps/$appName-$appVer/"*
+    else
+        pm install --user 0 -r "apps/$appName-$appVer.apk"
+    fi
 fi
 
 pm list packages | grep -q "$pkgName" || exit 1
