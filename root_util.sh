@@ -23,9 +23,9 @@ fi
 [ -d /data/adb/post-fs-data.d/ ] || mkdir -p /data/adb/post-fs-data.d/
 [ -d /data/adb/service.d/ ] || mkdir -p /data/adb/service.d/
 
-rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
-rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
-rm "/data/local/tmp/revancify/$pkgName.apk"
+[ -e "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh" ] && rm "/data/adb/post-fs-data.d/umount_revanced_$pkgName.sh"
+[ -e "/data/adb/service.d/mount_revanced_$pkgName.sh" ] && rm "/data/adb/service.d/mount_revanced_$pkgName.sh"
+[ -e "/data/local/tmp/revancify/$pkgName.apk" ] && rm "/data/local/tmp/revancify/$pkgName.apk"
 
 
 if ! (pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]); then
