@@ -1,12 +1,9 @@
 
-.shellcheckrc
 *.json
 *.txt
 *.jar
 *.apk
 *.sh
-
-pup
 
 !main.sh
 !root_util.sh
