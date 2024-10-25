@@ -30,7 +30,7 @@ rm "/data/local/tmp/revancify/$pkgName.apk"
 
 if ! (pm list packages | grep -q "$pkgName" && [ "$(dumpsys package "$pkgName" | sed -n '/versionName/s/.*=//p' | sed 's/ /./1p')" = "$appVer" ]); then
     if [ -d "apps/$appName-$appVer" ]; then
-        pm install --user 0 -rp "apps/$appName-$appVer/"*
+        pm install --user 0 -r "apps/$appName-$appVer/"*
     else
         pm install --user 0 -r "apps/$appName-$appVer.apk"
     fi
@@ -42,6 +42,7 @@ stockApp=$(pm path "$pkgName" | sed -n "/base/s/package://p")
 revancedApp="/data/local/tmp/revancify/$pkgName.apk"
 
 am force-stop "$pkgName"
+pm clear --cache-only "$pkgName"
 
 {
     grep "$pkgName" /proc/mounts | cut -d " " -f 2 | sed "s/apk.*/apk/" | xargs -r umount -vl
@@ -52,6 +53,7 @@ am force-stop "$pkgName"
 } > /storage/emulated/0/Revancify/install_log.txt 2>&1
 
 am force-stop "$pkgName"
+pm clear --cache-only "$pkgName"
 
 grep -q "$pkgName" /proc/mounts || exit 1
 
