@@ -4,10 +4,17 @@
 [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
 
 ## Termux
-| Android Version | Download Link|
-| ---- | ----- |
-| Android 8+ | [Termux Monet](https://github.com/Termux-Monet/termux-monet/releases/latest) (Strictly Recommended)
-| Android 4+ | [Termux](https://github.com/termux/termux-app/releases/latest)
+
+<table>
+  <tr>
+    <td colspan="2">Download Link</td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/termux/termux-app/releases/latest">GitHub</a></td>
+    <td><a href="https://play.google.com/store/apps/details?id=com.termux">PlayStore</a></td>
+  </tr>
+</table>
+
 
 # Features
 1. Auto updates Patches and CLI
@@ -23,8 +30,9 @@
 # Guide
 
 ## Installation
-1. Open Termux.  
-2. Copy and paste this command.  
+1. Download and Install [Termux](#termux).
+2. Open Termux.
+3. Copy and paste this command.
 ```
 curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
 ```
@@ -43,5 +51,5 @@ After installation, type `revancify` in termux and press enter.
 Or use with arguments. Check them with `revancify -h` or `revancify --help`
 
 # Thanks & Credits
-[Revanced](https://github.com/revanced)  
+[Revanced](https://github.com/revanced)
 [Revanced Extended](https://github.com/inotia00)  
