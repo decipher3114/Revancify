@@ -128,8 +128,7 @@ fetchSrc() {
         rm -rf "Revancify" &> /dev/null
         unzip -qqo "$TAG" &> /dev/null
         rm "$TAG" &> /dev/null
-        mv decipher3114*/* "$SRC/" &> /dev/null
-        rm -rf decipher3114*
+        mv -f decipher3114* "$SRC" &> /dev/null
         cp -f "$SRC/revancify" "$BIN/revancify"
         chmod +x "$BIN/revancify"
         echo -e "Revancify $TAG is now available.\nRun 'revancify -h' for help."
