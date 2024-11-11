@@ -4,7 +4,7 @@ cd "$HOME" || exit 1
 
 SRC="$HOME/Revancify"
 
-DATA="$SRC/files"
+DATA="$HOME/.revancify"
 [ -e "$DATA" ] || mkdir -p "$DATA"
 
 HELP="revancify
