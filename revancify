@@ -110,8 +110,6 @@ else
     fi
 fi
 
-tput civis
-
 fetchSrc() {
     [ -e "$SRC/.info" ] && source "$SRC/.info"
 
@@ -147,12 +145,12 @@ fi
 
 cd "$DATA" &> /dev/null || exit 1
 
-bash "$SRC/main.sh" "$ROOT_ACCESS"
+tput civis
 
+bash "$SRC/main.sh" "$ROOT_ACCESS"
 EXIT_CODE=$?
 
-clear
-
 tput cnorm
+clear
 
 exit "$EXIT_CODE"
