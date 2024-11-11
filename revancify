@@ -7,6 +7,8 @@ SRC="$HOME/Revancify"
 DATA="$HOME/.revancify"
 [ -e "$DATA" ] || mkdir -p "$DATA"
 
+BIN="$PREFIX/bin"
+
 HELP="revancify
 
 Usage: revancify [OPTION]
@@ -84,7 +86,7 @@ installDependencies() {
 
 if [ -e "$DATA/aapt2" ] && \
     [ -e "$DATA/ApkEditor.jar" ] && \
-    bins=$(ls "$PREFIX/bin") && \
+    bins=$(ls "$BIN") && \
     grep -q java <<< "$bins" && \
     grep -q wget <<< "$bins" && \
     grep -q tput <<< "$bins" && \
@@ -92,7 +94,7 @@ if [ -e "$DATA/aapt2" ] && \
     grep -q pup <<< "$bins" && \
     grep -q jq <<< "$bins" && \
     grep -q unzip <<< "$bins" && \
-    [ -e "$PREFIX/bin/revancify" ] &> /dev/null && \
+    [ -e "$BIN/revancify" ] &> /dev/null && \
     [ -e "$HOME/storage" ] &> /dev/null\
 ; then
     :
@@ -126,10 +128,10 @@ fetchSrc() {
         rm -rf "Revancify" &> /dev/null
         unzip -qqo "$TAG" &> /dev/null
         rm "$TAG" &> /dev/null
-        mv decipher3114*/* "Revancify/" &> /dev/null
-        rm -rf 
-        cp -f "Revancify/revancify" "$PREFIX/bin/revancify"
-        chmod +x "$PREFIX/bin/revancify"
+        mv decipher3114*/* "$SRC/" &> /dev/null
+        rm -rf decipher3114*
+        cp -f "$SRC/revancify" "$BIN/revancify"
+        chmod +x "$BIN/revancify"
         echo -e "Revancify $TAG is now available.\nRun 'revancify -h' for help."
         exit 1
     else
