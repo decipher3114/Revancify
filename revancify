@@ -1,78 +1,50 @@
 #!/usr/bin/bash
 
-HOME=/data/data/com.termux/files/home
-BIN=/data/data/com.termux/files/usr/bin
+cd "$HOME" || exit 1
 
-repo="$HOME/Revancify"
-cp "$repo/revancify" "$BIN/revancify" >/dev/null 2>&1
-root=default
-online="Checking..."
-DATA="$HOME/revancify-data"
-[ ! -d $DATA ] && mkdir -p "$DATA"
-# shellcheck source=/dev/null
-source "$DATA/config.cfg" > /dev/null 2>&1
-[ "${LightTheme:-false}" == "true" ] && theme=Light || theme=Dark
-export DIALOGRC="$repo/configs/.dialogrc$theme"
+SRC="$HOME/Revancify"
 
-help() {
-    if [ "$1" == "1" ]; then
-        readarray -t invalidArgs < <(for i in "${FLAG_ERR[@]}"; do
-            if grep -q "unrecognized" <<< "$i"; then
-                grep -oP "(?<=\`).*(?=')" <<< "$i"
-            else
-                cut -b 27 <<< "$i" | xargs -0 -I {} echo -n "-{}"
-            fi
-        done)
-        IFS=","
-        echo -e "\e[1;31mInvalid Argument(s) Passed: ${invalidArgs[*]}\n"
-    fi
-    echo -e "revancify\n
-Usage: revancify [OPTION]\n
+DATA="$SRC/files"
+[ -e "$DATA" ] || mkdir -p "$DATA"
+
+HELP="revancify
+
+Usage: revancify [OPTION]
+
 Options:
--n, --no-root     Run without SU permissions
--o, --offline     Run without updating revancify
--r, --reinstall   Reinstall revancify
--h, --help        Prints help statement"
-    exit "$1"
-}
+-u:  Disable Update Check
+-r:  Disable Root access
+-v:  Print current version
+-h:  Print help statement"
 
-if ! ARGS=$(getopt -o nohr -l "no-root,offline,help,reinstall" -- "$@" 2>/dev/null); then
-    readarray -t FLAG_ERR < <(getopt -o nohr -l no-root,offline,help,reinstall -- "$@" 2>&1 1>&-)
-    help 1
-fi
-eval set -- "$ARGS"
-while [ $# -gt 0 ]
-do
-    case "$1" in
-    "-h" | "--help")
-                        help 0
-                        ;;
-    "-n" | "--no-root")
-                        root=false
-                        shift
-                        ;;
-    "-r" | "--reinstall")
-                        if ping -c 1 google.com >/dev/null 2>&1; then
-                            rm -rf $DATA
-                            cd "$repo"/.. && rm -rf "$repo" && git clone --depth=1 https://github.com/decipher3114/Revancify.git && "$repo/revancify" && exit
-                        else
-                            echo "No internet Connection !!"
-                            exit 1
-                        fi
-                        ;;
-    "-o" | "--offline")
-                        online=false
-                        shift
-                        ;;
-    "--")
-        shift
-        break
-        ;;
+while getopts ":urvh" OPT 2> /dev/null; do
+    case $OPT in
+        u)
+            INTERNET_ACCESS=false
+            ;;
+        r)
+            ROOT_ACCESS=false
+            ;;
+        v)
+            source "$SRC/.info"
+            echo "$VERSION"
+            exit
+            ;;
+        h)
+            echo -e "$HELP"
+            exit
+            ;;
+        ?)
+            echo -e "Invalid option specified: -${OPTARG}"
+            echo -e "$HELP"
+            exit 1
+            ;;
     esac
-    shift
 done
 
 terminate() {
+    killall -9 curl &> /dev/null
+    killall -9 wget &> /dev/null
     clear
     echo "Script terminated !!"
     tput cnorm
@@ -80,91 +52,108 @@ terminate() {
 }
 trap terminate SIGTERM SIGINT SIGABRT
 
-checkdependencies() {
-    if [ -e "$DATA/aapt2" ] && [ -e "$DATA/ApkEditor.jar" ] && bins=$(ls "$BIN") && grep -q java <<<"$bins" && grep -q wget <<<"$bins" && grep -q tput <<<"$bins" && grep -q dialog <<<"$bins" && grep -q pup <<<"$bins" && grep -q jq <<<"$bins" && grep -q unzip <<<"$bins" && ls "$BIN/revancify" >/dev/null 2>&1 && ls "$HOME/storage" >/dev/null 2>&1; then
-        return 0
-    else
-        if ping -c 1 google.com >/dev/null 2>&1; then
-            installdependencies || (echo "Dependencies not installed !!" && exit 1)
-        else
-            cp "$repo/revancify" "$BIN/revancify"
-            echo -e "Dependencies not installed !!\nRun again with internet connection."
-            exit 1
-        fi
-    fi
-}
-
-installdependencies() {
+installDependencies() {
     clear
+
     echo "Installing dependencies..."
-    arch=$(getprop ro.product.cpu.abi)
-    cp "$repo/revancify" "$BIN/revancify"
-    sleep 1
-    [ ! -d "$HOME/storage" ] && termux-setup-storage
+
+    ARCH=$(getprop ro.product.cpu.abi)
+
+    [ -e "$HOME/storage" ] || termux-setup-storage
+
     pkg update -y -o Dpkg::Options::="--force-confnew" || return 1
-    pkg install openjdk-17 wget ncurses-utils dialog pup jq -y -o Dpkg::Options::="--force-confnew" || return 1
-    git config --global pull.rebase true
+
+    pkg install openjdk-21 wget ncurses-utils dialog pup jq unzip -y -o Dpkg::Options::="--force-confnew" || return 1
+
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
-    [ ! -f "$DATA/aapt2" ] && wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$arch" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
-    [ ! -e "$DATA/ApkEditor.jar" ] && wget "$(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0].browser_download_url')" -O "$DATA/ApkEditor.jar"
+
+    [ ! -e "$DATA/aapt2" ] && wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$ARCH" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
+
+    if [ ! -e "$DATA/ApkEditor.jar" ]; then 
+        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size')
+        wget "${RESPONSE[0]}" -O "$DATA/ApkEditor.jar"
+        [ "${RESPONSE[1]}" != "$(stat -c%s "$DATA/ApkEditor.jar")" ] && \
+            rm "$DATA/ApkEditor.jar" && \
+            return 1
+    fi
+
     echo "Dependencies installed successfully."
+
     return 0
 }
 
-checkrevancify() {
-    if [ -d "$repo" ]; then
-        cd "$repo" >/dev/null 2>&1 || true
-        rm -rf ./*cache*
-        return 0
-    else
-        echo -e "\e[1;31mRevancify dir is not found !!"
-        echo -e "\e[1;31mDo you want to reinstall Revancify?"
-        read -r -p "[Y/N]: " choice
-        case "$choice" in
-        y | Y)
-            rm -rf "$repo"
-            git clone --depth=1 https://github.com/decipher3114/Revancify.git && $repo/revancify && exit
-            ;;
-        n | N)
-            echo "Removing revancify completely !!"
-            sleep 0.5s
-            rm "$BIN/revancify"
-            echo "Successfully Uninstalled revancify."
-            exit 0
-            ;;
-        ?)
-            echo "Invalid option !!"
+if [ -e "$DATA/aapt2" ] && \
+    [ -e "$DATA/ApkEditor.jar" ] && \
+    bins=$(ls "$PREFIX/bin") && \
+    grep -q java <<< "$bins" && \
+    grep -q wget <<< "$bins" && \
+    grep -q tput <<< "$bins" && \
+    grep -q dialog <<< "$bins" && \
+    grep -q pup <<< "$bins" && \
+    grep -q jq <<< "$bins" && \
+    grep -q unzip <<< "$bins" && \
+    [ -e "$PREFIX/bin/revancify" ] &> /dev/null && \
+    [ -e "$HOME/storage" ] &> /dev/null\
+; then
+    :
+else
+    if ping -c 1 google.com &> /dev/null; then
+        if ! installDependencies; then
+            echo "Dependencies not installed !!"
             exit 1
-            ;;
-        esac
+        fi
+    else
+        echo -e "Dependencies not installed !!\nRun again with internet connection."
+        exit 1
+    fi
+fi
+
+tput civis
+
+fetchSrc() {
+    if [ -e "$SRC" ]; then
+        source "$SRC/.info"
+    fi
+
+    [ "$INTERNET_ACCESS" == false ] && return
+
+    TAG=$(curl -s 'https://api.github.com/repos/decipher3114/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
+
+    [ "$TAG" == "$VERSION" ] && return
+    
+    wget -qc "https://api.github.com/repos/decipher3114/Revancify/zipball/$TAG" -O "$TAG"
+    if [ -e "$TAG" ]; then
+        rm -rf "Revancify" &> /dev/null
+        unzip -qqo "$TAG" &> /dev/null
+        rm "$TAG" &> /dev/null
+        mv decipher3114*/* "Revancify/" &> /dev/null
+        rm -rf 
+        cp -f "Revancify/revancify" "$PREFIX/bin/revancify"
+        chmod +x "$PREFIX/bin/revancify"
+        echo -e "Revancify $TAG is now available.\nRun 'revancify -h' for help."
+        exit 1
+    else
+        echo -e "Unable to fetch Revancify $TAG !!\nPlease try again."
+        exit 1
     fi
 }
 
-checkdependencies
-checkrevancify
-tput civis
-dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : Checking...\nOnline       : $online" 10 42
+fetchSrc
 
-if [ "$online" != false ]; then
-    ping -c 1 google.com >/dev/null 2>&1 && online=true || online=false
-fi
-
-if [ "$online" == true ]; then
-    if ! git pull >/dev/null 2>&1;then
-        git fetch --all >/dev/null 2>&1 &&\
-        git reset --hard "@{u}" >/dev/null 2>&1
-    fi
-fi
-dialog --no-shadow --infobox "\n  █▀█ █▀▀ █░█ ▄▀█ █▄░█ █▀▀ █ █▀▀ █▄█\n  █▀▄ ██▄ ▀▄▀ █▀█ █░▀█ █▄▄ █ █▀░ ░█░  \n\nDeveloper    : decipher\nLast Updated : $(git log -1 --pretty='format:%cd' --date=format:'%b %d, %Y | %H:%M')\nOnline       : $online" 10 42
-cd "$DATA" >/dev/null 2>&1 || true
-bash "$repo/main.sh" "$root" "$online"
-exitstatus=$?
-clear
-cd "$HOME" || :
-if [ $exitstatus -eq 0 ]; then
-    echo "Script exited !!"
+if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &> /dev/null ; then
+    ROOT_ACCESS=true
 else
-    echo "Script terminated !!"
-    rm -rf -- *cache >/dev/null 2>&1
+    ROOT_ACCESS=false
 fi
+
+cd "$DATA" &> /dev/null || exit 1
+
+bash "$SRC/main.sh" "$ROOT_ACCESS"
+
+EXIT_CODE=$?
+
+clear
+
 tput cnorm
+
+exit "$EXIT_CODE"

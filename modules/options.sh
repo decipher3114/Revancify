@@ -1,0 +1,189 @@
+#!/usr/bin/bash
+
+editOptions() {
+    OPTIONS_JSON=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '$ENABLED_PATCHES[] | select(.pkgName == $PKG_NAME) | .options')
+
+    [ "$OPTIONS_JSON" == '[]' ] && return
+
+    readarray -t OPTIONS_LIST < <(jq -r '.[] | .key, .title' <<< "$OPTIONS_JSON")
+    while true; do
+        unset EXIT_CODE
+        if [ -z "$SELECTED_OPTION" ]; then
+            SELECTED_OPTION="$("${DIALOG[@]}" \
+                --title '| Select Option Key |' \
+                --no-tags \
+                --ok-label 'Edit' \
+                --cancel-label 'Done' \
+                --help-button \
+                --help-label 'Back' \
+                --menu "$NAVIGATION_HINT" -1 -1 0 \
+                "${OPTIONS_LIST[@]}" 2>&1 > /dev/tty
+            )"
+            case "$?" in
+                1)
+                    break
+                    ;;
+                2)
+                    TASK="MANAGE_PATCHES"
+                    unset OPTIONS_JSON SELECTED_OPTION CURRENT_VALUE OPTION_INFO NEW_VALUE
+                    return 1
+                    ;;
+            esac
+        else
+            readarray -t CURRENT_VALUE < <(jq -r --arg SELECTED_OPTION "$SELECTED_OPTION" '.[] | select(.key == $SELECTED_OPTION) | .value | if (. | type) == "array" then .[] else . end | if . != null then . else empty end' <<< "$OPTIONS_JSON")
+
+            readarray -t OPTION_INFO < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
+                $AVAILABLE_PATCHES[] |
+                select(.pkgName == $PKG_NAME or .pkgName == null) |
+                .options[] |
+                select(.key == $SELECTED_OPTION) |
+                .valueType,
+                .description,
+                (
+                    .values |
+                    if (length != 0) then
+                        (
+                            if any(.[]; match("^[^ ]+").string == $CURRENT_VALUE) then
+                                (
+                                    .[] |
+                                    if match("^[^ ]+").string == $CURRENT_VALUE then
+                                        ., "on"
+                                    else
+                                        ., "off"
+                                    end
+                                )
+                            else
+                                (.[] | ., "off"), $CURRENT_VALUE + " (Custom)", "on"
+                            end
+                        )
+                    else
+                        empty
+                    end
+                )'
+            )
+            VALUE_TYPE="${OPTION_INFO[0]}"
+            DESCRIPTION="${OPTION_INFO[1]}"
+            VALUES=("${OPTION_INFO[@]:2}")
+            while true; do
+                if [ "$VALUE_TYPE" == "Boolean" ] || [ "${VALUES[0]}" != "" ]; then
+                    if [ "$VALUE_TYPE" != "Boolean" ]; then
+                        ALLOWED_VALUES=("${VALUES[@]}" "Custom Value" "off")
+                    else
+                        if [ "${CURRENT_VALUE[0]}" == "true" ]; then
+                            ALLOWED_VALUES=("true" "on" "false" "off")
+                        else
+                            ALLOWED_VALUES=("true" "off" "false" "on")
+                        fi
+                    fi
+                    NEW_VALUE=$("${DIALOG[@]}" \
+                        --title '| Choose Option Value |' \
+                        --no-items \
+                        --ok-label 'Select' \
+                        --cancel-label 'Cancel' \
+                        --help-button \
+                        --help-label 'Description' \
+                        --radiolist "$NAVIGATION_HINT\n$SELECTION_HINT" -1 -1 0 \
+                        "${ALLOWED_VALUES[@]}" 2>&1 > /dev/tty
+                    )
+                    EXIT_CODE=$?
+                    unset ALLOWED_VALUES
+                    case "$EXIT_CODE" in
+                    1)
+                        unset NEW_VALUE
+                        break
+                        ;;
+                    2)
+                        "${DIALOG[@]}" \
+                            --title '| Option Description |' \
+                            --msgbox "Value Type : $VALUE_TYPE\nDescription: $DESCRIPTION" -1 -1
+                        continue
+                        ;;
+                    esac
+                    NEW_VALUE=${NEW_VALUE%% *}
+                    if [ "$NEW_VALUE" == "Custom" ]; then
+                        unset NEW_VALUE
+                    fi
+                fi
+                if [ -z "$NEW_VALUE" ]; then
+                    tput cnorm
+                    if [ "$VALUE_TYPE" == "StringArray" ]; then
+                        TEMP_FILE="$(mktemp)"
+                        printf "%s\n" "${CURRENT_VALUE[@]}" > "$TEMP_FILE"
+                        tput cnorm
+                        NEW_VALUE=$("${DIALOG[@]}" \
+                            --title '| Edit Option Value |' \
+                            --help-button \
+                            --help-label "Description" \
+                            --editbox "$TEMP_FILE" -1 -1 \
+                            2>&1 1>&2 1>/dev/tty
+                        )
+                        EXIT_CODE=$?
+                        rm "$TEMP_FILE"
+                        readarray -t NEW_VALUE <<< "$NEW_VALUE"
+                    else
+                        NEW_VALUE=$("${DIALOG[@]}" \
+                            --title '| Edit Option Value |' \
+                            --help-button \
+                            --help-label \
+                            "Description" \
+                            --inputbox "Enter $VALUE_TYPE\nLeave empty to set as null" -1 -1 \
+                            "${CURRENT_VALUE[@]}" \
+                            2>&1 1>&2 1>/dev/tty
+                        )
+                        EXIT_CODE=$?
+                    fi
+                    tput civis
+                    case "$EXIT_CODE" in
+                    1)
+                        unset NEW_VALUE
+                        break
+                        ;;
+                    2)
+                        "${DIALOG[@]}" \
+                            --title '| Option Description |' \
+                            --msgbox "Value Type : $VALUE_TYPE\n# Each line represents an individual value.\nDescription: $DESCRIPTION" -1 -1
+                        continue
+                        ;;
+                    esac
+                fi
+                if [ "${NEW_VALUE[*]}" == "${CURRENT_VALUE[*]}" ]; then
+                    break
+                fi
+                if UPDATED_OPTIONS=$(jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg VALUE_TYPE "$VALUE_TYPE" '
+                        map(
+                            if .key == $SELECTED_OPTION then
+                                .value |= (
+                                    $ARGS.positional |
+                                    if length == 0 then
+                                        null
+                                    elif length == 1 then
+                                        if $VALUE_TYPE == "Boolean" then
+                                            .[0] | test("true")
+                                        elif $VALUE_TYPE == "Number" then
+                                            .[0] | tonumber
+                                        elif $VALUE_TYPE == "String" then
+                                            .[0] | debug | tostring
+                                        else
+                                            .
+                                        end
+                                    else
+                                        .
+                                    end
+                                )
+                            else
+                                .
+                            end
+                        )' --args "${NEW_VALUE[@]}" <<< "$OPTIONS_JSON" 2> /dev/null
+                    ); then
+                    OPTIONS_JSON="$UPDATED_OPTIONS"
+                fi
+                break
+            done
+            unset SELECTED_OPTION NEW_VALUE UPDATED_OPTIONS
+        fi
+    done
+    UPDATED_PATCHES=$(jq -c --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '. as $OPTIONS_JSON | $ENABLED_PATCHES | map(if .pkgName == $PKG_NAME then .options |= $OPTIONS_JSON else . end)' <<< "$OPTIONS_JSON")
+    echo "$UPDATED_PATCHES" > "$STORAGE/$SOURCE-patches.json"
+    ENABLED_PATCHES="$UPDATED_PATCHES"
+    unset OPTIONS_JSON UPDATED_PATCHES
+}

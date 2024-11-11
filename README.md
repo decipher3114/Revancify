@@ -1,7 +1,7 @@
 # Revancify 🛠️
 ### A TUI wrapper for Revanced CLI with amazing features.
 
-[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
+[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/decipher_projects)
 
 ## Termux
 
@@ -36,14 +36,6 @@
 ```
 curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
 ```
-
-<details>
-  <summary>If the above one doesn't work, use this.</summary>
-
-  ```
-pkg update -y -o Dpkg::Options::="--force-confnew" && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
-```
-</details>
 
 ## Usage
 After installation, type `revancify` in termux and press enter.  
