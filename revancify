@@ -55,69 +55,65 @@ terminate() {
 trap terminate SIGTERM SIGINT SIGABRT
 
 installDependencies() {
-    clear
+    echo "Checking dependencies..."
 
-    echo "Installing dependencies..."
+    BINS=$(ls "$BIN")
+    grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
+    grep -q wget <<< "$BINS" || PKGS+=("wget")
+    grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
+    grep -q dialog <<< "$BINS" || PKGS+=("dialog")
+    grep -q pup <<< "$BINS" || PKGS+=("pup")
+    grep -q jq <<< "$BINS" || PKGS+=("jq")
+    grep -q unzip <<< "$BINS" || PKGS+=("unzip")
 
-    ARCH=$(getprop ro.product.cpu.abi)
-
-    [ -e "$HOME/storage" ] || termux-setup-storage
-
-    pkg update -y -o Dpkg::Options::="--force-confnew" || return 1
-
-    pkg install openjdk-21 wget ncurses-utils dialog pup jq unzip -y -o Dpkg::Options::="--force-confnew" || return 1
+    if [ "${#PKGS[@]}" -ne 0 ]; then
+        pkg update -o
+        pkg install "${PKGS[@]}" -y -o Dpkg::Options::="--force-confnew" || return 1
+    fi
 
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
 
-    [ ! -e "$DATA/aapt2" ] && wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$ARCH" -O "$DATA/aapt2" && chmod +x "$DATA/aapt2"
+    CTR=0 && while [ ! -e "$DATA/aapt2" ]; do
+        [ $CTR -gt 2 ] && return 1
+        wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$ARCH" -O "$DATA/aapt2"
+        chmod +x "$DATA/aapt2"
+        if "$DATA/aapt2" version &> /dev/null; then
+            break
+        else
+            rm "$DATA/aapt2"
+        fi
+        (( CTR++ ))
+    done
 
-    if [ ! -e "$DATA/ApkEditor.jar" ]; then 
+    CTR=0 && while [ ! -e "$DATA/ApkEditor.jar" ]; do
+        [ $CTR -gt 2 ] && return 1
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size')
         wget "${RESPONSE[0]}" -O "$DATA/ApkEditor.jar"
-        [ "${RESPONSE[1]}" != "$(stat -c%s "$DATA/ApkEditor.jar")" ] && \
-            rm "$DATA/ApkEditor.jar" && \
-            return 1
-    fi
-
-    echo "Dependencies installed successfully."
+        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/ApkEditor.jar")" ]; then
+            break
+        else
+            rm "$DATA/ApkEditor.jar"
+        fi
+        (( CTR++ ))
+    done
 
     return 0
 }
-
-if [ -e "$DATA/aapt2" ] && \
-    [ -e "$DATA/ApkEditor.jar" ] && \
-    bins=$(ls "$BIN") && \
-    grep -q java <<< "$bins" && \
-    grep -q wget <<< "$bins" && \
-    grep -q tput <<< "$bins" && \
-    grep -q dialog <<< "$bins" && \
-    grep -q pup <<< "$bins" && \
-    grep -q jq <<< "$bins" && \
-    grep -q unzip <<< "$bins" && \
-    [ -e "$BIN/revancify" ] &> /dev/null && \
-    [ -e "$HOME/storage" ] &> /dev/null\
-; then
-    :
-else
-    if ping -c 1 google.com &> /dev/null; then
-        if ! installDependencies; then
-            echo "Dependencies not installed !!"
-            exit 1
-        fi
-    else
-        echo -e "Dependencies not installed !!\nRun again with internet connection."
-        exit 1
-    fi
-fi
 
 fetchSrc() {
     [ -e "$SRC/.info" ] && source "$SRC/.info"
 
     [ "$INTERNET_ACCESS" == false ] && return
 
+    echo "Checking Latest Release..."
+
     TAG=$(curl -s 'https://api.github.com/repos/decipher3114/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
 
     [ "$TAG" == "$VERSION" ] && return
+
+    echo "Revancify $TAG is available..."
+
+    echo "Installing..."
     
     wget -qc "https://api.github.com/repos/decipher3114/Revancify/zipball/$TAG" -O "$TAG"
     if [ -e "$TAG" ]; then
@@ -127,13 +123,20 @@ fetchSrc() {
         rm -rf decipher3114* &> /dev/null
         cp -f "$SRC/revancify" "$BIN/revancify"
         chmod +x "$BIN/revancify"
-        echo -e "Revancify $TAG is now available.\nRun 'revancify -h' for help."
+        echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."
         exit
     else
-        echo -e "Unable to fetch Revancify $TAG !!\nPlease try again."
+        echo -e "Unable to install Revancify $TAG !!\nPlease try again with proper Internet"
         exit 1
     fi
 }
+
+clear
+
+if ! installDependencies; then
+    echo -e "Dependencies not installed !!\nRun again with internet connection."
+    exit 1
+fi
 
 fetchSrc
 
