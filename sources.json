@@ -1,48 +1,4 @@
 {
-    "revanced": 
-    {
-        "projectName": "Revanced",
-        "sources": 
-        {
-            "cli":
-            {
-                "org": "revanced",
-                "repo": "revanced-cli"
-            },
-            "patches":
-            {
-                "org": "revanced",
-                "repo": "revanced-patches"
-            },
-            "integrations":
-            {
-                "org": "revanced",
-                "repo": "revanced-integrations"
-            }
-        }
-    },
-    "crimera": 
-    {
-        "projectName": "piko-Twitter",
-        "sources": 
-        {
-            "cli":
-            {
-                "org": "revanced",
-                "repo": "revanced-cli"
-            },
-            "patches":
-            {
-                "org": "crimera",
-                "repo": "piko"
-            },
-            "integrations":
-            {
-                "org": "crimera",
-                "repo": "revanced-integrations"
-            }
-        }
-    },
     "YT-Advanced": 
     {
         "projectName": "ReX",
