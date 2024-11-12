@@ -75,6 +75,7 @@ installDependencies() {
 
     CTR=0 && while [ ! -e "$DATA/aapt2" ]; do
         [ $CTR -gt 2 ] && return 1
+        ARCH=$(getprop ro.product.cpu.abi)
         wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$ARCH" -O "$DATA/aapt2"
         chmod +x "$DATA/aapt2"
         if "$DATA/aapt2" version &> /dev/null; then
