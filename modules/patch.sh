@@ -63,7 +63,6 @@ patchApp() {
         "${ARGUMENTS[@]}" \
         --custom-aapt2-binary="./aapt2" \
         --keystore="$STORAGE/revancify.keystore" \
-        --temporary-files-path=TEMP \
         "apps/$APP_NAME/$APP_VER.apk" |&
     tee -a "$STORAGE/patch_log.txt" |
     "${DIALOG[@]}" \
