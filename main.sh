@@ -16,7 +16,7 @@ main() {
     if [ -e .assets ]; then
         source .assets
     else
-        fetchAssetsInfo force
+        fetchAssetsInfo
     fi
 
     while true; do
@@ -35,7 +35,7 @@ main() {
             initiateWorkflow
             ;;
         2 )
-            fetchAssetsInfo force || break
+            fetchAssetsInfo || break
             fetchAssets
             ;;
         3 )
@@ -50,7 +50,7 @@ main() {
                     --defaultno \
                     --yesno "Please confirm to delete the assets.\nIt will delete the CLI and $SOURCE patches." -1 -1\
             ; then
-                rm revanced-cli-*.jar &> /dev/null
+                rm ReVanced-cli-*.jar &> /dev/null
                 rm "$SOURCE"-patches-*.rvp &> /dev/null
             fi
             ;;
@@ -61,7 +61,7 @@ main() {
     done
 }
 
-for MODULE in "$SRC"/modules/*; do
+for MODULE in $(find "$SRC/modules" -type f -name "*.sh"); do
     source "$MODULE"
 done
 
@@ -69,7 +69,6 @@ setEnv LIGHT_THEME "off" init .config
 setEnv PREFER_SPLIT_APK "on" init .config
 setEnv LAUNCH_APP_AFTER_MOUNT "on" init .config
 setEnv ALLOW_APP_VERSION_DOWNGRADE "off" init .config
-setEnv ALLOW_PRERELEASED_ASSETS "off" init .config
 source .config
 
 trap terminate SIGTERM SIGINT SIGABRT

@@ -1,7 +1,6 @@
 #!/usr/bin/bash
 
 chooseApp() {
-    fetchAssetsInfo || return 1
     fetchAssets || return 1
     PREVIOUS_PKG="$PKG_NAME"
     PKG_NAME=$("${DIALOG[@]}" \
@@ -20,27 +19,16 @@ chooseApp() {
     case "$EXIT_CODE" in
     0)
         source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson APPS_INFO "$APPS_INFO" '$APPS_INFO[] | select(.pkgName == $PKG_NAME) | "APP_NAME=" + .appName + " APKMIRROR_APP_NAME=" + .apkmirrorAppName + " DEVELOPER_NAME=" + .developerName')
-        APP_SRC="remote"
+        APP_TASK="download"
         ;;
     1)
         return 1
         ;;
     2)
-        APP_SRC="local"
+        APP_TASK="import"
         unset APP_NAME APP_VER
         ;;
     esac
     unset EXIT_CODE
     [ "$PREVIOUS_PKG" != "$PKG_NAME" ] && unset VERSIONS_LIST
-}
-
-installApp() {
-    if [ "$ROOT_ACCESS" == true ]; then
-        mountApp
-    else
-        notify info "Copying patched $APP_NAME apk to Internal Storage..."
-        CANONICAL_VER=${APP_VER//:/}
-        cp -f "apps/$APP_NAME/$APP_VER-$SOURCE.apk" "$STORAGE/Patched/$APP_NAME-$CANONICAL_VER-$SOURCE.apk" &> /dev/null
-        termux-open --view "$STORAGE/Patched/$APP_NAME-$CANONICAL_VER-$SOURCE.apk"
-    fi
 }

@@ -37,7 +37,7 @@ editOptions() {
                 select(.pkgName == $PKG_NAME or .pkgName == null) |
                 .options[] |
                 select(.key == $SELECTED_OPTION) |
-                .valueType,
+                .type,
                 .description,
                 (
                     .values |
@@ -61,12 +61,12 @@ editOptions() {
                     end
                 )'
             )
-            VALUE_TYPE="${OPTION_INFO[0]}"
+            TYPE="${OPTION_INFO[0]}"
             DESCRIPTION="${OPTION_INFO[1]}"
             VALUES=("${OPTION_INFO[@]:2}")
             while true; do
-                if [ "$VALUE_TYPE" == "Boolean" ] || [ "${VALUES[0]}" != "" ]; then
-                    if [ "$VALUE_TYPE" != "Boolean" ]; then
+                if [ "$TYPE" == "Boolean" ] || [ "${VALUES[0]}" != "" ]; then
+                    if [ "$TYPE" != "Boolean" ]; then
                         ALLOWED_VALUES=("${VALUES[@]}" "Custom Value" "off")
                     else
                         if [ "${CURRENT_VALUE[0]}" == "true" ]; then
@@ -95,7 +95,7 @@ editOptions() {
                     2)
                         "${DIALOG[@]}" \
                             --title '| Option Description |' \
-                            --msgbox "Value Type : $VALUE_TYPE\nDescription: $DESCRIPTION" -1 -1
+                            --msgbox "Value Type : $TYPE\nDescription: $DESCRIPTION" -1 -1
                         continue
                         ;;
                     esac
@@ -106,7 +106,7 @@ editOptions() {
                 fi
                 if [ -z "$NEW_VALUE" ]; then
                     tput cnorm
-                    if [ "$VALUE_TYPE" == "StringArray" ]; then
+                    if [ "$TYPE" == "StringArray" ]; then
                         TEMP_FILE="$(mktemp)"
                         printf "%s\n" "${CURRENT_VALUE[@]}" > "$TEMP_FILE"
                         tput cnorm
@@ -126,7 +126,7 @@ editOptions() {
                             --help-button \
                             --help-label \
                             "Description" \
-                            --inputbox "Enter $VALUE_TYPE\nLeave empty to set as null" -1 -1 \
+                            --inputbox "Enter $TYPE\nLeave empty to set as null" -1 -1 \
                             "${CURRENT_VALUE[@]}" \
                             2>&1 1>&2 1>/dev/tty
                         )
@@ -141,7 +141,7 @@ editOptions() {
                     2)
                         "${DIALOG[@]}" \
                             --title '| Option Description |' \
-                            --msgbox "Value Type : $VALUE_TYPE\n# Each line represents an individual value.\nDescription: $DESCRIPTION" -1 -1
+                            --msgbox "Value Type : $TYPE\n# Each line represents an individual value.\nDescription: $DESCRIPTION" -1 -1
                         continue
                         ;;
                     esac
@@ -149,7 +149,7 @@ editOptions() {
                 if [ "${NEW_VALUE[*]}" == "${CURRENT_VALUE[*]}" ]; then
                     break
                 fi
-                if UPDATED_OPTIONS=$(jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg VALUE_TYPE "$VALUE_TYPE" '
+                if UPDATED_OPTIONS=$(jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg TYPE "$TYPE" '
                         map(
                             if .key == $SELECTED_OPTION then
                                 .value |= (
@@ -157,11 +157,11 @@ editOptions() {
                                     if length == 0 then
                                         null
                                     elif length == 1 then
-                                        if $VALUE_TYPE == "Boolean" then
+                                        if $TYPE == "Boolean" then
                                             .[0] | test("true")
-                                        elif $VALUE_TYPE == "Number" then
+                                        elif $TYPE == "Number" then
                                             .[0] | tonumber
-                                        elif $VALUE_TYPE == "String" then
+                                        elif $TYPE == "String" then
                                             .[0] | debug | tostring
                                         else
                                             .

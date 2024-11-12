@@ -13,7 +13,7 @@ changeSource() {
 
     [ "$SOURCE" == "$SELECTED_SOURCE" ] && return
 
-    fetchAssetsInfo force || return 1
+    fetchAssetsInfo || return 1
     SOURCE="$SELECTED_SOURCE"
     setEnv source "$SELECTED_SOURCE" update .assets
     unset AVAILABLE_PATCHES APPS_INFO APPS_LIST AVAILABLE_PATCHES SELECTED_SOURCE

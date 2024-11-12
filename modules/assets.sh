@@ -1,26 +1,11 @@
 #!/usr/bin/bash
 
 fetchAssetsInfo() {
-    if [ "$1" != "force" ]; then
-        if [ "$ALLOW_PRERELEASED_ASSETS" == "off" ]; then
-            [ "$RELEASE_CHANNEL" == "stable" ] && return
-        else
-            [ "$RELEASE_CHANNEL" == "dev" ] && return
-        fi
-    fi
     internet || return 1
-    if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 2 ]; then
+    if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
         notify info "Fetching Assets Info..."
 
-        if [ "$ALLOW_PRERELEASED_ASSETS" == "off" ]; then
-            RELEASE_CHANNEL="stable"
-            ENDPOINT="/latest"
-        else
-            RELEASE_CHANNEL="dev"
-            unset ENDPOINT
-        fi
-        
-        source <("${CURL[@]}" "https://api.github.com/repos/revanced/revanced-cli/releases$ENDPOINT" | jq -r '
+        source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases$ENDPOINT" | jq -r '
                 if type == "array" then .[0] else . end |
                 "CLI_VERSION="+.tag_name,
                 (
@@ -35,12 +20,29 @@ fetchAssetsInfo() {
             '
         )
         if [ -z "$SOURCE" ]; then
-            SOURCE="revanced"
-            setEnv SOURCE "revanced" init .assets
+            SOURCE="ReVanced"
+            setEnv SOURCE "$SOURCE" init .assets
         fi
-        REPOSITORY=$(jq -r --arg SOURCE "$SOURCE" '.[] | select(.source == $SOURCE).repository' "$SRC/sources.json")
 
-        source <("${CURL[@]}" "https://api.github.com/repos/$REPOSITORY/releases$ENDPOINT" | jq -r '
+        readarray -t SOURCE_INFO < <(jq -r --arg SOURCE "$SOURCE" '
+            .[] | select(.source == $SOURCE) |
+            .api |
+            .patches,
+            (.json // empty),
+            ((.version | .endpoint, .key) // empty)
+            ' "$SRC/sources.json"
+        )
+
+        if [ "${#SOURCE_INFO[@]}" -gt 2 ]; then
+            VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r --arg KEY "${SOURCE_INFO[3]}" '.[$KEY]')
+            eval "PATCHES_API_URL=\"${SOURCE_INFO[0]}\""
+        else
+            PATCHES_API_URL="${SOURCE_INFO[0]}"
+        fi
+
+        JSON_URL="${SOURCE_INFO[1]}"
+
+        source <("${CURL[@]}" "$PATCHES_API_URL" | jq -r '
                 if type == "array" then .[0] else . end |
                 "PATCHES_VERSION="+.tag_name,
                 (
@@ -54,13 +56,13 @@ fetchAssetsInfo() {
                 )
             '
         )
-        setEnv RELEASE_CHANNEL "$RELEASE_CHANNEL" update .assets
         setEnv CLI_VERSION "$CLI_VERSION" update .assets
         setEnv CLI_FILE_URL "$CLI_FILE_URL" update .assets
         setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" update .assets
         setEnv PATCHES_VERSION "$PATCHES_VERSION" update .assets
         setEnv PATCHES_FILE_URL "$PATCHES_FILE_URL" update .assets
         setEnv PATCHES_FILE_SIZE "$PATCHES_FILE_SIZE" update .assets
+        setEnv JSON_URL "$JSON_URL" update .assets
     else
         notify msg "Unable to check for update.\nYou are probably rate-limited at this moment.\nTry again later or Run again with '-o' argument."
         return 1
@@ -69,7 +71,7 @@ fetchAssetsInfo() {
 }
 
 fetchAssets() {
-    CLI_FILE_NAME="revanced-cli-$CLI_VERSION.jar"
+    CLI_FILE_NAME="ReVanced-cli-$CLI_VERSION.jar"
     [ -e "$CLI_FILE_NAME" ] || rm -- *-cli-* &> /dev/null
     CTR=2 && while [ "$CLI_FILE_SIZE" != "$(stat -c%s "$CLI_FILE_NAME" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1

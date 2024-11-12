@@ -1,6 +1,13 @@
 [
     {
-        "source": "revanced",
-        "repository": "revanced/revanced-patches"
+        "source": "ReVanced",
+        "api": {
+            "version": {
+                "endpoint": "https://api.revanced.app/v4/patches/version",
+                "key": "version"
+            },
+            "patches": "https://api.github.com/repos/ReVanced/revanced-patches/releases/tags/$VERSION",
+            "json": "https://api.revanced.app/v4/patches/list"
+        }
     }
 ]

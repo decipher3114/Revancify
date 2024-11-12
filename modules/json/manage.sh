@@ -9,22 +9,22 @@ managePatches() {
             empty
         end'
     )
+    BUTTON_TEXT="Recommended"
 
     while true; do
 
         readarray -t PATCHES_ARRAY < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
-                $AVAILABLE_PATCHES[] |
-                select(.pkgName == $PKG_NAME or .pkgName == null) |
-                .patches[] |
-                . as $PATCH |
-                if ($ARGS.positional | index($PATCH)) != null then
-                    $PATCH, "on"
-                else
-                    $PATCH, "off"
-                end' --args "${ENABLED_PATCHES_LIST[@]}"
+            $AVAILABLE_PATCHES[] |
+            select(.pkgName == $PKG_NAME or .pkgName == null) |
+            .patches |
+            .recommended[], .optional[] |
+            . as $PATCH |
+            if ($ARGS.positional | index($PATCH)) != null then
+                $PATCH, "on"
+            else
+                $PATCH, "off"
+            end' --args "${ENABLED_PATCHES_LIST[@]}"
         )
-
-        [ "${#ENABLED_PATCHES_LIST[@]}" -ne 0 ] && BUTTON_TEXT="Disable All" || BUTTON_TEXT="Enable All"
 
         CHOICES=$("${DIALOG[@]}" \
             --title '| Patch Selection Menu |' \
@@ -51,14 +51,19 @@ managePatches() {
             break
             ;;
         1 )
-            if [ "$BUTTON_TEXT" == "Enable All" ]; then
-                readarray -t ENABLED_PATCHES_LIST < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '$AVAILABLE_PATCHES[] | select(.pkgName == $PKG_NAME or .pkgName == null) | .patches[]')
+            if [ "$BUTTON_TEXT" == "Recommended" ]; then
+                readarray -t ENABLED_PATCHES_LIST < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '$AVAILABLE_PATCHES[] | select(.pkgName == $PKG_NAME or .pkgName == null) | .patches | .recommended[]')
+                BUTTON_TEXT="Enable All"
+            elif [ "$BUTTON_TEXT" == "Enable All" ]; then
+                readarray -t ENABLED_PATCHES_LIST < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '$AVAILABLE_PATCHES[] | select(.pkgName == $PKG_NAME or .pkgName == null) | .patches | .recommended[], .optional[]')
+                BUTTON_TEXT="Disable All"
             elif [ "$BUTTON_TEXT" == "Disable All" ]; then
                 ENABLED_PATCHES_LIST=()
+                BUTTON_TEXT="Recommended"
             fi
             ;;
         2 )
-            TASK="APP_FETCH"
+            TASK="FETCH_APP"
             return 1
         esac
     done
@@ -84,11 +89,11 @@ managePatches() {
                     if ($ARGS.positional | index($OPTION.patchName)) != null then
                         .title as $TITLE |
                         .key as $KEY |
-                        .defaultValue as $DEFAULT_VALUE |
+                        .default as $DEFAULT |
                         {
                             "title": $TITLE,
                             "key": $KEY,
-                            "value": (($SAVED_OPTIONS[]? | select(.key == $KEY) | .value) // $DEFAULT_VALUE)
+                            "value": (($SAVED_OPTIONS[]? | select(.key == $KEY) | .value) // $DEFAULT)
                         }
                     else
                         empty

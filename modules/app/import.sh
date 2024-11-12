@@ -56,7 +56,7 @@ extractProperties() {
     fi
 }
 
-localAppFetch() {
+importApp() {
     selectFile || return 1
     extractProperties || return 1
     unset APP_PROPERTIES FILE_APP_NAME
