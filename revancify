@@ -57,6 +57,8 @@ trap terminate SIGTERM SIGINT SIGABRT
 installDependencies() {
     echo "Checking dependencies..."
 
+    [ -e "$HOME/storage" ] || termux-setup-storage
+
     BINS=$(ls "$BIN")
     grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
     grep -q wget <<< "$BINS" || PKGS+=("wget")
@@ -115,13 +117,16 @@ fetchSrc() {
     echo "Revancify $TAG is available..."
 
     echo "Installing..."
-    
-    wget -qc "https://api.github.com/repos/decipher3114/Revancify/zipball/$TAG" -O "$TAG"
-    if [ -e "$TAG" ]; then
-        unzip -qqo "$TAG" &> /dev/null
-        rm "$TAG" &> /dev/null
-        mv -f decipher3114*/* decipher3114*/.* "$SRC/" &> /dev/null
-        rm -rf decipher3114* &> /dev/null
+
+    wget -qc "https://github.com/decipher3114/Revancify/archive/refs/tags/$TAG.zip" -O "$TAG.zip"
+    if [ -e "$TAG.zip" ]; then
+        unzip -qo "$TAG.zip"
+        rm -rf "$TAG.zip"
+        for CONTENT in Revancify-*/* Revancify-*/.*; do
+            rm -rf "${SRC:?}/$(basename "$CONTENT")"
+            mv "$CONTENT" "$SRC/"
+        done
+        rm -rf Revancify-* &> /dev/null
         cp -f "$SRC/revancify" "$BIN/revancify"
         chmod +x "$BIN/revancify"
         echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."

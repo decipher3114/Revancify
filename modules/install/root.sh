@@ -16,10 +16,10 @@ getInstalledVersion() {
 
 mountApp() {
     notify info "Please Wait !!\nMounting $APP_NAME..."
-    if su -mm -c "/system/bin/sh $SRC/root_scripts/mount.sh $PKG_NAME $APP_NAME $APP_VER" &> /dev/null; then
+    if su -mm -c "/system/bin/sh $SRC/root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
         notify msg "$APP_NAME Mounted Successfully !!"
     else
-        notify msg "Installation Failed !!\n Share logs to developer."
+        notify msg "Installation Failed !!\nShare logs to developer."
         termux-open --send "$STORAGE/mount_log.txt"
         return 0
     fi
@@ -47,7 +47,7 @@ unmountApp() {
     fi
     notify info "Unmounting $PKG_NAME..."
     sleep 1
-    su -mm -c "/system/bin/sh $SRC/root_scripts/umount.sh $PKG_NAME" &> /dev/null
+    su -mm -c "/system/bin/sh $SRC/root/umount.sh $PKG_NAME" &> /dev/null
     notify msg "Unmount Successful !!"
     unset MOUNTED_PKGS PKG_NAME
 }
