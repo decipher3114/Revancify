@@ -1,6 +1,5 @@
 #!/usr/bin/bash
 
-
 getInstalledVersion() {
     if su -c "pm list packages | grep -q $PKG_NAME" && [ "$ALLOW_APP_VERSION_DOWNGRADE" == "off" ]; then
         INSTALLED_VERSION=$(su -c dumpsys package "$PKG_NAME" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
@@ -29,7 +28,7 @@ mountApp() {
 }
 
 unmountApp() {
-    readarray -t MOUNTED_PKGS < <(su -c 'ls /data/local/tmp/revancify/* 2> /dev/null | xargs -I APK basename APK .apk')
+    readarray -t MOUNTED_PKGS < <(su -c 'ls /data/local/tmp/revancify | xargs basename -s ".apk" 2> /dev/null')
     if [ ${#MOUNTED_PKGS[@]} == 0 ]; then
         notify msg "No mounted app present!!"
         return
