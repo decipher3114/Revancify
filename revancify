@@ -108,6 +108,8 @@ fetchSrc() {
 
     [ "$INTERNET_ACCESS" == false ] && return
 
+    ping -c 1 google.com &> /dev/null || return
+
     echo "Checking Latest Release..."
 
     TAG=$(curl -s 'https://api.github.com/repos/decipher3114/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
