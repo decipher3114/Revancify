@@ -29,12 +29,12 @@ fetchAssetsInfo() {
             .api |
             .patches,
             (.json // empty),
-            ((.version | .endpoint, .key) // empty)
+            (.version // empty)
             ' "$SRC/sources.json"
         )
 
         if [ "${#SOURCE_INFO[@]}" -gt 2 ]; then
-            VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r --arg KEY "${SOURCE_INFO[3]}" '.[$KEY]')
+            VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r '.version')
             eval "PATCHES_API_URL=\"${SOURCE_INFO[0]}\""
         else
             PATCHES_API_URL="${SOURCE_INFO[0]}"
