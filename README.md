@@ -30,17 +30,18 @@
 # Guide
 
 ## Installation
+> Clear Termux data and delete Revancify folder from Storage, if already using **Revancify v1**.
 1. Download and Install [Termux](#termux).
 2. Open Termux.
 3. Copy and paste this command.
 ```
-curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
+curl -sL https://raw.githubusercontent.com/decipher3114/Revancify/refs/heads/bump/v2.0/install.sh | bash
 ```
 
 ## Usage
 After installation, type `revancify` in termux and press enter.  
 
-Or use with arguments. Check them with `revancify -h` or `revancify --help`
+Or use with arguments. Check them with `revancify -h`
 
 # Thanks & Credits
 [Revanced](https://github.com/revanced)
