@@ -28,7 +28,7 @@ mountApp() {
 }
 
 unmountApp() {
-    readarray -t MOUNTED_PKGS < <(su -c 'ls /data/local/tmp/revancify | xargs basename -s ".apk" 2> /dev/null')
+    readarray -t MOUNTED_PKGS < <(su -c 'ls /data/local/tmp/revancify | xargs basename -s ".apk" -a 2> /dev/null')
     if [ ${#MOUNTED_PKGS[@]} == 0 ]; then
         notify msg "No mounted app present!!"
         return
