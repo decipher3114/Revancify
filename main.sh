@@ -8,7 +8,7 @@ main() {
     mkdir -p "$STORAGE" "$STORAGE/Patched" "$STORAGE/Stock"
     mkdir -p apps
 
-    [ "$ROOT_ACCESS" == true ] && MENU_ENTRY=(5 "Uninstall Patched app")
+    [ "$ROOT_ACCESS" == true ] && MENU_ENTRY=(6 "Uninstall Patched app")
 
     [ "$LIGHT_THEME" == "on" ] && THEME="LIGHT" || THEME="DARK"
     export DIALOGRC="$SRC/config/.DIALOGRC_$THEME"
@@ -55,7 +55,7 @@ main() {
             fi
             ;;
         6 )
-            unmountApp
+            umountApp
             ;;
         esac
     done
