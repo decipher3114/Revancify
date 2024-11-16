@@ -3,6 +3,10 @@
 
 [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/decipher_projects)
 
+> Only **ReVanced** is supported as this moment.  
+> More sources will be added when the migrate to `.rvp` format for patches.
+> For other sources, migrate to Revancify v1.
+
 ## Termux
 
 <table>
@@ -30,7 +34,7 @@
 # Guide
 
 ## Installation
-> Clear Termux data and delete Revancify folder from Storage, if already using **Revancify v1**.
+> Clear Termux data and delete Revancify folder from Storage, if migrating from **Revancify v1**.
 1. Download and Install [Termux](#termux).
 2. Open Termux.
 3. Copy and paste this command.
@@ -44,5 +48,5 @@ After installation, type `revancify` in termux and press enter.
 Or use with arguments. Check them with `revancify -h`
 
 # Thanks & Credits
-[Revanced](https://github.com/revanced)
+[Revanced](https://github.com/revanced)  
 [Revanced Extended](https://github.com/inotia00)  
