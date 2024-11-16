@@ -60,7 +60,7 @@ installDependencies() {
     [ -e "$HOME/storage" ] || termux-setup-storage
 
     BINS=$(ls "$BIN")
-    grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
+    grep -q java <<< "$BINS" || PKGS+=("openjdk-17")
     grep -q wget <<< "$BINS" || PKGS+=("wget")
     grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
     grep -q dialog <<< "$BINS" || PKGS+=("dialog")
@@ -69,7 +69,7 @@ installDependencies() {
     grep -q unzip <<< "$BINS" || PKGS+=("unzip")
 
     if [ "${#PKGS[@]}" -ne 0 ]; then
-        pkg update -o
+        pkg update -o Dpkg::Options::="--force-confnew" || return 1
         pkg install "${PKGS[@]}" -y -o Dpkg::Options::="--force-confnew" || return 1
     fi
 
@@ -142,7 +142,7 @@ fetchSrc() {
 clear
 
 if ! installDependencies; then
-    echo -e "Dependencies not installed !!\nRun again with internet connection."
+    echo -e "Dependencies not installed !!\nRun again with stable internet connection."
     exit 1
 fi
 
