@@ -39,7 +39,7 @@ scrapeVersionsList() {
             elif ($VERSION | test("beta|Beta|BETA")) then
                 $VERSION | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[BETA]"
             elif ($VERSION | test("alpha|Alpha|ALPHA")) then
-                $VERSION | sub("(?<=[0-9])-[a-zA-Z]$"; ""), "[ALPHA]"
+                $VERSION | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[ALPHA]"
             else
                 $VERSION, "[STABLE]"
             end

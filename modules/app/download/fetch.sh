@@ -14,28 +14,43 @@ scrapeAppInfo() {
         else
             APP_FORMAT="APK"
         fi
-        readarray -t VARIANT_INFO < <(pup -p --charset utf-8 'div.variants-table json{}' <<< "$PAGE1"  2> /dev/null | jq -r --arg ARCH "$ARCH" --arg APP_FORMAT "$APP_FORMAT" '
+        readarray -t VARIANT_INFO < <(pup -p --charset utf-8 'div.variants-table json{}' <<< "$PAGE1" | jq -r --arg ARCH "$ARCH" --arg DPI "$DPI" --arg APP_FORMAT "$APP_FORMAT" '
             [
                 .[].children[1:][].children |
-                if (.[1].text | test("universal|noarch|\($ARCH)")) then
+                if (.[1].text | test("universal|noarch|\($ARCH)")) and
+                    (
+                        .[3].text |
+                        test("nodpi") or
+                        (
+                            capture("(?<low>\\d+)-(?<high>\\d+)dpi") |
+                            (($DPI | tonumber) <= (.high | tonumber)) and (($DPI | tonumber) >= (.low | tonumber))
+                        )
+                    )
+                then
                     .[0].children
                 else
                     empty
                 end
-            ] | [
-                if any(.[]; .[1].text == $APP_FORMAT) then
-                    .[] |
-                    if (.[1].text == $APP_FORMAT) then
-                        [.[1].text, .[0].href]
+            ] |
+            if length != 0 then
+                [
+                    if any(.[]; .[1].text == $APP_FORMAT) then
+                        .[] |
+                        if (.[1].text == $APP_FORMAT) then
+                            [.[1].text, .[0].href]
+                        else
+                            empty
+                        end
                     else
-                        empty
+                        .[] | 
+                        [.[1].text, .[0].href]
                     end
-                else
-                    .[] | 
-                    [.[1].text, .[0].href]
-                end
-            ][-1][]' \
-        2> /dev/null)
+                ][-1][]
+            else
+                empty
+            end'
+        )
+        [ "${#VARIANT_INFO[@]}" -eq 0 ] && echo 1 >&2 && exit
         APP_FORMAT="${VARIANT_INFO[0]}"
         URL1="${VARIANT_INFO[1]}"
         unset VARIANT_INFO
@@ -44,14 +59,19 @@ scrapeAppInfo() {
     echo 33
     PAGE2=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL1")
     unset URL1
-    URL2=$(pup -p --charset utf-8 'a.downloadButton attr{href}' <<< "$PAGE2" 2> /dev/null)
+    readarray -t DL_URLS < <(pup -p --charset utf-8 'a.downloadButton attr{href}' <<< "$PAGE2" 2> /dev/null)
+    if [ "$APP_FORMAT" == "APK" ]; then
+        URL2="${DL_URLS[0]}"
+    else
+        URL2="${DL_URLS[-1]}"
+    fi
     APP_SIZE=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<< "$PAGE2" 2> /dev/null | sed -n 's/.*(//;s/ bytes.*//;s/,//gp' 2> /dev/null)
     unset PAGE2
-    [ "$URL2" == "" ] && return 1
+    [ "$URL2" == "" ] && exit 2 >&2 && exit
     echo 66
     URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2> /dev/null | head -n 1)
     unset URL2
-    [ "$URL3" == "" ] && return 1
+    [ "$URL3" == "" ] && exit 2 >&2 && exit
     APP_URL="https://www.apkmirror.com$URL3"
     unset URL3
     setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.info"
@@ -64,7 +84,7 @@ fetchDownloadURL() {
     internet || return 1
     mkdir -p "apps/$APP_NAME"
     rm "apps/$APP_NAME/.info" &> /dev/null
-    scrapeAppInfo | "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0
+    EXIT_CODE=$( { scrapeAppInfo 2>&3 | "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty; } 3>&1)
     if [ -e "apps/$APP_NAME/.info" ]; then
         source "apps/$APP_NAME/.info"
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
@@ -73,7 +93,15 @@ fetchDownloadURL() {
             export APP_EXT="apk"
         fi
     else
-        notify msg "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network."
+        case $EXIT_CODE in
+        1)
+            notify msg "No apk or bundle found matching device architecture. Please select a different version."
+            ;;
+        2) 
+            notify msg "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network."
+            ;;
+        esac
+        unset EXIT_CODE
         return 1
     fi
     tput civis
