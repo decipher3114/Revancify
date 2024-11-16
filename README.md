@@ -3,6 +3,10 @@
 
 [![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
 
+> #### Revancify v1 will be deprecated once Revanced Extended bring support for `.rvp` patches.  
+> ReVanced has changed the patches format to `.rvp` in v5.  
+> For patching apps with **ReVanced** patches, check [**Revancify v2**](https://github.com/decipher3114/Revancify/tree/bump/v2.0)
+
 ## Termux
 
 <table>
@@ -30,6 +34,7 @@
 # Guide
 
 ## Installation
+> Clear Termux data and delete Revancify folder from Storage, if coming back from **Revancify v2**.
 1. Download and Install [Termux](#termux).
 2. Open Termux.
 3. Copy and paste this command.
