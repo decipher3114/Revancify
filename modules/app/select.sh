@@ -18,7 +18,7 @@ chooseApp() {
     EXIT_CODE=$?
     case "$EXIT_CODE" in
     0)
-        source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson APPS_INFO "$APPS_INFO" '$APPS_INFO[] | select(.pkgName == $PKG_NAME) | "APP_NAME=" + .appName + " APKMIRROR_APP_NAME=" + .apkmirrorAppName + " DEVELOPER_NAME=" + .developerName')
+        source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson APPS_INFO "$APPS_INFO" '$APPS_INFO[] | select(.pkgName == $PKG_NAME) | "APP_NAME=\(.appName) APKMIRROR_APP_NAME=\(.apkmirrorAppName) DEVELOPER_NAME=\(.developerName)"')
         APP_TASK="download"
         ;;
     1)

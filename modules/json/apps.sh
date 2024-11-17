@@ -35,7 +35,7 @@ fetchAppsInfo() {
                         if any(.[]; .pkgName == $PKG_NAME) | not then
                             . += [{
                                 "pkgName": $PKG_NAME,
-                                "appName": ($APP.name | sub("( -)|( &amp;)|:"; ""; "g") | sub("[()\\|]"; ""; "g") | sub(" *[-, ] *"; "-"; "g") | sub("-Wear-OS"; ""; "g")),
+                                "appName": ($APP.name | sub("( -)|( &amp;)|:"; ""; "g") | sub("[()\\|]"; ""; "g") | sub(" *[-, ] *"; "-"; "g") | sub("-Wear-OS"; ""; "g")) | split("-")[:4] | join("-"),
                                 "apkmirrorAppName": ($APP.link | sub("-wear-os"; "") | match("(?<=\\/)(((?!\\/).)*)(?=\\/$)").string),
                                 "developerName": ($APP.link | match("(?<=apk\\/).*?(?=\\/)").string)
                             }]
