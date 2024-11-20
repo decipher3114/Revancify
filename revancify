@@ -60,7 +60,7 @@ installDependencies() {
     [ -e "$HOME/storage" ] || termux-setup-storage
 
     BINS=$(ls "$BIN")
-    grep -q java <<< "$BINS" || PKGS+=("openjdk-17")
+    grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
     grep -q wget <<< "$BINS" || PKGS+=("wget")
     grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
     grep -q dialog <<< "$BINS" || PKGS+=("dialog")
