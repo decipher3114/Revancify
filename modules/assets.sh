@@ -5,7 +5,7 @@ fetchAssetsInfo() {
     if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
         notify info "Fetching Assets Info..."
 
-        source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases$ENDPOINT" | jq -r '
+        source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
                 if type == "array" then .[0] else . end |
                 "CLI_VERSION="+.tag_name,
                 (
@@ -26,21 +26,17 @@ fetchAssetsInfo() {
 
         readarray -t SOURCE_INFO < <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
-            .api |
-            .patches,
-            (.json // empty),
-            (.version // empty)
+            .repository,
+            (.api | .json, .version)
             ' "$SRC/sources.json"
         )
 
-        if [ "${#SOURCE_INFO[@]}" -gt 2 ]; then
-            VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r '.version')
-            eval "PATCHES_API_URL=\"${SOURCE_INFO[0]}\""
+        if [ "${#SOURCE_INFO[@]}" -gt 2 ] && VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r '.version' 2> /dev/null); then
+            JSON_URL="${SOURCE_INFO[1]}"
+            PATCHES_API_URL="https://api.github.com/repos/${SOURCE_INFO[0]}/releases/tags/$VERSION"
         else
-            PATCHES_API_URL="${SOURCE_INFO[0]}"
+            PATCHES_API_URL="https://api.github.com/repos/${SOURCE_INFO[0]}/releases/latest"
         fi
-
-        JSON_URL="${SOURCE_INFO[1]}"
 
         source <("${CURL[@]}" "$PATCHES_API_URL" | jq -r '
                 if type == "array" then .[0] else . end |

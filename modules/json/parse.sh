@@ -1,19 +1,20 @@
 #!/usr/bin/bash
 
 parsePatchesJson() {
-    if [ ! -e "$SOURCE-patches-$PATCHES_VERSION.json" ]; then
-        if [ "$JSON_URL" == "" ]; then
-            parseJsonFromCLI | 
-            "${DIALOG[@]}" --gauge "Please Wait!!\nParsing JSON file for $SOURCE patches from CLI Output.\nThis might take some time." -1 -1 0
-            tput civis
-        else
+    while [ ! -e "$SOURCE-patches-$PATCHES_VERSION.json" ]; do
+        if [ "$JSON_URL" != "" ]; then
             notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
             if ! parseJsonFromAPI; then
-                return 1
+                unset JSON_URL
+                notify info "Unable to access API!!\nFalling back to CLI method..."
             fi
+            continue
         fi
+        parseJsonFromCLI | 
+        "${DIALOG[@]}" --gauge "Please Wait!!\nParsing JSON file for $SOURCE patches from CLI Output.\nThis might take some time." -1 -1 0
+        tput civis
         fetchAppsInfo || return 1
-    fi
+    done
 
     if [ ! -e "$SOURCE-apps.json" ]; then
         fetchAppsInfo || return 1

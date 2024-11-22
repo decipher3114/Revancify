@@ -2,7 +2,7 @@
 
 parseJsonFromAPI() {
     
-    RESPONSE=$("${CURL[@]}" "$JSON_URL") || return 1
+    RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null) || return 1
 
     AVAILABLE_PATCHES=$(jq -c '
         reduce .[] as {

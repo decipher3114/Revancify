@@ -1,10 +1,10 @@
 [
     {
         "source": "ReVanced",
+        "repository": "ReVanced/revanced-patches",
         "api": {
-            "version": "https://api.revanced.app/v4/patches/version",
-            "patches": "https://api.github.com/repos/ReVanced/revanced-patches/releases/tags/$VERSION",
-            "json": "https://api.revanced.app/v4/patches/list"
+            "json": "https://api.revanced.app/v4/patches/list",
+            "version": "https://api.revanced.app/v4/patches/version"
         }
     }
 ]
