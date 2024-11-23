@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 installApp() {
+    local CANONICAL_VER
     if [ "$ROOT_ACCESS" == true ]; then
         mountApp
     else

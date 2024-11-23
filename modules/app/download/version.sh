@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 scrapeVersionsList() {
+    local PAGE VERSIONS
     PAGE=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com/uploads/?appcategory=$APKMIRROR_APP_NAME" 2>&1)
 
     if [ "$PAGE" == "" ]; then
@@ -10,8 +11,6 @@ scrapeVersionsList() {
     fi
 
     readarray -t VERSIONS < <(pup -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$PAGE")
-
-    unset PAGE
 
     readarray -t VERSIONS_LIST < <(jq -nrc --arg APP_NAME "$APP_NAME-"\
         --arg INSTALLED_VERSION "$INSTALLED_VERSION"\
@@ -59,7 +58,8 @@ scrapeVersionsList() {
 }
 
 chooseVersion() {
-    unset SELECTED_VERSION APP_VER
+    unset APP_VER
+    local SUPPORTED_VERSIONS SELECTED_VERSION
     if [ "$ROOT_ACCESS" == true ]; then
         getInstalledVersion
     fi
@@ -100,5 +100,4 @@ chooseVersion() {
         fi
     fi
     APP_VER="${SELECTED_VERSION// /-}"
-    unset SUPPORTED_VERSIONS SELECTED_VERSION
 }

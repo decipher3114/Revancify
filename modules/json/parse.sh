@@ -10,8 +10,7 @@ parsePatchesJson() {
             fi
             continue
         fi
-        parseJsonFromCLI | 
-        "${DIALOG[@]}" --gauge "Please Wait!!\nParsing JSON file for $SOURCE patches from CLI Output.\nThis might take some time." -1 -1 0
+        parseJsonFromCLI | "${DIALOG[@]}" --gauge "Please Wait!!\nParsing JSON file for $SOURCE patches from CLI Output.\nThis might take some time." -1 -1 0
         tput civis
         fetchAppsInfo || return 1
     done

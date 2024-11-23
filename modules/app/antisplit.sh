@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 antisplitApp() {
+    local SPLITS APP_DIR LOCALE
     [ "$APP_FORMAT" == "BUNDLE" ] || return 0
 
     notify info "Please Wait !!\nReducing app size..."
@@ -25,5 +26,4 @@ antisplitApp() {
         return 1
     fi
     setEnv "APP_SIZE" "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.info"
-    unset APP_DIR
 }

@@ -53,12 +53,9 @@ scrapeAppInfo() {
         [ "${#VARIANT_INFO[@]}" -eq 0 ] && echo 1 >&2 && exit
         APP_FORMAT="${VARIANT_INFO[0]}"
         URL1="${VARIANT_INFO[1]}"
-        unset VARIANT_INFO
     fi
-    unset CANONICAL_URL PAGE1
     echo 33
     PAGE2=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL1")
-    unset URL1
     readarray -t DL_URLS < <(pup -p --charset utf-8 'a.downloadButton attr{href}' <<< "$PAGE2" 2> /dev/null)
     if [ "$APP_FORMAT" == "APK" ]; then
         URL2="${DL_URLS[0]}"
@@ -66,14 +63,11 @@ scrapeAppInfo() {
         URL2="${DL_URLS[-1]}"
     fi
     APP_SIZE=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<< "$PAGE2" 2> /dev/null | sed -n 's/.*(//;s/ bytes.*//;s/,//gp' 2> /dev/null)
-    unset PAGE2
     [ "$URL2" == "" ] && echo 2 >&2 && exit
     echo 66
     URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2> /dev/null | head -n 1)
-    unset URL2
     [ "$URL3" == "" ] && echo 2 >&2 && exit
     APP_URL="https://www.apkmirror.com$URL3"
-    unset URL3
     setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.info"
     setEnv APP_URL "$APP_URL" update "apps/$APP_NAME/.info"
     setEnv APP_SIZE "$APP_SIZE" update "apps/$APP_NAME/.info"
@@ -82,6 +76,7 @@ scrapeAppInfo() {
 
 fetchDownloadURL() {
     internet || return 1
+    local EXIT_CODE
     mkdir -p "apps/$APP_NAME"
     rm "apps/$APP_NAME/.info" &> /dev/null
     EXIT_CODE=$( { scrapeAppInfo 2>&3 | "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty; } 3>&1)
@@ -93,7 +88,6 @@ fetchDownloadURL() {
             export APP_EXT="apk"
         fi
     else
-        echo $EXIT_CODE
         case $EXIT_CODE in
         1)
             notify msg "No apk or bundle found matching device architecture. Please select a different version."
@@ -102,7 +96,6 @@ fetchDownloadURL() {
             notify msg "Unable to fetch link !!\nEither there is some problem with your internet connection or blocked by cloudflare protection. Disable VPN or Change your network."
             ;;
         esac
-        unset EXIT_CODE
         return 1
     fi
     tput civis

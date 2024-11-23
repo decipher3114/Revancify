@@ -1,8 +1,10 @@
 #!/usr/bin/bash
 
 fetchAssetsInfo() {
+    local SOURCE_INFO VERSION PATCHES_API_URL
     internet || return 1
     if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
+    
         notify info "Fetching Assets Info..."
 
         source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
@@ -23,7 +25,7 @@ fetchAssetsInfo() {
             SOURCE="ReVanced"
             setEnv SOURCE "$SOURCE" init .assets
         fi
-
+        
         readarray -t SOURCE_INFO < <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
             .repository,
@@ -67,6 +69,7 @@ fetchAssetsInfo() {
 }
 
 fetchAssets() {
+    local CTR
     CLI_FILE_NAME="ReVanced-cli-$CLI_VERSION.jar"
     [ -e "$CLI_FILE_NAME" ] || rm -- *-cli-* &> /dev/null
     CTR=2 && while [ "$CLI_FILE_SIZE" != "$(stat -c%s "$CLI_FILE_NAME" 2> /dev/null)" ]; do

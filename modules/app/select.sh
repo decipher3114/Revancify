@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 chooseApp() {
+    local EXIT_CODE
     fetchAssets || return 1
     PREVIOUS_PKG="$PKG_NAME"
     PKG_NAME=$("${DIALOG[@]}" \
@@ -29,6 +30,5 @@ chooseApp() {
         unset APP_NAME APP_VER
         ;;
     esac
-    unset EXIT_CODE
     [ "$PREVIOUS_PKG" != "$PKG_NAME" ] && unset VERSIONS_LIST
 }

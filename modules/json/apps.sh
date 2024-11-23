@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 fetchAppsInfo() {
+    local APPS_ARRAY PKGS_ARRAY RESPONSE_JSON
     APPS_ARRAY=$(jq -rc '.' "$SOURCE-apps.json" 2> /dev/null || echo '[]')
 
     [ -n "$AVAILABLE_PATCHES" ] || AVAILABLE_PATCHES=$(jq -rc '.' "$SOURCE-patches-$PATCHES_VERSION.json")
@@ -54,5 +55,4 @@ fetchAppsInfo() {
             return 1
         fi
     fi
-    unset APPS_ARRAY PKGS_ARRAY
 }

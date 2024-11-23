@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 parseJsonFromCLI() {
+    local PACKAGES PATCHES TOTAL CTR OPTIONS_ARRAY
 
     AVAILABLE_PATCHES='[]'
 
@@ -116,7 +117,7 @@ parseJsonFromCLI() {
                             null
                         end
                     ) as $DEFAULT |
-                    . += [{
+                    $OPTIONS_ARRAY + [{
                         "patchName": $PATCH_NAME,
                         "key": $KEY,
                         "title": $TITLE,

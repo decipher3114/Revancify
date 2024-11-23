@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 parseJsonFromAPI() {
+    local RESPONSE
     
     RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null) || return 1
 
@@ -85,6 +86,4 @@ parseJsonFromAPI() {
             )
         )' <<< "$RESPONSE" > "$SOURCE-patches-$PATCHES_VERSION.json" 2> /dev/null
     )
-
-    unset RESPONSE
 }

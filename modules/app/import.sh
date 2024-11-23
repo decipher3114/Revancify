@@ -23,7 +23,7 @@ selectFile() {
 
 extractProperties() {
     APP_PATH="$STORAGE/Stock/$SELECTED_APP"
-    unset SELECTED_APP APP_VER SELECTED_VERSION VERSION_STATUS
+    local FILE_APP_NAME SELECTED_VERSION VERSION_STATUS
     notify info "Please Wait !!\nExtracting data from \"$(basename "$APP_PATH")\""
     sleep 1
     if ! APP_PROPERTIES=$(./aapt2 dump badging "$APP_PATH"); then

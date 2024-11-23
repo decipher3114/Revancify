@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 editOptions() {
+    local OPTIONS_JSON OPTIONS_LIST CURRENT_VALUE OPTION_INFO TYPE DESCRIPTION VALUE ALLOWED_VALUES NEW_VALUE EXIT_CODE TEMP_FILE UPDATED_OPTIONS UPDATED_PATCHES
     OPTIONS_JSON=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '$ENABLED_PATCHES[] | select(.pkgName == $PKG_NAME) | .options')
 
     [ "$OPTIONS_JSON" == '[]' ] && return
@@ -185,5 +186,4 @@ editOptions() {
     UPDATED_PATCHES=$(jq -c --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '. as $OPTIONS_JSON | $ENABLED_PATCHES | map(if .pkgName == $PKG_NAME then .options |= $OPTIONS_JSON else . end)' <<< "$OPTIONS_JSON")
     echo "$UPDATED_PATCHES" > "$STORAGE/$SOURCE-patches.json"
     ENABLED_PATCHES="$UPDATED_PATCHES"
-    unset OPTIONS_JSON UPDATED_PATCHES
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 managePatches() {
+    local ENABLED_PATCHES_LIST BUTTON_TEXT PATCHES_ARRAY UPDATED_PATCHES CHOICES EXIT_CODE
     readarray -t ENABLED_PATCHES_LIST < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '
         $ENABLED_PATCHES |
         if any(.[]; .pkgName == $PKG_NAME) then
@@ -40,7 +41,6 @@ managePatches() {
         EXIT_CODE=$?
 
         [ "$CHOICES" != "" ] && readarray -t ENABLED_PATCHES_LIST <<< "$CHOICES"
-        unset CHOICES
 
         case "$EXIT_CODE" in
         0 )
@@ -106,5 +106,4 @@ managePatches() {
     )
     echo "$UPDATED_PATCHES" > "$STORAGE/$SOURCE-patches.json"
     ENABLED_PATCHES="$UPDATED_PATCHES"
-    unset ENABLED_PATCHES_LIST PATCHES_ARRAY
 }
