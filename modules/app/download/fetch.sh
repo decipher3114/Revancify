@@ -123,9 +123,16 @@ downloadApp() {
             return 0
         fi
     else
-        rm -rf apps/"$APP_NAME"/* &> /dev/null
+        if [ -e "apps/$APP_NAME/$APP_VER" ]; then
+            antisplitApp || return 1
+            return 0
+        else
+            rm -rf apps/"$APP_NAME"/* &> /dev/null
+        fi
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
-    antisplitApp || return 1
+    if [ "$APP_FORMAT" == "BUNDLE" ]; then
+        antisplitApp || return 1
+    fi
 }

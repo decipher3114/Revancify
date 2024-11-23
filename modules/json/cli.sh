@@ -28,7 +28,8 @@ parseJsonFromCLI() {
                         []
                     else
                         [ .[] | match("^[^ ]+").string ]
-                    end
+                    end |
+                    sort
                 ),
                 "patches": {
                     "recommended": [],

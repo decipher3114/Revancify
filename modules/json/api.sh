@@ -70,7 +70,7 @@ parseJsonFromAPI() {
                 end |
                 map(
                     if .pkgName == $PKG_NAME then
-                        .versions |= (. += $VERSIONS | unique) |
+                        .versions |= (. += $VERSIONS | unique | sort) |
                         .patches |= (
                             if $USE then
                                 .recommended += [$PATCH]
