@@ -77,22 +77,24 @@ installDependencies() {
 
     CTR=0 && while [ ! -e "$DATA/aapt2" ]; do
         [ $CTR -gt 2 ] && return 1
-        ARCH=$(getprop ro.product.cpu.abi)
-        wget "https://github.com/decipher3114/binaries/releases/latest/download/aapt2_$ARCH" -O "$DATA/aapt2"
+        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2> /dev/null)
+        [ "${#RESPONSE[@]}" -eq 0 ] && return 1
+        wget "${RESPONSE[0]}" -O "$DATA/aapt2"
         chmod +x "$DATA/aapt2"
-        if "$DATA/aapt2" version &> /dev/null; then
+        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/aapt2" 2> /dev/null)" ]; then
             break
         else
             rm "$DATA/aapt2"
         fi
         (( CTR++ ))
     done
-
+    unset RESPONSE
     CTR=0 && while [ ! -e "$DATA/ApkEditor.jar" ]; do
         [ $CTR -gt 2 ] && return 1
-        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size')
+        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
+        [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget "${RESPONSE[0]}" -O "$DATA/ApkEditor.jar"
-        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/ApkEditor.jar")" ]; then
+        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/ApkEditor.jar" 2> /dev/null)" ]; then
             break
         else
             rm "$DATA/ApkEditor.jar"

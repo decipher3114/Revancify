@@ -20,6 +20,10 @@ antisplitApp() {
     cp "$SPLITS"/split_config.*dpi.apk "$APP_DIR" &> /dev/null
     rm -rf "$SPLITS"
     java -jar ApkEditor.jar m -i "$APP_DIR" -o "apps/$APP_NAME/$APP_VER.apk" &> /dev/null
+    if [ ! -e "apps/$APP_NAME/$APP_VER.apk" ]; then
+        notify msg "Unable to run merge splits!!\nApkEditor is not working properly."
+        return 1
+    fi
     setEnv "APP_SIZE" "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.info"
     unset APP_DIR
 }

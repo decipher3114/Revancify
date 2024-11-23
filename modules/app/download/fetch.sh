@@ -67,11 +67,11 @@ scrapeAppInfo() {
     fi
     APP_SIZE=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<< "$PAGE2" 2> /dev/null | sed -n 's/.*(//;s/ bytes.*//;s/,//gp' 2> /dev/null)
     unset PAGE2
-    [ "$URL2" == "" ] && exit 2 >&2 && exit
+    [ "$URL2" == "" ] && echo 2 >&2 && exit
     echo 66
     URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2> /dev/null | head -n 1)
     unset URL2
-    [ "$URL3" == "" ] && exit 2 >&2 && exit
+    [ "$URL3" == "" ] && echo 2 >&2 && exit
     APP_URL="https://www.apkmirror.com$URL3"
     unset URL3
     setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.info"
@@ -93,12 +93,13 @@ fetchDownloadURL() {
             export APP_EXT="apk"
         fi
     else
+        echo $EXIT_CODE
         case $EXIT_CODE in
         1)
             notify msg "No apk or bundle found matching device architecture. Please select a different version."
             ;;
         2) 
-            notify msg "Unable to fetch link !!\nThere is some problem with your internet connection. Disable VPN or Change your network."
+            notify msg "Unable to fetch link !!\nEither there is some problem with your internet connection or blocked by cloudflare protection. Disable VPN or Change your network."
             ;;
         esac
         unset EXIT_CODE
@@ -133,5 +134,5 @@ downloadApp() {
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
-    antisplitApp
+    antisplitApp || return 1
 }
