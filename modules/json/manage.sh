@@ -86,12 +86,14 @@ managePatches() {
                 .options |= . as $SAVED_OPTIONS | [
                     $AVAILABLE_OPTIONS[] |
                     . as $OPTION |
-                    if ($ARGS.positional | index($OPTION.patchName)) != null then
+                    .patchName as $PATCH_NAME |
+                    if ($ARGS.positional | index($PATCH_NAME)) != null then
                         .title as $TITLE |
                         .key as $KEY |
                         .default as $DEFAULT |
                         {
                             "title": $TITLE,
+                            "patchName": $PATCH_NAME,
                             "key": $KEY,
                             "value": (($SAVED_OPTIONS[]? | select(.key == $KEY) | .value) // $DEFAULT)
                         }

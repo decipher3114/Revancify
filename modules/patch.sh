@@ -37,19 +37,27 @@ patchApp() {
     readarray -t ARGUMENTS < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '
         $ENABLED_PATCHES[] |
         select(.pkgName == $PKG_NAME) |
-        (.patches[] | "--enable", .),
+        .options as $OPTIONS |
+        .patches[] |
+        . as $PATCH_NAME |
+        "--enable",
+        $PATCH_NAME,
         (
-            .options[] |
-            "--options=" +
-            .key + "=" +
-            (
-                .value |
-                if . != null then
-                    . | tostring | sub("[\" ]"; ""; "g")
-                else
-                    ""
-                end
-            )
+            $OPTIONS[] |
+            if .patchName == $PATCH_NAME then
+                "--options=" +
+                .key + "=" +
+                (
+                    .value |
+                    if . != null then
+                        . | tostring | sub("[\" ]"; ""; "g")
+                    else
+                        empty
+                    end
+                )
+            else
+                empty
+            end
         )
         '
     )
