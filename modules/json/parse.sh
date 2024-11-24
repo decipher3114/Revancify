@@ -2,12 +2,8 @@
 
 parsePatchesJson() {
     while [ ! -e "$SOURCE-patches-$PATCHES_VERSION.json" ]; do
-        if [ "$JSON_URL" != "" ]; then
-            notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
-            if ! parseJsonFromAPI; then
-                unset JSON_URL
-                notify info "Unable to access API!!\nFalling back to CLI method..."
-            fi
+        if [ -n "$JSON_URL" ]; then
+            parseJsonFromAPI
             continue
         fi
         parseJsonFromCLI | "${DIALOG[@]}" --gauge "Please Wait!!\nParsing JSON file for $SOURCE patches from CLI Output.\nThis might take some time." -1 -1 0

@@ -19,14 +19,16 @@ fetchAppsInfo() {
     )
 
     if [ "$PKGS_ARRAY" != '[]' ]; then
+
+        notify info "Fetching apps info from apkmirror.com..."
     
         if RESPONSE_JSON=$(
             "${CURL[@]}" 'https://www.apkmirror.com/wp-json/apkm/v1/app_exists/' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -H 'Authorization: Basic YXBpLXRvb2xib3gtZm9yLWdvb2dsZS1wbGF5OkNiVVcgQVVMZyBNRVJXIHU4M3IgS0s0SCBEbmJL' \
-            -H 'User-Agent: Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36' \
-            -d "$(jq -nr --argjson PKGS_ARRAY "$PKGS_ARRAY" '{"pnames": $PKGS_ARRAY}')" |
+                -H 'Accept: application/json' \
+                -H 'Content-Type: application/json' \
+                -H 'Authorization: Basic YXBpLXRvb2xib3gtZm9yLWdvb2dsZS1wbGF5OkNiVVcgQVVMZyBNRVJXIHU4M3IgS0s0SCBEbmJL' \
+                -H 'User-Agent: Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.86 Mobile Safari/537.36' \
+                -d "$(jq -nr --argjson PKGS_ARRAY "$PKGS_ARRAY" '{"pnames": $PKGS_ARRAY}')" |
             jq -c '.' 2> /dev/null
         ); then
 

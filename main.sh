@@ -45,14 +45,7 @@ main() {
             preferences
             ;;
         5 )
-            if "${DIALOG[@]}" \
-                    --title '| Delete Tools |' \
-                    --defaultno \
-                    --yesno "Please confirm to delete the assets.\nIt will delete the CLI and $SOURCE patches." -1 -1\
-            ; then
-                rm ReVanced-cli-*.jar &> /dev/null
-                rm "$SOURCE"-patches-*.rvp &> /dev/null
-            fi
+            deleteAssets
             ;;
         6 )
             umountApp

@@ -1,13 +1,16 @@
 #!/usr/bin/bash
 
 fetchAssetsInfo() {
+    unset CLI_VERSION CLI_FILE_URL CLI_FILE_SIZE PATCHES_VERSION PATCHES_FILE_URL PATCHES_FILE_SIZE JSON_URL
     local SOURCE_INFO VERSION PATCHES_API_URL
+
     internet || return 1
+    
     if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
     
         notify info "Fetching Assets Info..."
 
-        source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
+        if ! source <("${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
                 if type == "array" then .[0] else . end |
                 "CLI_VERSION="+.tag_name,
                 (
@@ -20,7 +23,11 @@ fetchAssetsInfo() {
                     end
                 )
             '
-        )
+        ); then
+            notify msg "Unable to fetch latest CLI info from API!!\n Retry later."
+        fi
+
+
         if [ -z "$SOURCE" ]; then
             SOURCE="ReVanced"
             setEnv SOURCE "$SOURCE" init .assets
@@ -40,7 +47,7 @@ fetchAssetsInfo() {
             PATCHES_API_URL="https://api.github.com/repos/${SOURCE_INFO[0]}/releases/latest"
         fi
 
-        source <("${CURL[@]}" "$PATCHES_API_URL" | jq -r '
+        if ! source <("${CURL[@]}" "$PATCHES_API_URL" | jq -r '
                 if type == "array" then .[0] else . end |
                 "PATCHES_VERSION="+.tag_name,
                 (
@@ -53,7 +60,10 @@ fetchAssetsInfo() {
                     end
                 )
             '
-        )
+        ); then
+            notify msg "Unable to fetch latest CLI info from API!!\n Retry later."
+        fi
+            
         setEnv CLI_VERSION "$CLI_VERSION" update .assets
         setEnv CLI_FILE_URL "$CLI_FILE_URL" update .assets
         setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" update .assets
@@ -70,8 +80,14 @@ fetchAssetsInfo() {
 
 fetchAssets() {
     local CTR
+
+    if [ -z "$CLI_VERSION" ] && [ -z "$PATCHES_VERSION" ]; then
+        fetchAssetsInfo || return 1
+    fi
+
     CLI_FILE_NAME="ReVanced-cli-$CLI_VERSION.jar"
     [ -e "$CLI_FILE_NAME" ] || rm -- *-cli-* &> /dev/null
+
     CTR=2 && while [ "$CLI_FILE_SIZE" != "$(stat -c%s "$CLI_FILE_NAME" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
         ((CTR--))
@@ -79,8 +95,10 @@ fetchAssets() {
         "${DIALOG[@]}" --gauge "File    : $CLI_FILE_NAME\nSize    : $(numfmt --to=iec --format="%0.1f" "$CLI_FILE_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c%s "$CLI_FILE_NAME" 2> /dev/null || echo 0) * 100)) / CLI_FILE_SIZE))"
         tput civis
     done
+
     PATCHES_FILE_NAME="$SOURCE-patches-$PATCHES_VERSION.rvp"
     [ -e "$PATCHES_FILE_NAME" ] || rm -- *-patches-* &> /dev/null
+
     CTR=2 && while [ "$PATCHES_FILE_SIZE" != "$(stat -c%s "$PATCHES_FILE_NAME" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
         ((CTR--))
@@ -88,5 +106,20 @@ fetchAssets() {
         "${DIALOG[@]}" --gauge "File    : $PATCHES_FILE_NAME\nSize    : $(numfmt --to=iec --format="%0.1f" "$PATCHES_FILE_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c%s "$PATCHES_FILE_NAME" 2> /dev/null || echo 0) * 100)) / PATCHES_FILE_SIZE))"
         tput civis
     done
+
     parsePatchesJson || return 1
+}
+
+deleteAssets() {
+
+    if "${DIALOG[@]}" \
+            --title '| Delete Tools |' \
+            --defaultno \
+            --yesno "Please confirm to delete the assets.\nIt will delete the CLI and $SOURCE patches." -1 -1\
+    ; then
+        unset CLI_VERSION CLI_FILE_URL CLI_FILE_SIZE PATCHES_VERSION PATCHES_FILE_URL PATCHES_FILE_SIZE JSON_URL
+        rm .assets &> /dev/null
+        rm ReVanced-cli-*.jar &> /dev/null
+        rm "$SOURCE"-patches-*.rvp &> /dev/null
+    fi
 }

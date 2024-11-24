@@ -3,7 +3,14 @@
 parseJsonFromAPI() {
     local RESPONSE
     
-    RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null) || return 1
+    notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
+
+    if ! RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null); then
+        unset JSON_URL
+        notify info "Unable to access API!!\nFalling back to CLI method..."
+        sleep 0.5
+        return 1
+    fi
 
     AVAILABLE_PATCHES=$(jq -c '
         reduce .[] as {
