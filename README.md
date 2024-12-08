@@ -1,11 +1,11 @@
 # Revancify 🛠️
 ### A TUI wrapper for Revanced CLI with amazing features.
 
-[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/revancifychat)
+[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/decipher_projects)
 
-> #### Revancify v1 will be deprecated once Revanced Extended bring support for `.rvp` patches.  
-> ReVanced has changed the patches format to `.rvp` in v5.  
-> For patching apps with **ReVanced** patches, check [**Revancify v2**](https://github.com/decipher3114/Revancify/tree/bump/v2.0)
+> Only **ReVanced** is supported as this moment.  
+> More sources will be added when the migrate to `.rvp` format for patches.
+> For other sources, migrate to Revancify v1.
 
 ## Termux
 
@@ -14,10 +14,12 @@
     <td colspan="2">Download Link</td>
   </tr>
   <tr>
-    <td><a href="https://github.com/termux/termux-app/releases/latest">GitHub</a></td>
-    <td><a href="https://play.google.com/store/apps/details?id=com.termux">PlayStore</a></td>
+    <td><a href="https://github.com/termux/termux-app/releases/latest">Termux Official</a></td>
+    <td><a href="https://github.com/Termux-Monet/termux-monet/releases/latest">Termux Monet (Deprecated)</a></td>
   </tr>
 </table>
+
+> Termux Monet is deprecated, still works better than Official one.
 
 
 # Features
@@ -34,27 +36,19 @@
 # Guide
 
 ## Installation
-> Clear Termux data and delete Revancify folder from Storage, if coming back from **Revancify v2**.
+> Clear Termux data and delete Revancify folder from Storage, if migrating from **Revancify v1**.
 1. Download and Install [Termux](#termux).
 2. Open Termux.
 3. Copy and paste this command.
 ```
-curl -sL "https://raw.githubusercontent.com/decipher3114/Revancify/main/install.sh" | bash
+curl -sL https://raw.githubusercontent.com/decipher3114/Revancify/refs/heads/bump/v2.0/install.sh | bash
 ```
-
-<details>
-  <summary>If the above one doesn't work, use this.</summary>
-
-  ```
-pkg update -y -o Dpkg::Options::="--force-confnew" && pkg install git -y && git clone --depth=1 https://github.com/decipher3114/Revancify.git && ./Revancify/revancify
-```
-</details>
 
 ## Usage
 After installation, type `revancify` in termux and press enter.  
 
-Or use with arguments. Check them with `revancify -h` or `revancify --help`
+Or use with arguments. Check them with `revancify -h`
 
 # Thanks & Credits
-[Revanced](https://github.com/revanced)
+[Revanced](https://github.com/revanced)  
 [Revanced Extended](https://github.com/inotia00)  

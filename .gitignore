@@ -1,12 +1,11 @@
-
 *.json
 *.txt
 *.jar
+*.rvp
 *.apk
 *.sh
-
 !main.sh
-!root_util.sh
-!fetch*.sh
 !install.sh
 !sources.json
+!modules/**/*
+!root/*
