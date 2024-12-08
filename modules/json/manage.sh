@@ -95,7 +95,7 @@ managePatches() {
                             "title": $TITLE,
                             "patchName": $PATCH_NAME,
                             "key": $KEY,
-                            "value": (($SAVED_OPTIONS[]? | select(.key == $KEY) | .value) // $DEFAULT)
+                            "value": (($SAVED_OPTIONS[]? | select(.key == $KEY and .patchName == $PATCH_NAME) | .value) // $DEFAULT)
                         }
                     else
                         empty

@@ -6,7 +6,7 @@ editOptions() {
 
     [ "$OPTIONS_JSON" == '[]' ] && return
 
-    readarray -t OPTIONS_LIST < <(jq -r '.[] | .key, .title' <<< "$OPTIONS_JSON")
+    readarray -t OPTIONS_LIST < <(jq -r '.[] | ({"key": .key, "patchName": .patchName} | tostring), .title' <<< "$OPTIONS_JSON")
     while true; do
         unset EXIT_CODE
         if [ -z "$SELECTED_OPTION" ]; then
@@ -31,13 +31,38 @@ editOptions() {
                     ;;
             esac
         else
-            readarray -t CURRENT_VALUE < <(jq -r --arg SELECTED_OPTION "$SELECTED_OPTION" '.[] | select(.key == $SELECTED_OPTION) | .value | if (. | type) == "array" then .[] else . end | if . != null then . else empty end' <<< "$OPTIONS_JSON")
+            readarray -t CURRENT_VALUE < <(jq -r --arg SELECTED_OPTION "$SELECTED_OPTION" '
+                .[] |
+                select(
+                    .key as $KEY |
+                    .patchName as $PATCH_NAME |
+                    $SELECTED_OPTION |
+                    fromjson |
+                    .key == $KEY and .patchName == $PATCH_NAME
+                ) |
+                .value |
+                if (. | type) == "array" then
+                    .[]
+                else
+                    .
+                end |
+                if . != null then
+                    .
+                else
+                    empty
+                end' <<< "$OPTIONS_JSON")
 
             readarray -t OPTION_INFO < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
                 $AVAILABLE_PATCHES[] |
                 select(.pkgName == $PKG_NAME or .pkgName == null) |
                 .options[] |
-                select(.key == $SELECTED_OPTION) |
+                select(
+                    .key as $KEY |
+                    .patchName as $PATCH_NAME |
+                    $SELECTED_OPTION |
+                    fromjson |
+                    .key == $KEY and .patchName == $PATCH_NAME
+                ) |
                 .type,
                 .description,
                 (
@@ -152,7 +177,9 @@ editOptions() {
                 fi
                 if UPDATED_OPTIONS=$(jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg TYPE "$TYPE" '
                         map(
-                            if .key == $SELECTED_OPTION then
+                            .key as $KEY |
+                            .patchName as $PATCH_NAME |
+                            if ($SELECTED_OPTION | fromjson | .key == $KEY and .patchName == $PATCH_NAME) then
                                 .value |= (
                                     $ARGS.positional |
                                     if length == 0 then
@@ -163,7 +190,7 @@ editOptions() {
                                         elif $TYPE == "Number" then
                                             .[0] | tonumber
                                         elif $TYPE == "String" then
-                                            .[0] | debug | tostring
+                                            .[0] | tostring
                                         else
                                             .
                                         end
