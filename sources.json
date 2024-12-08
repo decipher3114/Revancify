@@ -6,5 +6,10 @@
             "json": "https://api.revanced.app/v4/patches/list",
             "version": "https://api.revanced.app/v4/patches/version"
         }
+    },
+    {
+        "source": "ReVanced-Extended",
+        "repository": "inotia00/revanced-patches",
+        "api": null
     }
 ]

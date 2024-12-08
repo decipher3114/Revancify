@@ -7,6 +7,8 @@ fetchAssetsInfo() {
     internet || return 1
     
     if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
+
+        rm .assets 2> /dev/null
     
         notify info "Fetching Assets Info..."
 
@@ -28,23 +30,25 @@ fetchAssetsInfo() {
         fi
 
 
-        if [ -z "$SOURCE" ]; then
-            SOURCE="ReVanced"
-            setEnv SOURCE "$SOURCE" init .assets
-        fi
+        [ -z "$SOURCE" ] && SOURCE="ReVanced"
         
-        readarray -t SOURCE_INFO < <(jq -r --arg SOURCE "$SOURCE" '
+        source <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
-            .repository,
-            (.api | .json, .version)
+            "REPO=\(.repository)",
+            (
+                .api // empty |
+                (
+                    (.json // empty | "JSON_URL=\(.)"),
+                    (.version // empty | "VERSION_URL=\(.)")
+                )
+            )
             ' "$SRC/sources.json"
         )
 
-        if [ "${#SOURCE_INFO[@]}" -gt 2 ] && VERSION=$("${CURL[@]}" "${SOURCE_INFO[2]}" | jq -r '.version' 2> /dev/null); then
-            JSON_URL="${SOURCE_INFO[1]}"
-            PATCHES_API_URL="https://api.github.com/repos/${SOURCE_INFO[0]}/releases/tags/$VERSION"
+        if [ -n "$VERSION_URL" ] && VERSION=$("${CURL[@]}" "$VERSION_URL" | jq -r '.version' 2> /dev/null); then
+            PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
         else
-            PATCHES_API_URL="https://api.github.com/repos/${SOURCE_INFO[0]}/releases/latest"
+            PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/latest"
         fi
 
         if ! source <("${CURL[@]}" "$PATCHES_API_URL" | jq -r '
@@ -52,7 +56,7 @@ fetchAssetsInfo() {
                 "PATCHES_VERSION="+.tag_name,
                 (
                     .assets[] |
-                    if .content_type == "text/plain" then
+                    if (.name | endswith(".rvp")) then
                         "PATCHES_FILE_URL="+.browser_download_url,
                         "PATCHES_FILE_SIZE="+(.size|tostring)
                     else
@@ -63,14 +67,15 @@ fetchAssetsInfo() {
         ); then
             notify msg "Unable to fetch latest CLI info from API!!\n Retry later."
         fi
-            
-        setEnv CLI_VERSION "$CLI_VERSION" update .assets
-        setEnv CLI_FILE_URL "$CLI_FILE_URL" update .assets
-        setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" update .assets
-        setEnv PATCHES_VERSION "$PATCHES_VERSION" update .assets
-        setEnv PATCHES_FILE_URL "$PATCHES_FILE_URL" update .assets
-        setEnv PATCHES_FILE_SIZE "$PATCHES_FILE_SIZE" update .assets
-        setEnv JSON_URL "$JSON_URL" update .assets
+
+        setEnv SOURCE "$SOURCE" init .assets
+        setEnv CLI_VERSION "$CLI_VERSION" init .assets
+        setEnv CLI_FILE_URL "$CLI_FILE_URL" init .assets
+        setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" init .assets
+        setEnv PATCHES_VERSION "$PATCHES_VERSION" init .assets
+        setEnv PATCHES_FILE_URL "$PATCHES_FILE_URL" init .assets
+        setEnv PATCHES_FILE_SIZE "$PATCHES_FILE_SIZE" init .assets
+        [ -n "$JSON_URL" ] && setEnv JSON_URL "$JSON_URL" init .assets
     else
         notify msg "Unable to check for update.\nYou are probably rate-limited at this moment.\nTry again later or Run again with '-o' argument."
         return 1
