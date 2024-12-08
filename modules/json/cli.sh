@@ -60,30 +60,30 @@ parseJsonFromCLI() {
 
     for PATCH in "${PATCHES[@]}"; do
 
-        PATCH_NAME=$(grep '^N' <<< "$PATCH" | sed 's/.*: //')
-        USE=$(grep '^E' <<< "$PATCH" | sed 's/.*: //')
-        PATCH=$(sed '/^N/d;/^E/d' <<< "$PATCH")
+        PATCH_NAME=$(grep '^Name:' <<< "$PATCH" | sed 's/.*: //')
+        USE=$(grep '^Enabled:' <<< "$PATCH" | sed 's/.*: //')
+        PATCH=$(sed '/^Name:/d;/^Enabled:/d' <<< "$PATCH")
 
         if grep -q '^C' <<< "$PATCH"; then
-            readarray -t PACKAGES < <(grep $'^\tPackage' <<< "$PATCH" | sed 's/.*: //;s/ //g')
-            PATCH=$(sed '/^C/d;/^Pa/d' <<< "$PATCH")
+            readarray -t PACKAGES < <(grep $'^\tPackage name:' <<< "$PATCH" | sed 's/.*: //;s/ //g')
+            PATCH=$(sed '/^Compatible packages:/d;/^\tPackage Name:/d' <<< "$PATCH")
         fi
 
         OPTIONS_ARRAY='[]'
         if grep -q "Options:" <<< "$PATCH"; then
-            PATCH=$(sed '/^O/d;s/^\t//g' <<< "$PATCH")
+            PATCH=$(sed '/^Options:/d;s/^\t//g' <<< "$PATCH")
             readarray -d '' -t OPTIONS < <(awk -v RS='\n\nTitle' -v ORS='\0' '1' <<< "$PATCH")
 
             for OPTION in "${OPTIONS[@]}"; do
 
-                KEY=$(grep '^K' <<< "$OPTION" | sed 's/.*: //;s/ //g')
+                KEY=$(grep '^Key:' <<< "$OPTION" | sed 's/.*: //;s/ //g')
                 TITLE=$(grep -E '^Title:|^:' <<< "$OPTION" | sed 's/.*: //;')
-                DESCRIPTION=$(grep '^Des' <<< "$OPTION" | sed 's/.*: //')
-                REQUIRED=$(grep '^R' <<< "$OPTION" | sed 's/.*: //')
-                DEFAULT=$(grep '^Def' <<< "$OPTION" | sed 's/.*: //')
-                TYPE=$(grep '^Ty' <<< "$OPTION" | sed 's/.*: //;s/ //')
+                DESCRIPTION=$(grep '^Description:' <<< "$OPTION" | sed 's/.*: //')
+                REQUIRED=$(grep '^Required:' <<< "$OPTION" | sed 's/.*: //')
+                DEFAULT=$(grep '^Default:' <<< "$OPTION" | sed 's/.*: //')
+                TYPE=$(grep '^Type:' <<< "$OPTION" | sed 's/.*: //;s/ //')
 
-                if grep -q "^Po" <<< "$OPTION"; then
+                if grep -q "^Possible values:" <<< "$OPTION"; then
                     readarray -t VALUES < <(grep $'^\t' <<< "$OPTION" | sed 's/\t//')
                 fi
 
