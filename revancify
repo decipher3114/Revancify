@@ -16,7 +16,7 @@ Options:
 while getopts ":furvh" OPT 2> /dev/null; do
     case $OPT in
         f)
-            rm "$SRC/.info"
+            rm "$SRC/.info" &> /dev/null
             ;;
         u)
             INTERNET_ACCESS=false
@@ -25,8 +25,12 @@ while getopts ":furvh" OPT 2> /dev/null; do
             ROOT_ACCESS=false
             ;;
         v)
-            source "$SRC/.info"
-            echo "$VERSION"
+            if [ -e "$SRC" ]; then
+                source "$SRC/.info"
+                echo "$VERSION"
+            else
+                echo "Revancify not installed !!"
+            fi
             exit
             ;;
         h)
@@ -90,7 +94,7 @@ installDependencies() {
         fi
         (( CTR++ ))
     done
-    
+
     CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
         [ $CTR -gt 2 ] && return 1
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
@@ -133,8 +137,8 @@ fetchSrc() {
             mv "$CONTENT" "$SRC/"
         done
         rm -rf Revancify-* &> /dev/null
-        cp -f "$SRC/revancify" "$BIN/revancify"
-        chmod +x "$BIN/revancify"
+        cp -f "$SRC/revancify" "$PREFIX/bin/revancify"
+        chmod +x "$PREFIX/bin/revancify"
         echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."
         exit
     else
@@ -158,9 +162,9 @@ else
     ROOT_ACCESS=false
 fi
 
-cd "$SRC" &> /dev/null || exit 1
+cd "$SRC" &> /dev/null || terminate
 
-bash "$SRC/main.sh" "$ROOT_ACCESS"
+bash main.sh "$ROOT_ACCESS"
 EXIT_CODE=$?
 
 exit "$EXIT_CODE"
