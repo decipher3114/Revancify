@@ -2,7 +2,7 @@
 
 fetchAppsInfo() {
     local APPS_ARRAY PKGS_ARRAY RESPONSE_JSON
-    APPS_ARRAY=$(jq -rc '[.[]]' "$SOURCE"-apps-*.json 2> /dev/null || echo '[]')
+    APPS_ARRAY=$(jq -rc '[.[]]' assets/"$SOURCE"/Apps-*.json 2> /dev/null || echo '[]')
 
     PKGS_ARRAY=$(jq -nc --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" --argjson APPS_ARRAY "$APPS_ARRAY" '
         $AVAILABLE_PATCHES |
@@ -49,7 +49,7 @@ fetchAppsInfo() {
                 )
             ' 2> /dev/null
         ); then
-            rm "$SOURCE"-apps-*.json 2> /dev/null
+            rm assets/"$SOURCE"/Apps-*.json &> /dev/null
 
             echo "$RESPONSE_JSON" | jq -c --argjson APPS_ARRAY "$APPS_ARRAY" '
                 reduce .[] as {pkgName: $PKG_NAME, appName: $APP_NAME, appUrl: $APP_URL} (
@@ -64,7 +64,7 @@ fetchAppsInfo() {
                     else
                         .
                     end
-            )' > "$SOURCE-apps-$PATCHES_VERSION.json" \
+            )' > "assets/$SOURCE/Apps-$PATCHES_VERSION.json" \
             2> /dev/null
 
         else

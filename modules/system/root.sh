@@ -1,22 +1,14 @@
 #!/usr/bin/bash
 
 getInstalledVersion() {
-    local INSTALLED_VERSION
-    if su -c "pm list packages | grep -q $PKG_NAME" && [ "$ALLOW_APP_VERSION_DOWNGRADE" == "off" ]; then
+    if [ "$ROOT_ACCESS" == true ] && su -c "pm list packages | grep -q $PKG_NAME"; then
         INSTALLED_VERSION=$(su -c dumpsys package "$PKG_NAME" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
-        if [ "$1" == "compare" ] && [ "$INSTALLED_VERSION" != "$SELECTED_VERSION" ]; then
-            SORTED=$(jq -nrc --arg INSTALLED_VERSION "$INSTALLED_VERSION" --arg SELECTED_VERSION "$SELECTED_VERSION" '[$INSTALLED_VERSION, $SELECTED_VERSION] | sort | .[0]')
-            if [ "$SORTED" != "$INSTALLED_VERSION" ]; then
-                notify msg "The selected version $SELECTED_VERSION is lower then version $INSTALLED_VERSION installed on your device.\nPlease Select a higher version !!"
-                return 1
-            fi
-        fi
     fi
 }
 
 mountApp() {
     notify info "Please Wait !!\nMounting $APP_NAME..."
-    if su -mm -c "/system/bin/sh $SRC/root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
+    if su -mm -c "/system/bin/sh root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
         notify msg "$APP_NAME Mounted Successfully !!"
     else
         notify msg "Installation Failed !!\nShare logs to developer."
@@ -46,9 +38,7 @@ umountApp() {
     ); then
         return
     fi
-    notify info "Unmounting $PKG_NAME..."
-    sleep 1
-    su -mm -c "/system/bin/sh $SRC/root/umount.sh $PKG_NAME" &> /dev/null
+    su -mm -c "/system/bin/sh root/umount.sh $PKG_NAME" &> /dev/null
     notify msg "Unmount Successful !!"
     unset MOUNTED_PKGS PKG_NAME
 }

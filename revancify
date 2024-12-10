@@ -1,13 +1,6 @@
 #!/usr/bin/bash
 
-cd "$HOME" || exit 1
-
 SRC="$HOME/Revancify"
-
-DATA="$SRC/data"
-[ -e "$DATA" ] || mkdir -p "$DATA"
-
-BIN="$PREFIX/bin"
 
 HELP="revancify
 
@@ -58,11 +51,12 @@ terminate() {
 trap terminate SIGTERM SIGINT SIGABRT
 
 installDependencies() {
+    local BINS BIN CTR RESPONSE
     echo "Checking dependencies..."
 
     [ -e "$HOME/storage" ] || termux-setup-storage
 
-    BINS=$(ls "$BIN")
+    BINS=$(ls "$PREFIX/bin")
     grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
     grep -q wget <<< "$BINS" || PKGS+=("wget")
     grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
@@ -78,29 +72,34 @@ installDependencies() {
 
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
 
-    CTR=0 && while [ ! -e "$DATA/aapt2" ]; do
+    [ -e "$SRC/bin" ] || mkdir -p "$SRC/bin"
+
+    AAPT2="$SRC/bin/aapt2"
+    APK_EDITOR="$SRC/bin/APKEditor.jar"
+
+    CTR=0 && while [ ! -e "$AAPT2" ]; do
         [ $CTR -gt 2 ] && return 1
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
-        wget "${RESPONSE[0]}" -O "$DATA/aapt2"
-        chmod +x "$DATA/aapt2"
-        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/aapt2" 2> /dev/null)" ]; then
+        wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
+        chmod +x "$AAPT2"
+        if [ "${RESPONSE[1]}" == "$(stat -c%s "$AAPT2" 2> /dev/null)" ]; then
             break
         else
-            rm "$DATA/aapt2"
+            rm "$AAPT2"
         fi
         (( CTR++ ))
     done
-    unset RESPONSE
-    CTR=0 && while [ ! -e "$DATA/ApkEditor.jar" ]; do
+    
+    CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
         [ $CTR -gt 2 ] && return 1
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
-        wget "${RESPONSE[0]}" -O "$DATA/ApkEditor.jar"
-        if [ "${RESPONSE[1]}" == "$(stat -c%s "$DATA/ApkEditor.jar" 2> /dev/null)" ]; then
+        wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
+        if [ "${RESPONSE[1]}" == "$(stat -c%s "$APK_EDITOR" 2> /dev/null)" ]; then
             break
         else
-            rm "$DATA/ApkEditor.jar"
+            rm "$APK_EDITOR"
         fi
         (( CTR++ ))
     done
@@ -159,7 +158,7 @@ else
     ROOT_ACCESS=false
 fi
 
-cd "$DATA" &> /dev/null || exit 1
+cd "$SRC" &> /dev/null || exit 1
 
 bash "$SRC/main.sh" "$ROOT_ACCESS"
 EXIT_CODE=$?

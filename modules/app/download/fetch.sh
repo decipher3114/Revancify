@@ -68,9 +68,9 @@ scrapeAppInfo() {
     URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2> /dev/null | head -n 1)
     [ "$URL3" == "" ] && echo 2 >&2 && exit
     APP_URL="https://www.apkmirror.com$URL3"
-    setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.info"
-    setEnv APP_URL "$APP_URL" update "apps/$APP_NAME/.info"
-    setEnv APP_SIZE "$APP_SIZE" update "apps/$APP_NAME/.info"
+    setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.data"
+    setEnv APP_URL "$APP_URL" update "apps/$APP_NAME/.data"
+    setEnv APP_SIZE "$APP_SIZE" update "apps/$APP_NAME/.data"
     echo 100
 }
 
@@ -78,10 +78,10 @@ fetchDownloadURL() {
     internet || return 1
     local EXIT_CODE
     mkdir -p "apps/$APP_NAME"
-    rm "apps/$APP_NAME/.info" &> /dev/null
+    rm "apps/$APP_NAME/.data" &> /dev/null
     EXIT_CODE=$( { scrapeAppInfo 2>&3 | "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty; } 3>&1)
-    if [ -e "apps/$APP_NAME/.info" ]; then
-        source "apps/$APP_NAME/.info"
+    if [ -e "apps/$APP_NAME/.data" ]; then
+        source "apps/$APP_NAME/.data"
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
             export APP_EXT="apkm"
         else
@@ -116,8 +116,8 @@ downloadAppFile() {
 downloadApp() {
     chooseVersion || return 1
     findPatchedApp || return 1
-    if [ -e "apps/$APP_NAME/$APP_VER.apk" ] && [ -e "apps/$APP_NAME/.info" ]; then
-        source "apps/$APP_NAME/.info"
+    if [ -e "apps/$APP_NAME/$APP_VER.apk" ] && [ -e "apps/$APP_NAME/.data" ]; then
+        source "apps/$APP_NAME/.data"
         if [ "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" || echo 0)" == "$APP_SIZE" ]; then
             TASK="MANAGE_PATCHES"
             return 0

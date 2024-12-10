@@ -23,10 +23,9 @@ selectFile() {
 
 extractProperties() {
     APP_PATH="$STORAGE/Stock/$SELECTED_APK_FILE"
-    local FILE_APP_NAME SELECTED_VERSION VERSION_STATUS
+    local FILE_APP_NAME SELECTED_VERSION INSTALLED_VERSION VERSION_STATUS
     notify info "Please Wait !!\nExtracting data from \"$(basename "$APP_PATH")\""
-    sleep 1
-    if ! APP_PROPERTIES=$(./aapt2 dump badging "$APP_PATH"); then
+    if ! APP_PROPERTIES=$(./bin/aapt2 dump badging "$APP_PATH"); then
         notify msg "The apkfile you selected is not an valid app. Download the apk again and retry."
         return 1
     fi
@@ -35,8 +34,12 @@ extractProperties() {
     APP_NAME="$(sed 's/\./-/g;s/ /-/g' <<<"$FILE_APP_NAME")"
     SELECTED_VERSION=$(grep "package:" <<<"$APP_PROPERTIES" | sed -e 's/.*versionName='\''//' -e 's/'\'' platformBuildVersionName.*//')
     APP_VER="${SELECTED_VERSION// /-}"
-    if [ "$ROOT_ACCESS" == true ]; then
-        getInstalledVersion compare || return 1
+    getInstalledVersion
+    if [ "$ALLOW_APP_VERSION_DOWNGRADE" == "off" ] && \
+        jq -e '.[0] < .[1]' <<< "[\"${INSTALLED_VERSION:-0}\", \"$SELECTED_VERSION\"]" \
+    &> /dev/null; then
+        notify msg "The selected version $SELECTED_VERSION is lower then version $INSTALLED_VERSION installed on your device.\nPlease Select a higher version !!"
+        return 1
     fi
     if [ "$(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_VERSION "$SELECTED_VERSION" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
         $AVAILABLE_PATCHES[] |

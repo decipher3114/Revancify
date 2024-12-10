@@ -5,9 +5,9 @@ parseJsonFromCLI() {
 
     AVAILABLE_PATCHES='[]'
 
-    readarray -d '' -t PACKAGES < <(java -jar "$CLI_FILE_NAME" list-versions "$PATCHES_FILE_NAME" -u | sed 's/INFO: //' | awk -v RS='' -v ORS='\0' '1')
+    readarray -d '' -t PACKAGES < <(java -jar "$CLI_FILE" list-versions "$PATCHES_FILE" -u | sed 's/INFO: //' | awk -v RS='' -v ORS='\0' '1')
 
-    readarray -d '' -t PATCHES < <(java -jar "$CLI_FILE_NAME" list-patches "$PATCHES_FILE_NAME" -iopd | sed 's/INFO: //' | awk -v RS='' -v ORS='\0' '1')
+    readarray -d '' -t PATCHES < <(java -jar "$CLI_FILE" list-patches "$PATCHES_FILE" -iopd | sed 's/INFO: //' | awk -v RS='' -v ORS='\0' '1')
 
     TOTAL=$(( ${#PACKAGES[@]} + ${#PATCHES[@]}))
 
@@ -164,5 +164,5 @@ parseJsonFromCLI() {
 
     unset TOTAL CTR PATCHES
 
-    echo "$AVAILABLE_PATCHES" > "$SOURCE-patches-$PATCHES_VERSION.json"
+    echo "$AVAILABLE_PATCHES" > "assets/$SOURCE/Patches-$PATCHES_VERSION.json"
 }

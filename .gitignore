@@ -9,3 +9,5 @@
 !sources.json
 !modules/**/*
 !root/*
+
+*/**

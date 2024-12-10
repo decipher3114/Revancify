@@ -3,6 +3,7 @@
 chooseApp() {
     local PREVIOUS_APP EXIT_CODE
     fetchAssets || return 1
+    unset PKG_NAME APP_NAME APKMIRROR_APP_NAME DEVELOPER_NAME
     PREVIOUS_APP="$SELECTED_APP"
     SELECTED_APP=$("${DIALOG[@]}" \
         --title '| App Selection Menu |' \
@@ -37,4 +38,5 @@ chooseApp() {
         ;;
     esac
     [ "$PREVIOUS_APP" != "$SELECTED_APP" ] && unset VERSIONS_LIST
+    return 0
 }

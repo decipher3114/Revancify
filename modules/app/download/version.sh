@@ -59,10 +59,7 @@ scrapeVersionsList() {
 
 chooseVersion() {
     unset APP_VER
-    local SUPPORTED_VERSIONS SELECTED_VERSION
-    if [ "$ROOT_ACCESS" == true ]; then
-        getInstalledVersion
-    fi
+    local INSTALLED_VERSION SUPPORTED_VERSIONS SELECTED_VERSION
     internet || return 1
     SUPPORTED_VERSIONS=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
         [
@@ -76,6 +73,7 @@ chooseVersion() {
             end
         ]'
     )
+    getInstalledVersion
     if [ "${#VERSIONS_LIST[@]}" -eq 0 ]; then
         notify info "Please Wait !!\nScraping versions list for $APP_NAME from apkmirror.com..."
         scrapeVersionsList || return 1

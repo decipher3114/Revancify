@@ -7,8 +7,6 @@ parseJsonFromAPI() {
 
     if ! RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null); then
         unset JSON_URL
-        notify info "Unable to access API!!\nFalling back to CLI method..."
-        sleep 1
         return 1
     fi
 
@@ -91,6 +89,6 @@ parseJsonFromAPI() {
                     end
                 )
             )
-        )' <<< "$RESPONSE" > "$SOURCE-patches-$PATCHES_VERSION.json" 2> /dev/null
+        )' <<< "$RESPONSE" > "assets/$SOURCE/Patches-$PATCHES_VERSION.json" 2> /dev/null
     )
 }
