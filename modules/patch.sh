@@ -50,7 +50,7 @@ patchApp() {
                 (
                     .value |
                     if . != null then
-                        . | tostring | sub("[\" ]"; ""; "g")
+                        . | tostring
                     else
                         empty
                     end
