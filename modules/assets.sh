@@ -89,7 +89,7 @@ fetchAssetsInfo() {
 fetchAssets() {
     local CTR
 
-    if [ ! -e ".$SOURCE-assets" ]; then
+    if [ ! -e ".$SOURCE-assets" ] || [ -z "$CLI_VERSION" ] || [ -z "$PATCHES_VERSION" ]; then
         fetchAssetsInfo || return 1
     fi
 

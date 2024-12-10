@@ -16,5 +16,7 @@ changeSource() {
     SOURCE="$SELECTED_SOURCE"
     setEnv SOURCE "$SOURCE" update .config
     unset AVAILABLE_PATCHES APPS_INFO APPS_LIST AVAILABLE_PATCHES
-    fetchAssetsInfo || return 1
+    if [ ! -e ".$SOURCE-assets" ]; then
+        fetchAssetsInfo || return 1
+    fi
 }
