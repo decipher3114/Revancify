@@ -5,6 +5,7 @@ terminate() {
     killall -9 dialog &> /dev/null
     killall -9 WGET &> /dev/null
     rm -rf -- *temporary*
+    tput cnorm
     clear
     exit "${1:-0}"
 }

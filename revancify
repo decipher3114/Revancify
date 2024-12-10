@@ -158,12 +158,7 @@ fi
 
 cd "$DATA" &> /dev/null || exit 1
 
-tput civis
-
 bash "$SRC/main.sh" "$ROOT_ACCESS"
 EXIT_CODE=$?
-
-tput cnorm
-clear
 
 exit "$EXIT_CODE"

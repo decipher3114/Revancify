@@ -58,6 +58,7 @@ main() {
     done
 }
 
+tput civis
 SRC=$(dirname "$0")
 ROOT_ACCESS="$1"
 
