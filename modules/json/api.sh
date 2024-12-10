@@ -8,7 +8,7 @@ parseJsonFromAPI() {
     if ! RESPONSE=$("${CURL[@]}" "$JSON_URL" | jq -c '.' 2> /dev/null); then
         unset JSON_URL
         notify info "Unable to access API!!\nFalling back to CLI method..."
-        sleep 0.5
+        sleep 1
         return 1
     fi
 
