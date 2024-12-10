@@ -14,6 +14,7 @@ changeSource() {
 
     [ "$SOURCE" == "$SELECTED_SOURCE" ] && return
     SOURCE="$SELECTED_SOURCE"
+    setEnv SOURCE "$SOURCE" update .config
     unset AVAILABLE_PATCHES APPS_INFO APPS_LIST AVAILABLE_PATCHES
     fetchAssetsInfo || return 1
 }

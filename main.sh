@@ -1,9 +1,13 @@
 #!/usr/bin/bash
 
-SRC=$(dirname "$0")
-ROOT_ACCESS="$1"
-
 main() {
+
+    setEnv SOURCE "ReVanced" init .config
+    setEnv LIGHT_THEME "off" init .config
+    setEnv PREFER_SPLIT_APK "on" init .config
+    setEnv LAUNCH_APP_AFTER_MOUNT "on" init .config
+    setEnv ALLOW_APP_VERSION_DOWNGRADE "off" init .config
+    source .config
 
     mkdir -p "$STORAGE" "$STORAGE/Patched" "$STORAGE/Stock"
     mkdir -p apps
@@ -13,10 +17,10 @@ main() {
     [ "$LIGHT_THEME" == "on" ] && THEME="LIGHT" || THEME="DARK"
     export DIALOGRC="$SRC/config/.DIALOGRC_$THEME"
 
-    if [ -e .assets ]; then
-        source .assets
+    if [ -e ".$SOURCE-assets" ]; then
+        source ".$SOURCE-assets"
     else
-        fetchAssetsInfo
+        fetchAssetsInfo || return 1
     fi
 
     while true; do
@@ -54,16 +58,13 @@ main() {
     done
 }
 
+SRC=$(dirname "$0")
+ROOT_ACCESS="$1"
+
 for MODULE in $(find "$SRC/modules" -type f -name "*.sh"); do
     source "$MODULE"
 done
 
-setEnv LIGHT_THEME "off" init .config
-setEnv PREFER_SPLIT_APK "on" init .config
-setEnv LAUNCH_APP_AFTER_MOUNT "on" init .config
-setEnv ALLOW_APP_VERSION_DOWNGRADE "off" init .config
-source .config
-
 trap terminate SIGTERM SIGINT SIGABRT
-main
+main || terminate 1
 terminate "$?"

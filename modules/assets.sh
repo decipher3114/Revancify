@@ -8,7 +8,7 @@ fetchAssetsInfo() {
     
     if [ "$("${CURL[@]}" "https://api.github.com/rate_limit" | jq -r '.resources.core.remaining')" -gt 5 ]; then
 
-        rm .assets 2> /dev/null
+        rm ".$SOURCE-assets" 2> /dev/null
     
         notify info "Fetching Assets Info..."
 
@@ -26,11 +26,9 @@ fetchAssetsInfo() {
                 )
             '
         ); then
-            notify msg "Unable to fetch latest CLI info from API!!\n Retry later."
+            notify msg "Unable to fetch latest CLI info from API!!\nRetry later."
+            return 1
         fi
-
-
-        [ -z "$SOURCE" ] && SOURCE="ReVanced"
         
         source <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
@@ -45,8 +43,13 @@ fetchAssetsInfo() {
             ' "$SRC/sources.json"
         )
 
-        if [ -n "$VERSION_URL" ] && VERSION=$("${CURL[@]}" "$VERSION_URL" | jq -r '.version' 2> /dev/null); then
-            PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
+        if [ -n "$VERSION_URL" ]; then
+            if VERSION=$("${CURL[@]}" "$VERSION_URL" | jq -r '.version' 2> /dev/null); then
+                PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
+            else
+                notify msg "Unable to fetch latest version from API!!\nRetry later."
+                return 1
+            fi
         else
             PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/latest"
         fi
@@ -64,34 +67,34 @@ fetchAssetsInfo() {
                     end
                 )
             '
-        ); then
-            notify msg "Unable to fetch latest CLI info from API!!\n Retry later."
+        ); then 
+            notify msg "Unable to fetch latest Patches info from API!!\nRetry later."
+            return 1
         fi
-
-        setEnv SOURCE "$SOURCE" init .assets
-        setEnv CLI_VERSION "$CLI_VERSION" init .assets
-        setEnv CLI_FILE_URL "$CLI_FILE_URL" init .assets
-        setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" init .assets
-        setEnv PATCHES_VERSION "$PATCHES_VERSION" init .assets
-        setEnv PATCHES_FILE_URL "$PATCHES_FILE_URL" init .assets
-        setEnv PATCHES_FILE_SIZE "$PATCHES_FILE_SIZE" init .assets
-        [ -n "$JSON_URL" ] && setEnv JSON_URL "$JSON_URL" init .assets
+ 
+        setEnv CLI_VERSION "$CLI_VERSION" init ".$SOURCE-assets"
+        setEnv CLI_FILE_URL "$CLI_FILE_URL" init ".$SOURCE-assets"
+        setEnv CLI_FILE_SIZE "$CLI_FILE_SIZE" init ".$SOURCE-assets"
+        setEnv PATCHES_VERSION "$PATCHES_VERSION" init ".$SOURCE-assets"
+        setEnv PATCHES_FILE_URL "$PATCHES_FILE_URL" init ".$SOURCE-assets"
+        setEnv PATCHES_FILE_SIZE "$PATCHES_FILE_SIZE" init ".$SOURCE-assets"
+        [ -n "$JSON_URL" ] && setEnv JSON_URL "$JSON_URL" init ".$SOURCE-assets"
     else
         notify msg "Unable to check for update.\nYou are probably rate-limited at this moment.\nTry again later or Run again with '-o' argument."
         return 1
     fi
-    source .assets
+    source ".$SOURCE-assets"
 }
 
 fetchAssets() {
     local CTR
 
-    if [ -z "$CLI_VERSION" ] && [ -z "$PATCHES_VERSION" ]; then
+    if [ ! -e ".$SOURCE-assets" ]; then
         fetchAssetsInfo || return 1
     fi
 
     CLI_FILE_NAME="ReVanced-cli-$CLI_VERSION.jar"
-    [ -e "$CLI_FILE_NAME" ] || rm -- *-cli-* &> /dev/null
+    [ -e "$CLI_FILE_NAME" ] || rm -- ReVanced-cli-* &> /dev/null
 
     CTR=2 && while [ "$CLI_FILE_SIZE" != "$(stat -c%s "$CLI_FILE_NAME" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
@@ -102,7 +105,7 @@ fetchAssets() {
     done
 
     PATCHES_FILE_NAME="$SOURCE-patches-$PATCHES_VERSION.rvp"
-    [ -e "$PATCHES_FILE_NAME" ] || rm -- *-patches-* &> /dev/null
+    [ -e "$PATCHES_FILE_NAME" ] || rm -- "$SOURCE"-patches-* &> /dev/null
 
     CTR=2 && while [ "$PATCHES_FILE_SIZE" != "$(stat -c%s "$PATCHES_FILE_NAME" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
@@ -123,7 +126,7 @@ deleteAssets() {
             --yesno "Please confirm to delete the assets.\nIt will delete the CLI and $SOURCE patches." -1 -1\
     ; then
         unset CLI_VERSION CLI_FILE_URL CLI_FILE_SIZE PATCHES_VERSION PATCHES_FILE_URL PATCHES_FILE_SIZE JSON_URL
-        rm .assets &> /dev/null
+        rm ".$SOURCE-assets" &> /dev/null
         rm ReVanced-cli-*.jar &> /dev/null
         rm "$SOURCE"-patches-*.rvp &> /dev/null
     fi
