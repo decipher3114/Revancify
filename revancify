@@ -14,13 +14,17 @@ HELP="revancify
 Usage: revancify [OPTION]
 
 Options:
+-f:  Force re-install Revancify
 -u:  Disable Update Check
 -r:  Disable Root access
 -v:  Print current version
 -h:  Print help statement"
 
-while getopts ":urvh" OPT 2> /dev/null; do
+while getopts ":furvh" OPT 2> /dev/null; do
     case $OPT in
+        f)
+            rm "$SRC/.info"
+            ;;
         u)
             INTERNET_ACCESS=false
             ;;
@@ -49,7 +53,6 @@ terminate() {
     killall -9 wget &> /dev/null
     clear
     echo "Script terminated !!"
-    tput cnorm
     exit 1
 }
 trap terminate SIGTERM SIGINT SIGABRT
