@@ -69,10 +69,10 @@ editOptions() {
                     .values |
                     if (length != 0) then
                         (
-                            if any(.[]; match("^[^ ]+").string == $CURRENT_VALUE) then
+                            if any(.[]; match(".*(?= \\()").string == $CURRENT_VALUE) then
                                 (
                                     .[] |
-                                    if match("^[^ ]+").string == $CURRENT_VALUE then
+                                    if match(".*(?= \\()").string == $CURRENT_VALUE then
                                         ., "on"
                                     else
                                         ., "off"
@@ -125,7 +125,7 @@ editOptions() {
                         continue
                         ;;
                     esac
-                    NEW_VALUE=${NEW_VALUE%% *}
+                    NEW_VALUE=${NEW_VALUE%% (*}
                     if [ "$NEW_VALUE" == "Custom" ]; then
                         unset NEW_VALUE
                     fi
