@@ -7,7 +7,7 @@ selectFile() {
         TASK="CHOOSE_APP"
         return 1
     fi
-    if ! SELECTED_APP=$("${DIALOG[@]}" \
+    if ! SELECTED_APK_FILE=$("${DIALOG[@]}" \
         --title '| Import App |' \
         --no-items \
         --ok-label 'Select' \
@@ -22,7 +22,7 @@ selectFile() {
 }
 
 extractProperties() {
-    APP_PATH="$STORAGE/Stock/$SELECTED_APP"
+    APP_PATH="$STORAGE/Stock/$SELECTED_APK_FILE"
     local FILE_APP_NAME SELECTED_VERSION VERSION_STATUS
     notify info "Please Wait !!\nExtracting data from \"$(basename "$APP_PATH")\""
     sleep 1
@@ -47,7 +47,6 @@ extractProperties() {
     ; then
         VERSION_STATUS="[Incompatible]"
     fi
-    unset APP_PROPERTIES FILE_APP_NAME
     if ! "${DIALOG[@]}" \
         --title '| Proceed |' \
         --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $APP_NAME\nPackage Name: $PKG_NAME\nVersion     : $SELECTED_VERSION $VERSION_STATUS\nDo you want to proceed with this app?" -1 -1\
@@ -57,11 +56,10 @@ extractProperties() {
 }
 
 importApp() {
+    local SELECTED_APK_FILE APP_PROPERTIES FILE_APP_NAME APP_PATH
     selectFile || return 1
     extractProperties || return 1
-    unset APP_PROPERTIES FILE_APP_NAME
     mkdir -p "apps/$APP_NAME"
     cp "$APP_PATH" "apps/$APP_NAME/$APP_VER.apk"
-    unset APP_PATH
     findPatchedApp || return 1
 }

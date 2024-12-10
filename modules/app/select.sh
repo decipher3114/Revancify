@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 chooseApp() {
-    local EXIT_CODE
+    local PREVIOUS_APP EXIT_CODE
     fetchAssets || return 1
-    PREVIOUS_PKG="$PKG_NAME"
-    PKG_NAME=$("${DIALOG[@]}" \
+    PREVIOUS_APP="$SELECTED_APP"
+    SELECTED_APP=$("${DIALOG[@]}" \
         --title '| App Selection Menu |' \
         --no-tags \
         --ok-label 'Select' \
@@ -19,7 +19,13 @@ chooseApp() {
     EXIT_CODE=$?
     case "$EXIT_CODE" in
     0)
-        source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson APPS_INFO "$APPS_INFO" '$APPS_INFO[] | select(.pkgName == $PKG_NAME) | "APP_NAME=\(.appName) APKMIRROR_APP_NAME=\(.apkmirrorAppName) DEVELOPER_NAME=\(.developerName)"')
+        source <(jq -nrc --argjson SELECTED_APP "$SELECTED_APP" '
+            $SELECTED_APP |
+            "PKG_NAME=\(.pkgName)
+            APP_NAME=\(.appName)
+            APKMIRROR_APP_NAME=\(.apkmirrorAppName)
+            DEVELOPER_NAME=\(.developerName)"
+        ')
         APP_TASK="download"
         ;;
     1)
@@ -30,5 +36,5 @@ chooseApp() {
         unset APP_NAME APP_VER
         ;;
     esac
-    [ "$PREVIOUS_PKG" != "$PKG_NAME" ] && unset VERSIONS_LIST
+    [ "$PREVIOUS_APP" != "$SELECTED_APP" ] && unset VERSIONS_LIST
 }

@@ -17,16 +17,16 @@ parsePatchesJson() {
     while [ -z "$APPS_LIST" ]; do
         if [ -e "$SOURCE-apps-$PATCHES_VERSION.json" ]; then
             readarray -t APPS_LIST < <(jq -rc '
-                reduce .[] as {pkgName: $PKG_NAME, appName: $APP_NAME} (
+                reduce .[] as $APP_INFO (
                     [];
-                    if any(.[]; .[1] == $APP_NAME) then
-                        . += [[$PKG_NAME, "\($APP_NAME) [\($PKG_NAME)]"]] |
-                        .[-2] |= (.[0] as $PKG_NAME | .[1] as $APP_NAME | [$PKG_NAME, "\($APP_NAME) [\($PKG_NAME)]"])
+                    if any(.[]; .[1] == $APP_INFO.appName) then
+                        . += [[$APP_INFO, "\($APP_INFO.appName) [\($APP_INFO.pkgName)]"]] |
+                        .[-2] |= (.[0] as $APP_INFO | .[1] as $APP_NAME | [$APP_INFO, "\($APP_NAME) [\($APP_INFO.pkgName)]"])
                     else
-                        . += [[$PKG_NAME, $APP_NAME]]
+                        . += [[$APP_INFO, $APP_INFO.appName]]
                     end
                 ) |
-                .[][]' "$SOURCE-apps-$PATCHES_VERSION.json" 2> /dev/null
+                .[][]' "$SOURCE-apps-$PATCHES_VERSION.json"
             )
         fi
         if [ ${#APPS_LIST[@]} -eq 0 ]; then
