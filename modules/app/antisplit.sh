@@ -26,5 +26,5 @@ antisplitApp() {
         return 1
     fi
     rm -rf "apps/$APP_NAME/$APP_VER"
-    setEnv "APP_SIZE" "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.data"
+    setEnv "APP_SIZE" "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.data"
 }

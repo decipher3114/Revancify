@@ -87,7 +87,7 @@ installDependencies() {
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
         chmod +x "$AAPT2"
-        if [ "${RESPONSE[1]}" == "$(stat -c%s "$AAPT2" 2> /dev/null)" ]; then
+        if [ "${RESPONSE[1]}" == "$(stat -c %s "$AAPT2" 2> /dev/null)" ]; then
             break
         else
             rm "$AAPT2"
@@ -100,7 +100,7 @@ installDependencies() {
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
-        if [ "${RESPONSE[1]}" == "$(stat -c%s "$APK_EDITOR" 2> /dev/null)" ]; then
+        if [ "${RESPONSE[1]}" == "$(stat -c %s "$APK_EDITOR" 2> /dev/null)" ]; then
             break
         else
             rm "$APK_EDITOR"

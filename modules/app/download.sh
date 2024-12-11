@@ -112,9 +112,9 @@ downloadAppFile() {
         stdbuf -o0 grep '[0-9]' |
         "${DIALOG[@]}" \
             --gauge "File: $APP_NAME-$APP_VER.$APP_EXT\nSize: $(numfmt --to=iec --format="%0.1f" "$APP_SIZE")\n\nDownloading..." -1 -1 \
-            "$(($(( $(stat -c%s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0) * 100)) / APP_SIZE))"
+            "$(($(( $(stat -c %s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0) * 100)) / APP_SIZE))"
     tput civis
-    if [ "$APP_SIZE" != "$(stat -c%s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0)" ]; then
+    if [ "$APP_SIZE" != "$(stat -c %s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0)" ]; then
         notify msg "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry."
         return 1
     fi
@@ -127,14 +127,14 @@ downloadApp() {
     [ -e "apps/$APP_NAME/.data" ] && source "apps/$APP_NAME/.data"
     if [[ "$APP_FORMAT" == "APK" && \
         "$PREFER_SPLIT_APK" == "off" && \
-        "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE"
+        "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE"
     ]]; then
         return 0
     elif [[ "$APP_FORMAT" == "BUNDLE" && \
         "$PREFER_SPLIT_APK" == "on" &&
         ( -e "apps/$APP_NAME/$APP_VER.apk" || -e "apps/$APP_NAME/$APP_VER.apkm" )
     ]]; then
-        if [ "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
+        if [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
             return 0
         fi
     else

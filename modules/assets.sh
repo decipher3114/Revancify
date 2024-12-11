@@ -93,22 +93,22 @@ fetchAssets() {
     CLI_FILE="assets/CLI-$CLI_VERSION.jar"
     [ -e "$CLI_FILE" ] || rm -- assets/CLI-* &> /dev/null
 
-    CTR=2 && while [ "$CLI_SIZE" != "$(stat -c%s "$CLI_FILE" 2> /dev/null)" ]; do
+    CTR=2 && while [ "$CLI_SIZE" != "$(stat -c %s "$CLI_FILE" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
         ((CTR--))
         "${WGET[@]}" "$CLI_URL" -O "$CLI_FILE" |& stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' |
-        "${DIALOG[@]}" --gauge "File    : CLI-$CLI_VERSION.jar\nSize    : $(numfmt --to=iec --format="%0.1f" "$CLI_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c%s "$CLI_FILE" 2> /dev/null || echo 0) * 100)) / CLI_SIZE))"
+        "${DIALOG[@]}" --gauge "File    : CLI-$CLI_VERSION.jar\nSize    : $(numfmt --to=iec --format="%0.1f" "$CLI_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c %s "$CLI_FILE" 2> /dev/null || echo 0) * 100)) / CLI_SIZE))"
         tput civis
     done
 
     PATCHES_FILE="assets/$SOURCE/Patches-$PATCHES_VERSION.rvp"
     [ -e "$PATCHES_FILE" ] || rm -- assets/"$SOURCE"/Patches-* &> /dev/null
 
-    CTR=2 && while [ "$PATCHES_SIZE" != "$(stat -c%s "$PATCHES_FILE" 2> /dev/null)" ]; do
+    CTR=2 && while [ "$PATCHES_SIZE" != "$(stat -c %s "$PATCHES_FILE" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
         ((CTR--))
         "${WGET[@]}" "$PATCHES_URL" -O "$PATCHES_FILE" |& stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' |
-        "${DIALOG[@]}" --gauge "File    : Patches-$PATCHES_VERSION.rvp\nSize    : $(numfmt --to=iec --format="%0.1f" "$PATCHES_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c%s "$PATCHES_FILE" 2> /dev/null || echo 0) * 100)) / PATCHES_SIZE))"
+        "${DIALOG[@]}" --gauge "File    : Patches-$PATCHES_VERSION.rvp\nSize    : $(numfmt --to=iec --format="%0.1f" "$PATCHES_SIZE")\n\nDownloading..." -1 -1 "$(($(($(stat -c %s "$PATCHES_FILE" 2> /dev/null || echo 0) * 100)) / PATCHES_SIZE))"
         tput civis
     done
 
