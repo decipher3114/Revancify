@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 fetchAssetsInfo() {
-    unset CLI_VERSION CLI_URL CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
+    unset CLI_VERSION CLI_URL CLI_REPO CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
     local SOURCE_INFO VERSION PATCHES_API_URL
 
     internet || return 1
@@ -14,7 +14,21 @@ fetchAssetsInfo() {
     
         notify info "Fetching Assets Info..."
 
-        if ! "${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
+        source <(jq -r --arg SOURCE "$SOURCE" '
+            .[] | select(.source == $SOURCE) |
+            "REPO=\(.repository)",
+            (
+                .api // empty |
+                (
+                    (.json // empty | "JSON_URL=\(.)"),
+                    (.version // empty | "VERSION_URL=\(.)")
+                )
+            ),
+            "CLI_REPO=\(.cli)"
+            ' sources.json
+        )
+
+        if ! "${CURL[@]}" "https://api.github.com/repos/$CLI_REPO/releases" | jq -r '
                 if type == "array" then .[0] else . end |
                 "CLI_VERSION='\''\(.tag_name)'\''",
                 (
@@ -26,24 +40,11 @@ fetchAssetsInfo() {
                         empty
                     end
                 )
-            ' > assets/.data \
+            ' > "assets/$SOURCE/.data" \
         2> /dev/null; then
             notify msg "Unable to fetch latest CLI info from API!!\nRetry later."
             return 1
         fi
-        
-        source <(jq -r --arg SOURCE "$SOURCE" '
-            .[] | select(.source == $SOURCE) |
-            "REPO=\(.repository)",
-            (
-                .api // empty |
-                (
-                    (.json // empty | "JSON_URL=\(.)"),
-                    (.version // empty | "VERSION_URL=\(.)")
-                )
-            )
-            ' sources.json
-        )
 
         if [ -n "$VERSION_URL" ]; then
             if VERSION=$("${CURL[@]}" "$VERSION_URL" | jq -r '.version' 2> /dev/null); then
@@ -68,7 +69,7 @@ fetchAssetsInfo() {
                         empty
                     end
                 )
-            ' > "assets/$SOURCE/.data" \
+            ' >> "assets/$SOURCE/.data" \
         2> /dev/null; then 
             notify msg "Unable to fetch latest Patches info from API!!\nRetry later."
             return 1
@@ -90,8 +91,8 @@ fetchAssets() {
         fetchAssetsInfo || return 1
     fi
 
-    CLI_FILE="assets/CLI-$CLI_VERSION.jar"
-    [ -e "$CLI_FILE" ] || rm -- assets/CLI-* &> /dev/null
+    CLI_FILE="assets/$SOURCE/CLI-$CLI_VERSION.jar"
+    [ -e "$CLI_FILE" ] || rm -- assets/"$SOURCE"/CLI-* &> /dev/null
 
     CTR=2 && while [ "$CLI_SIZE" != "$(stat -c%s "$CLI_FILE" 2> /dev/null)" ]; do
         [ $CTR -eq 0 ] && notify msg "Oops! Unable to download completely.\n\nRetry or change your Network." && return 1
@@ -124,7 +125,7 @@ deleteAssets() {
     ; then
         unset CLI_VERSION CLI_URL CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
         rm "assets/$SOURCE/.data" &> /dev/null
-        rm assets/CLI-*.jar &> /dev/null
+        rm assets/"$SOURCE"/CLI-*.jar &> /dev/null
         rm assets/"$SOURCE"/Patches-*.rvp &> /dev/null
     fi
 }
