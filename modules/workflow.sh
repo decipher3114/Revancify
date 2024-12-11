@@ -5,10 +5,13 @@ initiateWorkflow() {
         case "$TASK" in
         "CHOOSE_APP")
             chooseApp || break
-            TASK="FETCH_APP"
             ;;
-        "FETCH_APP")
-            "$APP_TASK"App || continue
+        "DOWNLOAD_APP")
+            downloadApp || continue
+            TASK="MANAGE_PATCHES"
+            ;;
+        "IMPORT_APP")
+            importApp || continue
             TASK="MANAGE_PATCHES"
             ;;
         "MANAGE_PATCHES")

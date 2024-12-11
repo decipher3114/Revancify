@@ -63,7 +63,7 @@ managePatches() {
             fi
             ;;
         2 )
-            TASK="FETCH_APP"
+            TASK="CHOOSE_APP"
             return 1
         esac
     done

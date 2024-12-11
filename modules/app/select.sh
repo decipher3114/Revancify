@@ -27,14 +27,13 @@ chooseApp() {
             APKMIRROR_APP_NAME=\(.apkmirrorAppName)
             DEVELOPER_NAME=\(.developerName)"
         ')
-        APP_TASK="download"
+        TASK="DOWNLOAD_APP"
         ;;
     1)
         return 1
         ;;
     2)
-        APP_TASK="import"
-        unset APP_NAME APP_VER
+        TASK="IMPORT_APP"
         ;;
     esac
     [ "$PREVIOUS_APP" != "$SELECTED_APP" ] && unset VERSIONS_LIST

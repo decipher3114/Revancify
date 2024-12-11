@@ -114,6 +114,7 @@ downloadAppFile() {
 }
 
 downloadApp() {
+    local APP_FORMAT APP_EXT
     chooseVersion || return 1
     findPatchedApp || return 1
     if [ -e "apps/$APP_NAME/$APP_VER.apk" ] && [ -e "apps/$APP_NAME/.data" ]; then

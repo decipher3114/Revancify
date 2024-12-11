@@ -19,7 +19,6 @@ findPatchedApp() {
             return 1
             ;;
         2 )
-            unset APP_VER
             return 1
             ;;
         esac
