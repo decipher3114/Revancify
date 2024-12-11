@@ -36,7 +36,7 @@ extractProperties() {
     APP_VER="${SELECTED_VERSION// /-}"
     getInstalledVersion
     if [ "$ALLOW_APP_VERSION_DOWNGRADE" == "off" ] && \
-        jq -e '.[0] < .[1]' <<< "[\"${INSTALLED_VERSION:-0}\", \"$SELECTED_VERSION\"]" \
+        jq -e '.[0] > .[1]' <<< "[\"${INSTALLED_VERSION:-0}\", \"$SELECTED_VERSION\"]" \
     &> /dev/null; then
         notify msg "The selected version $SELECTED_VERSION is lower then version $INSTALLED_VERSION installed on your device.\nPlease Select a higher version !!"
         return 1
