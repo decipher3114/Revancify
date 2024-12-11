@@ -19,14 +19,11 @@
 
 
 # Features
-1. Auto updates Patches and CLI
+1. Auto fetches Patches and CLI
 2. Interactive and Easy to use
-3. Inbuilt scrapper for [ApkMirror](https://apkmirror.com)
-    > Only support apps available on apkmirror. However, you can still download app manually and use the apk file to patch
-4. Contains User-friendly Patch-options Editor
-5. Conserve selected patches
-6. Supports App Version downgrade for devices with Signature Spoof enabled
-7. Convenient Installation and usage
+3. Support APK download from ApkMirror or Importing from storage
+4. User-friendly Patch-options Editor
+5. Convenient Installation and usage
 6. Lightweight and faster than any other tool
 
 # Guide

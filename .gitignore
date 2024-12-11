@@ -1,9 +1,4 @@
-*.json
-*.txt
-*.jar
-*.rvp
-*.apk
-*.sh
+*.*
 !main.sh
 !install.sh
 !sources.json
