@@ -126,7 +126,7 @@ editOptions() {
                         ;;
                     esac
                     NEW_VALUE=${NEW_VALUE%% (*}
-                    if [ "$NEW_VALUE" == "Custom" ]; then
+                    if [ "$NEW_VALUE" == "Custom Value" ]; then
                         unset NEW_VALUE
                     fi
                 fi
