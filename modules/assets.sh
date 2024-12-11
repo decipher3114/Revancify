@@ -83,8 +83,8 @@ fetchAssetsInfo() {
         notify msg "Unable to check for update.\nYou are probably rate-limited at this moment.\nTry again later or Run again with '-o' argument."
         return 1
     fi
-    source "assets/.data"
-    source "assets/$SOURCE/.data"
+    [ -e "assets/.data" ] && source "assets/.data"
+    [ -e "assets/$SOURCE/.data" ] && source "assets/$SOURCE/.data"
 }
 
 fetchAssets() {
