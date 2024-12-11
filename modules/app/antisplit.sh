@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 antisplitApp() {
-    local SPLITS APP_DIR LOCALE
+    local APP_DIR LOCALE
 
     notify info "Please Wait !!\nReducing app size..."
 
@@ -25,5 +25,6 @@ antisplitApp() {
         notify msg "Unable to run merge splits!!\nApkEditor is not working properly."
         return 1
     fi
+    rm -rf "apps/$APP_NAME/$APP_VER"
     setEnv "APP_SIZE" "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.data"
 }

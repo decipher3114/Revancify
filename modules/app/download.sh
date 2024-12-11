@@ -5,7 +5,7 @@ scrapeAppInfo() {
         -A "$USER_AGENT" \
         "https://www.apkmirror.com/apk/$DEVELOPER_NAME/$APKMIRROR_APP_NAME/$APKMIRROR_APP_NAME-$APP_VER-release"
     )
-    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<"$page1"  2> /dev/null)
+    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<" $page1"  2> /dev/null)
     if grep -q "apk-download" <<< "$CANONICAL_URL"; then
         URL1="${CANONICAL_URL/"https://www.apkmirror.com/"//}"
     else
@@ -69,8 +69,8 @@ scrapeAppInfo() {
     [ "$URL3" == "" ] && echo 2 >&2 && exit
     APP_URL="https://www.apkmirror.com$URL3"
     setEnv APP_FORMAT "$APP_FORMAT" update "apps/$APP_NAME/.data"
-    setEnv APP_URL "$APP_URL" update "apps/$APP_NAME/.data"
     setEnv APP_SIZE "$APP_SIZE" update "apps/$APP_NAME/.data"
+    setEnv APP_URL "$APP_URL" update "apps/$APP_NAME/.data"
     echo 100
 }
 
@@ -79,7 +79,12 @@ fetchDownloadURL() {
     local EXIT_CODE
     mkdir -p "apps/$APP_NAME"
     rm "apps/$APP_NAME/.data" &> /dev/null
-    EXIT_CODE=$( { scrapeAppInfo 2>&3 | "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty; } 3>&1)
+    EXIT_CODE=$(
+        {
+            scrapeAppInfo 2>&3 |
+            "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty;
+        } 3>&1
+    )
     if [ -e "apps/$APP_NAME/.data" ]; then
         source "apps/$APP_NAME/.data"
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
@@ -102,10 +107,12 @@ fetchDownloadURL() {
 }
 
 downloadAppFile() {
-    "${WGET[@]}" "$APP_URL" -O "apps/$APP_NAME/$APP_VER.$APP_EXT" |& stdbuf -o0 cut -b 63-65 | stdbuf -o0 grep '[0-9]' |
-    "${DIALOG[@]}" \
-        --gauge "File: $APP_NAME-$APP_VER.$APP_EXT\nSize: $(numfmt --to=iec --format="%0.1f" "$APP_SIZE")\n\nDownloading..." -1 -1 \
-        "$(($(( $(stat -c%s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0) * 100)) / APP_SIZE))"
+    "${WGET[@]}" "$APP_URL" -O "apps/$APP_NAME/$APP_VER.$APP_EXT" |&
+        stdbuf -o0 cut -b 63-65 |
+        stdbuf -o0 grep '[0-9]' |
+        "${DIALOG[@]}" \
+            --gauge "File: $APP_NAME-$APP_VER.$APP_EXT\nSize: $(numfmt --to=iec --format="%0.1f" "$APP_SIZE")\n\nDownloading..." -1 -1 \
+            "$(($(( $(stat -c%s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0) * 100)) / APP_SIZE))"
     tput civis
     if [ "$APP_SIZE" != "$(stat -c%s "apps/$APP_NAME/$APP_VER.$APP_EXT" || echo 0)" ]; then
         notify msg "Oh No !!\nUnable to complete download. Please Check your internet connection and Retry."
@@ -114,22 +121,24 @@ downloadAppFile() {
 }
 
 downloadApp() {
-    local APP_FORMAT APP_EXT
+    local APP_FORMAT APP_EXT APP_SIZE APP_URL
     chooseVersion || return 1
     findPatchedApp || return 1
-    if [ -e "apps/$APP_NAME/$APP_VER.apk" ] && [ -e "apps/$APP_NAME/.data" ]; then
-        source "apps/$APP_NAME/.data"
-        if [ "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" || echo 0)" == "$APP_SIZE" ]; then
-            TASK="MANAGE_PATCHES"
+    [ -e "apps/$APP_NAME/.data" ] && source "apps/$APP_NAME/.data"
+    if [[ "$APP_FORMAT" == "APK" && \
+        "$PREFER_SPLIT_APK" == "off" && \
+        "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE"
+    ]]; then
+        return 0
+    elif [[ "$APP_FORMAT" == "BUNDLE" && \
+        "$PREFER_SPLIT_APK" == "on" &&
+        ( -e "apps/$APP_NAME/$APP_VER.apk" || -e "apps/$APP_NAME/$APP_VER.apkm" )
+    ]]; then
+        if [ "$(stat -c%s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
             return 0
         fi
     else
-        if [ -e "apps/$APP_NAME/$APP_VER" ]; then
-            antisplitApp || return 1
-            return 0
-        else
-            rm -rf apps/"$APP_NAME"/* &> /dev/null
-        fi
+        rm -rf apps/"$APP_NAME"/* &> /dev/null
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
