@@ -70,8 +70,8 @@ installDependencies() {
     grep -q unzip <<< "$BINS" || PKGS+=("unzip")
 
     if [ "${#PKGS[@]}" -ne 0 ]; then
-        pkg update -o Dpkg::Options::="--force-confnew" || return 1
-        pkg install "${PKGS[@]}" -y -o Dpkg::Options::="--force-confnew" || return 1
+        pkg update || return 1
+        yes | pkg install "${PKGS[@]}" || return 1
     fi
 
     sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
