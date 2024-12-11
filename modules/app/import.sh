@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 selectFile() {
-    readarray -t STOCK_APPS < <(ls "$STORAGE/Stock/"*.apk "$STORAGE/Stock"/*.apkm | xargs basename -a 2> /dev/null)
+    readarray -t STOCK_APPS < <(ls "$STORAGE/Stock/"*.apk "$STORAGE/Stock"/*.apkm 2> /dev/null | xargs basename -a 2> /dev/null)
     if [ "${#STOCK_APPS[@]}" -eq 0 ]; then
         notify msg "No apk found in Stock Apps directory !!\nMove app to 'Revancify/Stock' to import."
         TASK="CHOOSE_APP"
