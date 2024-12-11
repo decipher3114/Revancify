@@ -78,6 +78,14 @@ fetchDownloadURL() {
     internet || return 1
     local EXIT_CODE
     mkdir -p "apps/$APP_NAME"
+    if [ $(( ( $(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2> /dev/null || echo 0) ) / 60 )) -le 5 ]; then
+        if [ "$APP_FORMAT" == "BUNDLE" ]; then
+            export APP_EXT="apkm"
+        else
+            export APP_EXT="apk"
+        fi
+        return 0
+    fi
     rm "apps/$APP_NAME/.data" &> /dev/null
     EXIT_CODE=$(
         {
@@ -138,7 +146,7 @@ downloadApp() {
             return 0
         fi
     else
-        rm -rf apps/"$APP_NAME"/* &> /dev/null
+        rm -rf apps/"$APP_NAME" &> /dev/null
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
