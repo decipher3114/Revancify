@@ -33,7 +33,6 @@ main() {
         ) || break
         case "$MAIN" in
         1 )
-            TASK="CHOOSE_APP"
             initiateWorkflow
             ;;
         2 )

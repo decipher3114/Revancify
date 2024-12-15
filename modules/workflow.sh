@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 initiateWorkflow() {
+    TASK="CHOOSE_APP"
     while true; do
         case "$TASK" in
         "CHOOSE_APP")
