@@ -11,7 +11,7 @@ main() {
 
     mkdir -p "assets" "apps" "$STORAGE" "$STORAGE/Patched" "$STORAGE/Stock"
 
-    [ "$ROOT_ACCESS" == true ] && MENU_ENTRY=(6 "Uninstall Patched app")
+    [ "$ROOT_ACCESS" == true ] && MENU_ENTRY=(7 "Unmount Patched app")
 
     [ "$LIGHT_THEME" == "on" ] && THEME="LIGHT" || THEME="DARK"
     export DIALOGRC="config/.DIALOGRC_$THEME"
@@ -28,7 +28,7 @@ main() {
             --title '| Main Menu |' \
             --ok-label 'Select' \
             --cancel-label 'Exit' \
-            --menu "$NAVIGATION_HINT" -1 -1 0 1 "Patch App" 2 "Update Assets" 3 "Change Source" 4 "Configure" 5 "Delete Assets" "${MENU_ENTRY[@]}" \
+            --menu "$NAVIGATION_HINT" -1 -1 0 1 "Patch App" 2 "Update Assets" 3 "Change Source" 4 "Configure" 5 "Delete Assets" 6 "Delete Apps" "${MENU_ENTRY[@]}" \
             2>&1 > /dev/tty
         ) || break
         case "$MAIN" in
@@ -50,6 +50,9 @@ main() {
             deleteAssets
             ;;
         6 )
+            deleteApps
+            ;;
+        7 )
             umountApp
             ;;
         esac

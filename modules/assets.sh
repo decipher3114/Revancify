@@ -116,15 +116,12 @@ fetchAssets() {
 }
 
 deleteAssets() {
-
     if "${DIALOG[@]}" \
-            --title '| Delete Tools |' \
+            --title '| Delete Assets |' \
             --defaultno \
-            --yesno "Please confirm to delete the assets.\nIt will delete the CLI and $SOURCE patches." -1 -1\
+            --yesno "Please confirm to delete the assets.\nIt will delete the CLI and patches." -1 -1\
     ; then
         unset CLI_VERSION CLI_URL CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
-        rm "assets/$SOURCE/.data" &> /dev/null
-        rm assets/CLI-*.jar &> /dev/null
-        rm assets/"$SOURCE"/Patches-*.rvp &> /dev/null
+        rm -rf "assets"/* &> /dev/null
     fi
 }
