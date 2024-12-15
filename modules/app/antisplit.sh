@@ -25,6 +25,8 @@ antisplitApp() {
         notify msg "Unable to run merge splits!!\nApkEditor is not working properly."
         return 1
     fi
-    rm -rf "apps/$APP_NAME/$APP_VER"
+    if [ "$ROOT_ACCESS" == false ]; then
+        rm -rf "apps/$APP_NAME/$APP_VER"
+    fi
     setEnv "APP_SIZE" "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk")" update "apps/$APP_NAME/.data"
 }

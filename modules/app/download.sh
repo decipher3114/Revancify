@@ -86,14 +86,13 @@ fetchDownloadURL() {
         fi
         return 0
     fi
-    rm "apps/$APP_NAME/.data" &> /dev/null
     EXIT_CODE=$(
         {
             scrapeAppInfo 2>&3 |
             "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty;
         } 3>&1
     )
-    if [ -e "apps/$APP_NAME/.data" ]; then
+    if [ $(($(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2> /dev/null || echo 0))) -le 5 ]; then
         source "apps/$APP_NAME/.data"
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
             export APP_EXT="apkm"
