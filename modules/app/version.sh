@@ -10,69 +10,71 @@ scrapeVersionsList() {
         return 1
     fi
 
-    readarray -t VERSIONS < <(pup -p 'div.widget_appmanager_recentpostswidget h5 a.fontBlack text{}' <<<"$PAGE")
-
-    readarray -t VERSIONS_LIST < <(jq -nrc --arg APP_NAME "$APP_NAME-"\
-        --arg INSTALLED_VERSION "$INSTALLED_VERSION"\
-        --argjson SUPPORTED_VERSIONS "$SUPPORTED_VERSIONS"\
-        '($INSTALLED_VERSION | sub(" *[-, ] *"; "-"; "g")) as $INSTALLED_VERSION |
-        [
+    readarray -t VERSIONS_LIST < <(pup -c 'div.widget_appmanager_recentpostswidget div.listWidget div:not([class]) json{}' <<< "$PAGE" |
+        jq -rc \
+            --arg PKG_NAME "$PKG_NAME" \
+            --arg INSTALLED_VERSION "$INSTALLED_VERSION" \
+            --arg ALLOW_APP_VERSION_DOWNGRADE "$ALLOW_APP_VERSION_DOWNGRADE" \
+            --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
             [
-                $ARGS.positional[] |
-                sub("( -)|( &)"; ""; "g") |
-                sub("[()\\|]"; ""; "g") |
-                sub(" *[-, ] *"; "-"; "g") |
-                sub($APP_NAME; "")
-            ] |
-            . |= . + $SUPPORTED_VERSIONS |
-            unique |
+                .[].children |
+                {
+                    "version": (.[1].children.[0].children.[1].text),
+                    "tag": (
+                        .[0].children.[0].children.[1].children.[0].children.[0].title |
+                        if test("beta"; "i") then
+                            "[BETA]"
+                        elif test("alpha"; "i") then
+                            "[ALPHA]"
+                        else
+                            "[STABLE]"
+                        end
+                    )
+                }
+            ] as $ALL_VERSIONS |
+            [
+                $AVAILABLE_PATCHES[] |
+                select(.pkgName == $PKG_NAME) |
+                .versions[] |
+                {
+                    "version": .,
+                    "tag": "[RECOMMENDED]"
+                }
+            ] as $SUPPORTED_VERSIONS |
+            $SUPPORTED_VERSIONS + $ALL_VERSIONS |
+            unique_by(.version) |
             reverse |
-            index($INSTALLED_VERSION) as $index |
-            if $index == null then
-                .[]
-            else
-                .[0:($index + 1)][]
-            end | . as $VERSION |
-            if (($SUPPORTED_VERSIONS | index($VERSION)) != null) then
-                $VERSION, "[RECOMMENDED]"
-            elif ($VERSION | test("beta|Beta|BETA")) then
-                $VERSION | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[BETA]"
-            elif ($VERSION | test("alpha|Alpha|ALPHA")) then
-                $VERSION | sub("(?<=[0-9])-[a-zA-Z]*$"; ""), "[ALPHA]"
-            else
-                $VERSION, "[STABLE]"
-            end
-        ] |
-        if (. | index($INSTALLED_VERSION)) != null then
-            .[-1] |= "[INSTALLED]"
-        else
-            .
-        end |
-        if ((. | index("[RECOMMENDED]")) != null) then
-            . |= ["Auto Select", "[RECOMMENDED]"] + .
-        else
-            .
-        end | 
-        .[]' --args "${VERSIONS[@]}"
+            if $INSTALLED_VERSION != "" then
+                if ($ALLOW_APP_VERSION_DOWNGRADE | test("off")) then
+                    .[0:(map(.version == $INSTALLED_VERSION) | index(true) + 1)]
+                end |
+                map(
+                    if .version == $INSTALLED_VERSION then
+                        .tag |= "[INSTALLED]"
+                    end
+                )
+            end |
+            (
+                if any(.[]; .tag == "[RECOMMENDED]") then
+                    $SUPPORTED_VERSIONS[-1], "Auto Select|[RECOMMENDED]"
+                elif $INSTALLED_VERSION != "" then
+                    .[-1], "Auto Select|[INSTALLED]"
+                else
+                    empty
+                end,
+                (
+                    .[] |
+                    ., "\(.version)|\(.tag)"
+                )
+            )
+        '
     )
 }
 
 chooseVersion() {
     unset APP_VER
-    local INSTALLED_VERSION SUPPORTED_VERSIONS SELECTED_VERSION
+    local INSTALLED_VERSION SELECTED_VERSION
     internet || return 1
-    SUPPORTED_VERSIONS=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
-        [
-            $AVAILABLE_PATCHES[] |
-            select(.pkgName == $PKG_NAME) | 
-            .versions |
-            if length != 0 then
-                .[] | sub(" *[-, ] *"; "-"; "g")
-            else
-                empty
-            end
-        ]'
-    )
     getInstalledVersion
     if [ "${#VERSIONS_LIST[@]}" -eq 0 ]; then
         notify info "Please Wait !!\nScraping versions list for $APP_NAME from apkmirror.com..."
@@ -80,22 +82,17 @@ chooseVersion() {
     fi
     if ! SELECTED_VERSION=$("${DIALOG[@]}" \
         --title '| Version Selection Menu |' \
+        --no-tags \
+        --column-separator "|" \
         --default-item "$SELECTED_VERSION" \
         --ok-label 'Select' \
         --cancel-label 'Back' \
-        --menu "$NAVIGATION_HINT" -1 -1 0 "${VERSIONS_LIST[@]}" \
+        --menu "$NAVIGATION_HINT" -1 -1 0 \
+        "${VERSIONS_LIST[@]}" \
         2>&1 > /dev/tty
     ); then
         TASK="CHOOSE_APP"
         return 1
     fi
-    if [ "$SELECTED_VERSION" == "Auto Select" ]; then
-        SELECTED_VERSION=$(jq -nrc --arg PKG_NAME "$PKG_NAME" --argjson SUPPORTED_VERSIONS "$SUPPORTED_VERSIONS" '$SUPPORTED_VERSIONS[-1]')
-    fi
-    if [ "$(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_VERSION "$SELECTED_VERSION" --argjson SUPPORTED_VERSIONS "$SUPPORTED_VERSIONS" '$SUPPORTED_VERSIONS | index($SELECTED_VERSION)')" == "null" ]; then
-        if ! "${DIALOG[@]}" --title '| Proceed |' --yesno "The version $SELECTED_VERSION is not supported.\nDo you still want to proceed with version this for $APP_NAME?" -1 -1; then
-            return 1
-        fi
-    fi
-    APP_VER="${SELECTED_VERSION// /-}"
+    APP_VER=$(jq -nrc --argjson SELECTED_VERSION "$SELECTED_VERSION" '$SELECTED_VERSION.version | sub(" "; ""; "g")')
 }

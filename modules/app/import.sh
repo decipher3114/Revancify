@@ -64,19 +64,11 @@ importApp() {
         notify msg "The selected version $SELECTED_VERSION is lower then version $INSTALLED_VERSION installed on your device.\nPlease Select a higher version !!"
         return 1
     fi
-    if jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_VERSION "$SELECTED_VERSION" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
-        $AVAILABLE_PATCHES[] |
-        select(.pkgName == $PKG_NAME) |
-        .versions |
-        index($SELECTED_VERSION) == null' \
-    &> /dev/null; then
-        VERSION_STATUS="[Not Recommended]"
-    fi
     if ! "${DIALOG[@]}" \
         --title '| Proceed |' \
         --yes-label 'Import' \
         --no-label 'Back' \
-        --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $APP_NAME\nPackage Name: $PKG_NAME\nVersion     : $SELECTED_VERSION $VERSION_STATUS\nDo you want to proceed with this app?" -1 -1\
+        --yesno "The following data is extracted from the apk file you provided.\nApp Name    : $APP_NAME\nPackage Name: $PKG_NAME\nVersion     : $SELECTED_VERSION\nDo you want to proceed with this app?" -1 -1\
     ; then
         return 1
     fi
