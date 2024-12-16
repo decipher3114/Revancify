@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 chooseApp() {
-    local PREVIOUS_APP EXIT_CODE
+    local PREVIOUS_APP SELECTED_APP EXIT_CODE
     fetchAssets || return 1
     unset PKG_NAME APP_NAME APKMIRROR_APP_NAME DEVELOPER_NAME
-    PREVIOUS_APP="$SELECTED_APP"
+    PREVIOUS_APP="$APP_NAME"
     SELECTED_APP=$("${DIALOG[@]}" \
         --title '| App Selection Menu |' \
         --no-tags \
@@ -36,6 +36,7 @@ chooseApp() {
         TASK="IMPORT_APP"
         ;;
     esac
-    [ "$PREVIOUS_APP" != "$SELECTED_APP" ] && unset VERSIONS_LIST
-    return 0
+    if [ "$APP_NAME" != "$SELECTED_APP" ]; then
+        unset VERSIONS_LIST
+    fi
 }
