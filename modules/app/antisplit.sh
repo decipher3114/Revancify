@@ -17,7 +17,7 @@ antisplitApp() {
             "split_config.${ARCH//-/_}.apk" \
             "split_config.${LOCALE}.apk" \
             split_config.*dpi.apk \
-            -d "$APP_DIR"
+            -d "$APP_DIR" 2> /dev/null
         rm "apps/$APP_NAME/$APP_VER.apkm"
     fi
     java -jar bin/APKEditor.jar m -i "$APP_DIR" -o "apps/$APP_NAME/$APP_VER.apk" &> /dev/null
