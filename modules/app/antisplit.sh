@@ -8,9 +8,6 @@ antisplitApp() {
     APP_DIR="apps/$APP_NAME/$APP_VER"
     if [ ! -e "$APP_DIR" ]; then
         LOCALE=$(getprop persist.sys.locale | sed 's/-.*//g')
-        if [ ! -e "$SPLITS/split_config.${LOCALE}.apk" ]; then
-            LOCALE=$(getprop ro.product.locale | sed 's/-.*//g')
-        fi
         unzip -qqo \
             "apps/$APP_NAME/$APP_VER.apkm" \
             "base.apk"\
