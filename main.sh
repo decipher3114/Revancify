@@ -16,13 +16,6 @@ main() {
     [ "$LIGHT_THEME" == "on" ] && THEME="LIGHT" || THEME="DARK"
     export DIALOGRC="config/.DIALOGRC_$THEME"
 
-    if [ -e "assets/.data" ] && [ -e "assets/$SOURCE/.data" ]; then
-        source "assets/.data"
-        source "assets/$SOURCE/.data"
-    else
-        fetchAssetsInfo || return 1
-    fi
-
     while true; do
         MAIN=$("${DIALOG[@]}" \
             --title '| Main Menu |' \

@@ -86,7 +86,10 @@ fetchAssetsInfo() {
 fetchAssets() {
     local CTR
 
-    if [ ! -e "assets/.data" ] || [ ! -e "assets/$SOURCE/.data" ] || [ -z "$CLI_VERSION" ] || [ -z "$PATCHES_VERSION" ]; then
+    if [ -e "assets/.data" ] && [ -e "assets/$SOURCE/.data" ]; then
+        source "assets/.data"
+        source "assets/$SOURCE/.data"
+    else
         fetchAssetsInfo || return 1
     fi
 
@@ -119,9 +122,10 @@ deleteAssets() {
     if "${DIALOG[@]}" \
             --title '| Delete Assets |' \
             --defaultno \
-            --yesno "Please confirm to delete the assets.\nIt will delete the CLI and patches." -1 -1\
+            --yesno "Please confirm to delete the assets.\nIt will delete the CLI and patches." -1 -1 \
     ; then
         unset CLI_VERSION CLI_URL CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
-        rm -rf "assets"/* &> /dev/null
+        rm -rf assets &> /dev/null
+        mkdir assets
     fi
 }
