@@ -74,13 +74,19 @@ patchApp() {
     tee -a "$STORAGE/patch_log.txt" |
     "${DIALOG[@]}" \
         --ok-label 'Continue' \
+        --extra-button \
+        --extra-label 'Share Logs' \
         --cursor-off-label \
         --programbox "Patching $APP_NAME $APP_VER" -1 -1
-
+    EXIT_CODE=$?
     tput civis
+
+    if [ $EXIT_CODE -eq 3 ]; then
+        termux-open --send "$STORAGE/patch_log.txt"
+    fi
+
     if [ ! -f "apps/$APP_NAME/$APP_VER-$SOURCE.apk" ]; then
-        notify msg "Patching failed !!\nShare the Patchlog to developer."
-        termux-open --send "$STORAGE/install_log.txt"
+        notify msg "Patching failed !!\nInstallation Aborted."
         return 1
     fi
 }
