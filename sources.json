@@ -10,6 +10,9 @@
     {
         "source": "ReVanced-Extended",
         "repository": "inotia00/revanced-patches",
-        "api": null
+        "api": {
+            "json": "https://raw.githubusercontent.com/inotia00/revanced-patches/refs/heads/revanced-extended/patches.json",
+            "version": null
+        }
     }
 ]
