@@ -27,7 +27,7 @@ parseJsonFromCLI() {
                     if .[0] == "Any" then
                         []
                     else
-                        [ .[] | match("^[^ ]+").string ]
+                        [ .[] | match(".*(?= \\()").string ]
                     end |
                     sort
                 ),
@@ -66,7 +66,7 @@ parseJsonFromCLI() {
 
         if grep -q '^C' <<< "$PATCH"; then
             readarray -t PACKAGES < <(grep $'^\tPackage name:' <<< "$PATCH" | sed 's/.*: //;s/ //g')
-            PATCH=$(sed '/^Compatible packages:/d;/^\tPackage Name:/d' <<< "$PATCH")
+            PATCH=$(sed '/^Compatible packages:/d;/^\tPackage name:/d' <<< "$PATCH")
         fi
 
         OPTIONS_ARRAY='[]'
@@ -78,7 +78,6 @@ parseJsonFromCLI() {
 
                 KEY=$(grep '^Key:' <<< "$OPTION" | sed 's/.*: //;s/ //g')
                 TITLE=$(grep -E '^Title:|^:' <<< "$OPTION" | sed 's/.*: //;')
-                DESCRIPTION=$(grep '^Description:' <<< "$OPTION" | sed 's/.*: //')
                 REQUIRED=$(grep '^Required:' <<< "$OPTION" | sed 's/.*: //')
                 DEFAULT=$(grep '^Default:' <<< "$OPTION" | sed 's/.*: //')
                 TYPE=$(grep '^Type:' <<< "$OPTION" | sed 's/.*: //;s/ //')
@@ -86,6 +85,10 @@ parseJsonFromCLI() {
                 if grep -q "^Possible values:" <<< "$OPTION"; then
                     readarray -t VALUES < <(grep $'^\t' <<< "$OPTION" | sed 's/\t//')
                 fi
+
+                OPTION=$(sed '/^Key:/d;/^Title:/d;/^:/d;/^Required:/d;/^Default:/d;/^Type:/d;/^Possible values:/d;/^\t/d' <<< "$OPTION")
+
+                DESCRIPTION=$(sed 's/^Description: //;s/\n/\\n/g' <<< "$OPTION")
 
                 OPTIONS_ARRAY=$(jq -nc --arg PATCH_NAME "$PATCH_NAME" --arg KEY "$KEY" --arg TITLE "$TITLE" --arg DESCRIPTION "$DESCRIPTION" --arg REQUIRED "$REQUIRED" --arg DEFAULT "$DEFAULT" --arg TYPE "$TYPE" --argjson OPTIONS_ARRAY "$OPTIONS_ARRAY" '
                     (
@@ -123,9 +126,9 @@ parseJsonFromCLI() {
                         "key": $KEY,
                         "title": $TITLE,
                         "description": $DESCRIPTION,
-                        "required": $REQUIRED,
-                        "default": $DEFAULT,
+                        "required": ($REQUIRED | test("true")),
                         "type": $TYPE,
+                        "default": $DEFAULT,
                         "values": $ARGS.positional
                     }]' --args "${VALUES[@]}"
                 )
