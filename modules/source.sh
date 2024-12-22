@@ -16,11 +16,4 @@ changeSource() {
     SOURCE="$SELECTED_SOURCE"
     setEnv SOURCE "$SOURCE" update .config
     unset AVAILABLE_PATCHES APPS_INFO APPS_LIST AVAILABLE_PATCHES
-    if [ -e "assets/.data" ] && [ -e "assets/$SOURCE/.data" ]; then
-        unset CLI_VERSION CLI_URL CLI_SIZE PATCHES_VERSION PATCHES_URL PATCHES_SIZE JSON_URL
-        source "assets/.data"
-        source "assets/$SOURCE/.data"
-    else
-        fetchAssetsInfo || return 1
-    fi
 }
