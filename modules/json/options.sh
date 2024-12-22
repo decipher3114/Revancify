@@ -176,6 +176,10 @@ editOptions() {
                 if [ "${NEW_VALUE[*]}" == "${CURRENT_VALUE[*]}" ]; then
                     break
                 fi
+                if [[ $TYPE == "Number" &&  ! "${NEW_VALUE[*]}" =~ ^[0-9]+$ ]]; then
+                    notify msg "This field should contain only numbers."
+                    continue
+                fi
                 if UPDATED_OPTIONS=$(jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg TYPE "$TYPE" '
                         map(
                             .key as $KEY |
