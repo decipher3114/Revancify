@@ -23,7 +23,6 @@ parseJsonFromAPI() {
                 if length != 0 then
                     map(
                         . |= {"patchName": $PATCH} + . |
-                        .description |= split("\n")[0] |
                         .type |= (
                             if test("List") then
                                 "StringArray"

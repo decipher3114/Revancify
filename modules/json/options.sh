@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 editOptions() {
-    local OPTIONS_JSON OPTIONS_LIST CURRENT_VALUE OPTION_INFO TYPE DESCRIPTION VALUE ALLOWED_VALUES NEW_VALUE EXIT_CODE TEMP_FILE UPDATED_OPTIONS UPDATED_PATCHES
+    local OPTIONS_JSON OPTIONS_LIST CURRENT_VALUE TYPE DESCRIPTION VALUE ALLOWED_VALUES NEW_VALUE EXIT_CODE TEMP_FILE UPDATED_OPTIONS UPDATED_PATCHES
     OPTIONS_JSON=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '$ENABLED_PATCHES[] | select(.pkgName == $PKG_NAME) | .options')
 
     [ "$OPTIONS_JSON" == '[]' ] && return
@@ -26,7 +26,7 @@ editOptions() {
                     ;;
                 2)
                     TASK="MANAGE_PATCHES"
-                    unset OPTIONS_JSON SELECTED_OPTION CURRENT_VALUE OPTION_INFO NEW_VALUE
+                    unset OPTIONS_JSON SELECTED_OPTION CURRENT_VALUE NEW_VALUE
                     return 1
                     ;;
             esac
@@ -50,9 +50,10 @@ editOptions() {
                     .
                 else
                     empty
-                end' <<< "$OPTIONS_JSON")
+                end' <<< "$OPTIONS_JSON"
+            )
 
-            readarray -t OPTION_INFO < <(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
+            source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
                 $AVAILABLE_PATCHES[] |
                 select(.pkgName == $PKG_NAME or .pkgName == null) |
                 .options[] |
@@ -63,13 +64,14 @@ editOptions() {
                     fromjson |
                     .key == $KEY and .patchName == $PATCH_NAME
                 ) |
-                .type,
-                .description,
-                (
-                    .values |
-                    if (length != 0) then
-                        (
-                            if any(.[]; match(".*(?= \\()").string == $CURRENT_VALUE) then
+                "TYPE=\(.type)",
+                "DESCRIPTION=\"\(.description | gsub("\n"; "\\n"))\"",
+                "VALUES=(
+                    \(
+                        [
+                            .values |
+                            if (length != 0) then (
+                                if any(.[]; match(".*(?= \\()").string == $CURRENT_VALUE) then
                                 (
                                     .[] |
                                     if match(".*(?= \\()").string == $CURRENT_VALUE then
@@ -77,19 +79,18 @@ editOptions() {
                                     else
                                         ., "off"
                                     end
-                                )
-                            else
-                                (.[] | ., "off"), $CURRENT_VALUE + " (Custom)", "on"
+                                ) else (
+                                    (.[] | ., "off"), "\($CURRENT_VALUE) (Custom)", "on"
+                                ) end
+                            ) else
+                                empty
                             end
-                        )
-                    else
-                        empty
-                    end
-                )'
+                        ] |
+                        map("\"\(.)\"") |
+                        join(" ")
+                    )
+                )"'
             )
-            TYPE="${OPTION_INFO[0]}"
-            DESCRIPTION="${OPTION_INFO[1]}"
-            VALUES=("${OPTION_INFO[@]:2}")
             while true; do
                 if [ "$TYPE" == "Boolean" ] || [ "${VALUES[0]}" != "" ]; then
                     if [ "$TYPE" != "Boolean" ]; then
@@ -104,7 +105,7 @@ editOptions() {
                     NEW_VALUE=$("${DIALOG[@]}" \
                         --title '| Choose Option Value |' \
                         --no-items \
-                        --ok-label 'Select' \
+                        --ok-label 'Done' \
                         --cancel-label 'Cancel' \
                         --help-button \
                         --help-label 'Description' \
@@ -207,7 +208,7 @@ editOptions() {
                 fi
                 break
             done
-            unset SELECTED_OPTION NEW_VALUE UPDATED_OPTIONS
+            unset CURRENT_VALUE TYPE DESCRIPTION VALUES ALLOWED_VALUES SELECTED_OPTION NEW_VALUE UPDATED_OPTIONS
         fi
     done
     UPDATED_PATCHES=$(jq -c --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '. as $OPTIONS_JSON | $ENABLED_PATCHES | map(if .pkgName == $PKG_NAME then .options |= $OPTIONS_JSON else . end)' <<< "$OPTIONS_JSON")
