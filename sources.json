@@ -14,5 +14,13 @@
             "json": "https://raw.githubusercontent.com/inotia00/revanced-patches/refs/heads/revanced-extended/patches.json",
             "version": null
         }
+    },
+    {
+        "source": "Anddea",
+        "repository": "anddea/revanced-patches",
+        "api": {
+            "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/main/patches.json",
+            "version": null
+        }
     }
 ]
