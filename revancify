@@ -83,6 +83,7 @@ installDependencies() {
 
     CTR=0 && while [ ! -e "$AAPT2" ]; do
         [ $CTR -gt 2 ] && return 1
+        echo -e "\nDownloading aapt2...\n"
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
@@ -97,6 +98,7 @@ installDependencies() {
 
     CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
         [ $CTR -gt 2 ] && return 1
+        echo -e "\nDownloading APKEditor...\n"
         readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
@@ -104,6 +106,8 @@ installDependencies() {
             break
         else
             rm "$APK_EDITOR"
+            yes | pkg uninstall -y openjdk-21
+            yes | pkg install openjdk-17
         fi
         (( CTR++ ))
     done
