@@ -132,20 +132,16 @@ downloadApp() {
     chooseVersion || return 1
     findPatchedApp || return 1
     [ -e "apps/$APP_NAME/.data" ] && source "apps/$APP_NAME/.data"
-    if [[ "$APP_FORMAT" == "APK" && \
-        "$PREFER_SPLIT_APK" == "off" && \
-        "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE"
-    ]]; then
-        return 0
-    elif [[ "$APP_FORMAT" == "BUNDLE" && \
-        "$PREFER_SPLIT_APK" == "on" &&
-        ( -e "apps/$APP_NAME/$APP_VER.apk" || -e "apps/$APP_NAME/$APP_VER.apkm" )
-    ]]; then
-        if [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
+    if [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
+        if "${DIALOG[@]}" \
+            --title '| App Found |' \
+            --defaultno \
+            --yesno "Apk file already exists!!\nDo you want to download again?" -1 -1\
+        ; then
+            rm -rf "apps/$APP_NAME" &> /dev/null
+        else
             return 0
         fi
-    else
-        rm -rf apps/"$APP_NAME" &> /dev/null
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
