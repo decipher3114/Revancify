@@ -97,7 +97,6 @@ am force-stop "$PKG_NAME"
 chcon u:object_r:apk_data_file:s0 "\$BASE_PATH"
 [ ! -z "\$STOCK_PATH" ] && mount -o bind "\$BASE_PATH" "\$STOCK_PATH"
 am force-stop "$PKG_NAME"
-pm clear --cache-only "$PKG_NAME"
 EOF
 
 cat <<EOF >"/data/adb/post-fs-data.d/umount_$PKG_NAME.sh"
