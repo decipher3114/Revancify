@@ -129,7 +129,10 @@ downloadAppFile() {
 
 downloadApp() {
     local APP_FORMAT APP_EXT APP_SIZE APP_URL
-    chooseVersion || return 1
+    if ! chooseVersion; then
+        TASK="CHOOSE_APP"
+        return 1
+    fi
     findPatchedApp || return 1
     [ -e "apps/$APP_NAME/.data" ] && source "apps/$APP_NAME/.data"
     if [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
