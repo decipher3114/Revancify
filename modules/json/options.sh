@@ -52,7 +52,6 @@ editOptions() {
                     empty
                 end' <<< "$OPTIONS_JSON"
             )
-
             source <(jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
                 $AVAILABLE_PATCHES[] |
                 select(.pkgName == $PKG_NAME or .pkgName == null) |
@@ -65,7 +64,7 @@ editOptions() {
                     .key == $KEY and .patchName == $PATCH_NAME
                 ) |
                 "TYPE=\(.type)",
-                "DESCRIPTION=\"\(.description | gsub("\n"; "\\n"))\"",
+                "DESCRIPTION=\"\(.description | gsub("\n"; "\\n") | gsub("\""; "\\\""))\"",
                 "VALUES=(
                     \(
                         [
