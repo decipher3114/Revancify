@@ -22,5 +22,13 @@
             "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/main/patches.json",
             "version": null
         }
+    },
+     {
+        "source": "kitadai31",
+        "repository": "kitadai31/revanced-patches-android6-7",
+        "api": {
+            "json": "https://raw.githubusercontent.com/kitadai31/revanced-patches-android6-7/refs/heads/revanced-extended/patches.json",
+            "version": null
+        }
     }
 ]
