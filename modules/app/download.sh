@@ -145,6 +145,8 @@ downloadApp() {
         else
             return 0
         fi
+    elif [ -e "apps/$APP_NAME/$APP_VER" ]; then
+        antisplitApp && return 0 || return 1
     fi
     fetchDownloadURL || return 1
     downloadAppFile || return 1
