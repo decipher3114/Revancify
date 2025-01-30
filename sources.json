@@ -1,24 +1,11 @@
 [
     {
-        if [ "$USE_PRE_RELEASE" == "on" ]; then
-        {
-            "source": "ReVanced",
-            "repository": "ReVanced/revanced-patches",
-            "api": {
-                "json": "https://api.revanced.app/v4/patches/list",
-                "version": null
-            }
+        "source": "ReVanced",
+        "repository": "ReVanced/revanced-patches",
+        "api": {
+            "json": "https://api.revanced.app/v4/patches/list",
+            "version": "https://api.revanced.app/v4/patches/version"
         }
-        else
-        {
-            "source": "ReVanced",
-            "repository": "ReVanced/revanced-patches",
-            "api": {
-                "json": "https://api.revanced.app/v4/patches/list",
-                "version": "https://api.revanced.app/v4/patches/version"
-            }
-        }
-        fi
     },
     {
         "source": "ReVanced-Extended",
@@ -29,25 +16,12 @@
         }
     },
     {
-        if [ "$USE_PRE_RELEASE" == "on" ]; then
-        {
-           "source": "Anddea",
-           "repository": "anddea/revanced-patches",
-           "api": {
-               "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/dev/patches.json",
-               "version": null
-           }
+        "source": "Anddea",
+        "repository": "anddea/revanced-patches",
+        "api": {
+            "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/main/patches.json",
+            "version": null
         }
-        else
-        {
-           "source": "Anddea",
-           "repository": "anddea/revanced-patches",
-           "api": {
-               "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/main/patches.json",
-               "version": null
-            }
-        }
-        fi
     },
     {
         "source": "RVX-Android-6-7",
