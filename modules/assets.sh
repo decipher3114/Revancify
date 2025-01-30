@@ -61,7 +61,7 @@ fetchAssetsInfo() {
                 return 1
             fi
         else
-            if ["$USE_PRE_RELEASE" == "on" ]; then
+            if [ "$USE_PRE_RELEASE" == "on" ]; then
                 PATCHES_API_URL="https://api.github.com/repos/$REPO/releases"
             else
                 PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/latest"
