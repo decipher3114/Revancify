@@ -31,7 +31,15 @@ fetchAssetsInfo() {
             notify msg "Unable to fetch latest CLI info from API!!\nRetry later."
             return 1
         fi
-        
+
+        if [ "$USE_PRE_RELEASE" == "on" ]; then
+            jq '
+                (.[]
+                | select(.source == "Anddea")
+                | .api.json) |= sub("main"; "dev")
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+        fi
+
         source <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
             "REPO=\(.repository)",
