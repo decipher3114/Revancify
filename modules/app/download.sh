@@ -5,7 +5,7 @@ scrapeAppInfo() {
         -A "$USER_AGENT" \
         "https://www.apkmirror.com/apk/$DEVELOPER_NAME/$APKMIRROR_APP_NAME/$APKMIRROR_APP_NAME-$APP_VER-release"
     )
-    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<" $page1"  2> /dev/null)
+    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<< "$PAGE1"  2> /dev/null)
     if grep -q "apk-download" <<< "$CANONICAL_URL"; then
         URL1="${CANONICAL_URL/"https://www.apkmirror.com/"//}"
     else
