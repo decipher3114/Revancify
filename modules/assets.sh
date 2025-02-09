@@ -45,6 +45,20 @@ fetchAssetsInfo() {
                 | .api.json) |= sub("dev"; "main")
             ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
         fi
+        
+        if [ "$USE_PRE_RELEASE" == "on" ]; then
+            jq '
+                (.[]
+                | select(.source == "ReVanced-Extended")
+                | .api.json) |= sub("revanced-extended"; "dev")
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+        else
+            jq '
+                (.[]
+                | select(.source == "ReVanced-Extended")
+                | .api.json) |= sub("dev"; "revanced-extended")
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+        fi
 
         source <(jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
