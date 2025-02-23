@@ -1,0 +1,41 @@
+[
+    {
+        "source": "ReVanced",
+        "repository": "ReVanced/revanced-patches",
+        "api": {
+            "json": "https://api.revanced.app/v4/patches/list",
+            "version": "https://api.revanced.app/v4/patches/version"
+        }
+    },
+    {
+        "source": "ReVanced-Extended",
+        "repository": "inotia00/revanced-patches",
+        "api": {
+            "json": "https://raw.githubusercontent.com/inotia00/revanced-patches/refs/heads/revanced-extended/patches.json",
+            "version": null
+        }
+    },
+    {
+        "source": "Mod4-Da-GOAT",
+        "repository": "Mod4-Da-GOAT/revanced-patches",
+        "api": {
+            "json": "https://raw.githubusercontent.com/Mod4-Da-GOAT/revanced-patches/refs/heads/main/patches.json",
+            "version": null
+        }
+    },
+    {
+        "source": "RVX-Android-6-7",
+        "repository": "kitadai31/revanced-patches-android6-7",
+        "api": {
+            "json": "https://raw.githubusercontent.com/kitadai31/revanced-patches-android6-7/refs/heads/revanced-extended/patches.json",
+            "version": null
+        }
+    },
+    {
+        "source": "Anddea",
+        "repository": "anddea/revanced-patches",
+        "api": {
+            "json": "https://raw.githubusercontent.com/anddea/revanced-patches/refs/heads/main/patches.json",
+            "version": null
+       }
+]
