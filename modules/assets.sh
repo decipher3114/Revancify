@@ -14,8 +14,7 @@ fetchAssetsInfo() {
     
         notify info "Fetching Assets Info..."
 
-        if ! "${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases" | jq -r '
-                if type == "array" then .[0] else . end |
+        if ! "${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases/latest" | jq -r '
                 "CLI_VERSION='\''\(.tag_name)'\''",
                 (
                     .assets[] |
