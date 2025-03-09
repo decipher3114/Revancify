@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-SRC="$HOME/Revancify"
+SRC="$HOME/Revancify-Xisr"
 
 HELP="revancify
 
