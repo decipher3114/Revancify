@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-SRC="$HOME/Revancify-Xisr"
+SRC="$HOME/Revancify"
 
 HELP="revancify
 
@@ -124,7 +124,7 @@ fetchSrc() {
 
     echo "Checking Latest Release..."
 
-    TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify-Xisr/releases/latest' 2> /dev/null | jq -r '.tag_name')
+    TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
 
     [ "$TAG" == "$VERSION" ] && return
 
@@ -132,7 +132,7 @@ fetchSrc() {
 
     echo "Installing..."
 
-    wget -qc "https://github.com/Xisrr1/Revancify-Xisr/archive/refs/tags/$TAG.zip" -O "$TAG.zip"
+    wget -qc "https://github.com/Xisrr1/Revancify/archive/refs/tags/$TAG.zip" -O "$TAG.zip"
     if [ -e "$TAG.zip" ]; then
         unzip -qo "$TAG.zip"
         rm -rf "$TAG.zip"
