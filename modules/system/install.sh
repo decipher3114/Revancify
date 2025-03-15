@@ -7,8 +7,8 @@ installApp() {
     else
         notify info "Copying patched $APP_NAME apk to Internal Storage..."
         CANONICAL_VER=${APP_VER//:/}
-        cp -f "apps/$APP_NAME/$APP_VER-$SOURCE.apk" "$STORAGE/Patched/$APP_NAME-$CANONICAL_VER-$SOURCE.apk" &> /dev/null
+        cp -f "apps/$APP_NAME/$APP_VER-$SOURCE.apk" "$STORAGE/Patched/$APP_NAME-$CANONICAL_VER-$SOURCE.apk" &>/dev/null
         termux-open --view "$STORAGE/Patched/$APP_NAME-$CANONICAL_VER-$SOURCE.apk"
     fi
-    unset PKG_NAME APP_NAME APKMIRROR_APP_NAME DEVELOPER_NAME APP_VER
+    unset PKG_NAME APP_NAME APKMIRROR_APP_NAME APP_VER
 }

@@ -26,7 +26,7 @@ fetchAppsInfo() {
                         )
                     }
                 ')" |
-        jq -c '
+            jq -c '
             reduce .data[] as {
                 pname: $PKG_NAME,
                 exists: $EXISTS,
@@ -46,9 +46,9 @@ fetchAppsInfo() {
                     .
                 end
             )
-        ' 2> /dev/null
+        ' 2>/dev/null
     ); then
-        rm assets/"$SOURCE"/Apps-*.json &> /dev/null
+        rm assets/"$SOURCE"/Apps-*.json &>/dev/null
 
         echo "$RESPONSE_JSON" | jq -c '
             reduce .[] as {pkgName: $PKG_NAME, appName: $APP_NAME, appUrl: $APP_URL} (
@@ -57,10 +57,9 @@ fetchAppsInfo() {
                     "pkgName": $PKG_NAME,
                     "appName": ($APP_NAME | sub("( -)|( &amp;)|:"; ""; "g") | sub("[()\\|]"; ""; "g") | sub(" *[-, ] *"; "-"; "g") | sub("-Wear-OS"; ""; "g")) | split("-")[:4] | join("-"),
                     "apkmirrorAppName": ($APP_URL | sub("-wear-os"; "") | match("(?<=\\/)(((?!\\/).)*)(?=\\/$)").string),
-                    "developerName": ($APP_URL | match("(?<=apk\\/).*?(?=\\/)").string)
                 }]
-        )' > "assets/$SOURCE/Apps-$PATCHES_VERSION.json" \
-        2> /dev/null
+        )' >"assets/$SOURCE/Apps-$PATCHES_VERSION.json" \
+            2>/dev/null
 
     else
         notify msg "API request failed for apkmirror.com.\nTry again later..."
