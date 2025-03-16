@@ -1,7 +1,7 @@
 # Revancify 🛠️
 ### A TUI wrapper for Revanced CLI with amazing features.
 
-[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/decipher_projects)
+[![TelegramChannel](https://img.shields.io/badge/Telegram_Support_Chat-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=FFFFFF)](https://t.me/anddeachat)
 
 ## Termux
 
@@ -22,6 +22,7 @@
 1. Auto fetches Patches and CLI
 2. Interactive and Easy to use
 3. Support APK download from ApkMirror or Importing from storage
+4. Supports Pre-releases
 4. User-friendly Patch-options Editor
 5. Convenient Installation and usage
 6. Lightweight and faster than any other tool
@@ -33,7 +34,7 @@
 2. Open Termux.
 3. Copy and paste this command.
 ```
-curl -sL https://github.com/decipher3114/Revancify/raw/refs/heads/main/install.sh | bash
+curl -sL https://github.com/Xisrr1/Revancify/raw/refs/heads/main/install.sh | bash
 ```
 
 ## Usage

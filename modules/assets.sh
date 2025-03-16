@@ -30,9 +30,57 @@ fetchAssetsInfo() {
 			notify msg "Unable to fetch latest CLI info from API!!\nRetry later."
 			return 1
 		fi
+    
+    if [ "$USE_PRE_RELEASE" == "on" ]; then
+
+            jq '
+
+                (.[]
+
+                | select(.source == "Anddea")
+
+                | .api.json) |= sub("main"; "dev")
+
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+     else
+            jq '
+
+                (.[]
+
+                | select(.source == "Anddea")
+
+                | .api.json) |= sub("dev"; "main")
+
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+      fi
+
+        
+
+      if [ "$USE_PRE_RELEASE" == "on" ]; then
+            jq '
+
+                (.[]
+
+                | select(.source == "ReVanced-Extended")
+
+                | .api.json) |= sub("revanced-extended"; "dev")
+
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+       else
+            jq '
+
+                (.[]
+
+                | select(.source == "ReVanced-Extended")
+
+                | .api.json) |= sub("dev"; "revanced-extended")
+
+            ' sources.json > sources_tmp.json && mv sources_tmp.json sources.json
+        fi
+
 
 		source <(
-			jq -r --arg SOURCE "$SOURCE" '
+			jq -r --arg  "$SOURCE" '
             .[] | select(.source == $SOURCE) |
             "REPO=\(.repository)",
             (
@@ -53,7 +101,11 @@ fetchAssetsInfo() {
 				return 1
 			fi
 		else
-			PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/latest"
+      if [ "$USE_PRE_RELEASE" == "on" ]; then
+        PATCHES_API_URL="https://api.github.com/repos/$REPO/releases"
+      else 
+        PATCHES_API_URL="https://api.github.com/repos/$REPO/releases/latest"
+      fi
 		fi
 
 		if ! "${CURL[@]}" "$PATCHES_API_URL" | jq -r '
