@@ -13,160 +13,160 @@ Options:
 -v:  Print current version
 -h:  Print help statement"
 
-while getopts ":furvh" OPT 2> /dev/null; do
-    case $OPT in
-        f)
-            rm "$SRC/.info" &> /dev/null
-            ;;
-        u)
-            INTERNET_ACCESS=false
-            ;;
-        r)
-            ROOT_ACCESS=false
-            ;;
-        v)
-            if [ -e "$SRC" ]; then
-                source "$SRC/.info"
-                echo "$VERSION"
-            else
-                echo "Revancify not installed !!"
-            fi
-            exit
-            ;;
-        h)
-            echo -e "$HELP"
-            exit
-            ;;
-        ?)
-            echo -e "Invalid option specified: -${OPTARG}"
-            echo -e "$HELP"
-            exit 1
-            ;;
-    esac
+while getopts ":furvh" OPT 2>/dev/null; do
+	case $OPT in
+	f)
+		rm "$SRC/.info" &>/dev/null
+		;;
+	u)
+		INTERNET_ACCESS=false
+		;;
+	r)
+		ROOT_ACCESS=false
+		;;
+	v)
+		if [ -e "$SRC" ]; then
+			source "$SRC/.info"
+			echo "$VERSION"
+		else
+			echo "Revancify not installed !!"
+		fi
+		exit
+		;;
+	h)
+		echo -e "$HELP"
+		exit
+		;;
+	?)
+		echo -e "Invalid option specified: -${OPTARG}"
+		echo -e "$HELP"
+		exit 1
+		;;
+	esac
 done
 
 terminate() {
-    killall -9 curl &> /dev/null
-    killall -9 wget &> /dev/null
-    clear
-    echo "Script terminated !!"
-    exit 1
+	killall -9 curl &>/dev/null
+	killall -9 wget &>/dev/null
+	clear
+	echo "Script terminated !!"
+	exit 1
 }
 trap terminate SIGTERM SIGINT SIGABRT
 
 installDependencies() {
-    local BINS BIN CTR RESPONSE
-    echo "Checking dependencies..."
+	local BINS BIN CTR RESPONSE
+	echo "Checking dependencies..."
 
-    [ -e "$HOME/storage" ] || termux-setup-storage
+	[ -e "$HOME/storage" ] || termux-setup-storage
 
-    BINS=$(ls "$PREFIX/bin")
-    grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
-    grep -q wget <<< "$BINS" || PKGS+=("wget")
-    grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
-    grep -q dialog <<< "$BINS" || PKGS+=("dialog")
-    grep -q pup <<< "$BINS" || PKGS+=("pup")
-    grep -q jq <<< "$BINS" || PKGS+=("jq")
-    grep -q unzip <<< "$BINS" || PKGS+=("unzip")
+	BINS=$(ls "$PREFIX/bin")
+	grep -q java <<<"$BINS" || PKGS+=("openjdk-21")
+	grep -q wget <<<"$BINS" || PKGS+=("wget")
+	grep -q tput <<<"$BINS" || PKGS+=("ncurses-utils")
+	grep -q dialog <<<"$BINS" || PKGS+=("dialog")
+	grep -q pup <<<"$BINS" || PKGS+=("pup")
+	grep -q jq <<<"$BINS" || PKGS+=("jq")
+	grep -q unzip <<<"$BINS" || PKGS+=("unzip")
 
-    if [ "${#PKGS[@]}" -ne 0 ]; then
-        pkg update || return 1
-        yes | pkg install "${PKGS[@]}" || return 1
-    fi
+	if [ "${#PKGS[@]}" -ne 0 ]; then
+		pkg update || return 1
+		yes | pkg install "${PKGS[@]}" || return 1
+	fi
 
-    sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
+	sed -i '/allow-external-apps/s/# //' "$HOME/.termux/termux.properties"
 
-    [ -e "$SRC/bin" ] || mkdir -p "$SRC/bin"
+	[ -e "$SRC/bin" ] || mkdir -p "$SRC/bin"
 
-    AAPT2="$SRC/bin/aapt2"
-    APK_EDITOR="$SRC/bin/APKEditor.jar"
+	AAPT2="$SRC/bin/aapt2"
+	APK_EDITOR="$SRC/bin/APKEditor.jar"
 
-    CTR=0 && while [ ! -e "$AAPT2" ]; do
-        [ $CTR -gt 2 ] && return 1
-        echo -e "\nDownloading aapt2...\n"
-        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2> /dev/null)
-        [ "${#RESPONSE[@]}" -eq 0 ] && return 1
-        wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
-        chmod +x "$AAPT2"
-        if [ "${RESPONSE[1]}" == "$(stat -c %s "$AAPT2" 2> /dev/null)" ]; then
-            break
-        else
-            rm "$AAPT2"
-        fi
-        (( CTR++ ))
-    done
+	CTR=0 && while [ ! -e "$AAPT2" ]; do
+		[ $CTR -gt 2 ] && return 1
+		echo -e "\nDownloading aapt2...\n"
+		readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2>/dev/null)
+		[ "${#RESPONSE[@]}" -eq 0 ] && return 1
+		wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
+		chmod +x "$AAPT2"
+		if [ "${RESPONSE[1]}" == "$(stat -c %s "$AAPT2" 2>/dev/null)" ]; then
+			break
+		else
+			rm "$AAPT2"
+		fi
+		((CTR++))
+	done
 
-    CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
-        [ $CTR -gt 2 ] && return 1
-        echo -e "\nDownloading APKEditor...\n"
-        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
-        [ "${#RESPONSE[@]}" -eq 0 ] && return 1
-        wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
-        if [ "${RESPONSE[1]}" == "$(stat -c %s "$APK_EDITOR" 2> /dev/null)" ]; then
-            break
-        else
-            rm "$APK_EDITOR"
-            yes | pkg uninstall -y openjdk-21
-            yes | pkg install openjdk-17
-        fi
-        (( CTR++ ))
-    done
+	CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
+		[ $CTR -gt 2 ] && return 1
+		echo -e "\nDownloading APKEditor...\n"
+		readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2>/dev/null)
+		[ "${#RESPONSE[@]}" -eq 0 ] && return 1
+		wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
+		if [ "${RESPONSE[1]}" == "$(stat -c %s "$APK_EDITOR" 2>/dev/null)" ]; then
+			break
+		else
+			rm "$APK_EDITOR"
+			yes | pkg uninstall -y openjdk-21
+			yes | pkg install openjdk-17
+		fi
+		((CTR++))
+	done
 
-    return 0
+	return 0
 }
 
 fetchSrc() {
-    [ -e "$SRC/.info" ] && source "$SRC/.info"
+	[ -e "$SRC/.info" ] && source "$SRC/.info"
 
-    [ "$INTERNET_ACCESS" == false ] && return
+	[ "$INTERNET_ACCESS" == false ] && return
 
-    ping -c 1 google.com &> /dev/null || return
+	ping -c 1 google.com &>/dev/null || return
 
-    echo "Checking Latest Release..."
+	echo "Checking Latest Release..."
 
-    TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
+  TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
 
-    [ "$TAG" == "$VERSION" ] && return
+	[ "$TAG" == "$VERSION" ] && return
 
-    echo "Revancify $TAG is available..."
+	echo "Revancify $TAG is available..."
 
-    echo "Installing..."
+	echo "Installing..."
 
-    wget -qc "https://github.com/Xisrr1/Revancify/archive/refs/tags/$TAG.zip" -O "$TAG.zip"
-    if [ -e "$TAG.zip" ]; then
-        unzip -qo "$TAG.zip"
-        rm -rf "$TAG.zip"
-        for CONTENT in Revancify-*/* Revancify-*/.*; do
-            rm -rf "${SRC:?}/$(basename "$CONTENT")"
-            mv "$CONTENT" "$SRC/"
-        done
-        rm -rf Revancify-* &> /dev/null
-        cp -f "$SRC/revancify" "$PREFIX/bin/revancify"
-        chmod +x "$PREFIX/bin/revancify"
-        echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."
-        exit
-    else
-        echo -e "Unable to install Revancify $TAG !!\nPlease try again with proper Internet"
-        exit 1
-    fi
+	wget -qc "https://github.com/Xisrr1/Revancify/archive/refs/tags/$TAG.zip" -O "$TAG.zip"
+	if [ -e "$TAG.zip" ]; then
+		unzip -qo "$TAG.zip"
+		rm -rf "$TAG.zip"
+		for CONTENT in Revancify-*/* Revancify-*/.*; do
+			rm -rf "${SRC:?}/$(basename "$CONTENT")"
+			mv "$CONTENT" "$SRC/"
+		done
+		rm -rf Revancify-* &>/dev/null
+		cp -f "$SRC/revancify" "$PREFIX/bin/revancify"
+		chmod +x "$PREFIX/bin/revancify"
+		echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."
+		exit
+	else
+		echo -e "Unable to install Revancify $TAG !!\nPlease try again with proper Internet"
+		exit 1
+	fi
 }
 
 clear
 
 if ! installDependencies; then
-    echo -e "Dependencies not installed !!\nRun again with stable internet connection."
-    exit 1
+	echo -e "Dependencies not installed !!\nRun again with stable internet connection."
+	exit 1
 fi
 
 fetchSrc
 
-if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &> /dev/null ; then
-    ROOT_ACCESS=true
+if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &>/dev/null; then
+	ROOT_ACCESS=true
 else
-    ROOT_ACCESS=false
+	ROOT_ACCESS=false
 fi
 
-cd "$SRC" &> /dev/null || terminate
+cd "$SRC" &>/dev/null || terminate
 
 bash main.sh "$ROOT_ACCESS"
 EXIT_CODE=$?
