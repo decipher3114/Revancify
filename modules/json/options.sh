@@ -73,10 +73,10 @@ editOptions() {
                         [
                             .values |
                             if (length != 0) then (
-                                if any(.[]; match(".*(?= \\()").string == $CURRENT_VALUE) then
+                                if any(.[]; match(".*?(?= \\()").string == $CURRENT_VALUE) then
                                 (
                                     .[] |
-                                    if match(".*(?= \\()").string == $CURRENT_VALUE then
+                                    if match(".*?(?= \\()").string == $CURRENT_VALUE then
                                         ., "on"
                                     else
                                         ., "off"
