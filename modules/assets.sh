@@ -14,7 +14,13 @@ fetchAssetsInfo() {
 
 		notify info "Fetching Assets Info..."
 
-		if ! "${CURL[@]}" "https://api.github.com/repos/ReVanced/revanced-cli/releases/latest" | jq -r '
+                if [ "$USE_PRE_RELEASE" == "on" ]; then
+			CLI_API_URL="https://api.github.com/repos/ReVanced/revanced-cli/releases"
+		else
+			CLI_API_URL="https://api.github.com/repos/ReVanced/revanced-cli/releases/latest"
+		fi
+  
+		if ! "${CURL[@]}" "$CLI_API_URL" | jq -r '
                 "CLI_VERSION='\''\(.tag_name)'\''",
                 (
                     .assets[] |
