@@ -156,11 +156,14 @@ downloadApp() {
     fi
 
     findPatchedApp || return 1
+
     [ -e "apps/$APP_NAME/.data" ] && source "apps/$APP_NAME/.data"
+
     if [[ "$APP_FORMAT" == "BUNDLE" && "$PREFER_SPLIT_APK" == "off" ]] ||
         [[ "$APP_FORMAT" == "APK" && "$PREFER_SPLIT_APK" == "on" ]]; then
 
         rm -rf "apps/$APP_NAME" &> /dev/null
+
     elif [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
         if "${DIALOG[@]}" \
             --title '| App Found |' \
@@ -172,6 +175,8 @@ downloadApp() {
         fi
     elif [ -e "apps/$APP_NAME/$APP_VER" ]; then
         antisplitApp && return 0 || return 1
+    elif ! ls "apps/$APP_NAME/$APP_VER"* &> /dev/null; then
+        rm -rf "apps/$APP_NAME" &> /dev/null
     fi
 
     fetchDownloadURL || return 1
