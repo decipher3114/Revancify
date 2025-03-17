@@ -21,6 +21,7 @@ fetchAssetsInfo() {
 		fi
   
 		if ! "${CURL[@]}" "$CLI_API_URL" | jq -r '
+                    if type == "array" then .[0] else . end |
                 "CLI_VERSION='\''\(.tag_name)'\''",
                 (
                     .assets[] |
