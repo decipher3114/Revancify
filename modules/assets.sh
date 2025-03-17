@@ -19,7 +19,7 @@ fetchAssetsInfo() {
                 "CLI_VERSION='\''\(.tag_name)'\''",
                 (
                     .assets[] |
-                    if .content_type == "application/java-archive" then
+                    if (.name | endswith(".jar")) then
                         "CLI_URL='\''\(.browser_download_url)'\''",
                         "CLI_SIZE='\''\(.size|tostring)'\''"
                     else
