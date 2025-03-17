@@ -93,30 +93,42 @@ parseJsonFromCLI() {
                 DESCRIPTION=$(sed 's/^Description: //;s/\n/\\n/g' <<<"$OPTION")
 
                 OPTIONS_ARRAY=$(
-                    jq -nc --arg PATCH_NAME "$PATCH_NAME" --arg KEY "$KEY" --arg TITLE "$TITLE" --arg DESCRIPTION "$DESCRIPTION" --arg REQUIRED "$REQUIRED" --arg DEFAULT "$DEFAULT" --arg TYPE "$TYPE" --argjson OPTIONS_ARRAY "$OPTIONS_ARRAY" '
+                    jq -nc \
+                        --arg PATCH_NAME "$PATCH_NAME" \
+                        --arg KEY "$KEY" \
+                        --arg TITLE "$TITLE" \
+                        --arg DESCRIPTION "$DESCRIPTION" \
+                        --arg REQUIRED "$REQUIRED" \
+                        --arg DEFAULT "$DEFAULT" \
+                        --arg TYPE "$TYPE" \
+                        --arg STRING "$STRING" \
+                        --arg NUMBER "$NUMBER" \
+                        --arg BOOLEAN "$BOOLEAN" \
+                        --arg STRINGARRAY "$STRINGARRAY" \
+                        --argjson OPTIONS_ARRAY "$OPTIONS_ARRAY" '
                     (
                         $TYPE |
                         if test("List") then
-                            "StringArray"
+                            $STRINGARRAY
                         elif test("Boolean") then
-                            "Boolean"
+                            $BOOLEAN
                         elif test("Long|Int|Float") then
-                            "Number"
+                            $NUMBER
                         else
-                            "String"
+                            $STRING
                         end
                     ) as $TYPE |
                     (
                         $DEFAULT |
                         if . != "" then
                             (
-                                if $TYPE == "String" then
+                                if $TYPE == $STRING then
                                     tostring
-                                elif $TYPE == "Number" then
+                                elif $TYPE == $NUMBER then
                                     tonumber
-                                elif $TYPE == "Boolean" then
+                                elif $TYPE == $BOOLEAN then
                                     test("true")
-                                elif $TYPE == "StringArray" then
+                                elif $TYPE == $STRINGARRAY then
                                     (gsub("(?<a>([^,\\[\\] ]+))" ; "\"" + .a + "\"") | fromjson)
                                 end
                             )

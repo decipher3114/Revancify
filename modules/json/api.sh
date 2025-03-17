@@ -5,7 +5,11 @@ parseJsonFromAPI() {
 
     notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
 
-    if ! AVAILABLE_PATCHES=$("${CURL[@]}" "$JSON_URL" | jq -c '
+    if ! AVAILABLE_PATCHES=$("${CURL[@]}" "$JSON_URL" | jq -c \
+        --arg STRING "$STRING" \
+        --arg NUMBER "$NUMBER" \
+        --arg BOOLEAN "$BOOLEAN" \
+        --arg STRINGARRAY "$STRINGARRAY" '
             reduce .[] as {
                 name: $PATCH,
                 use: $USE,
@@ -20,13 +24,13 @@ parseJsonFromAPI() {
                             . |= {"patchName": $PATCH} + . |
                             .type |= (
                                 if test("List") then
-                                    "StringArray"
+                                    $STRINGARRAY
                                 elif test("Boolean") then
-                                    "Boolean"
+                                    $BOOLEAN
                                 elif test("Long|Int|Float") then
-                                    "Number"
+                                    $NUMBER
                                 else
-                                    "String"
+                                    $STRING
                                 end
                             ) |
                             .values |= (

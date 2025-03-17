@@ -94,8 +94,8 @@ editOptions() {
                 )"'
             )
             while true; do
-                if [ "$TYPE" == "Boolean" ] || [ "${VALUES[0]}" != "" ]; then
-                    if [ "$TYPE" != "Boolean" ]; then
+                if [ "$TYPE" == $BOOLEAN ] || [ "${VALUES[0]}" != "" ]; then
+                    if [ "$TYPE" != $BOOLEAN ]; then
                         ALLOWED_VALUES=("${VALUES[@]}" "Custom Value" "off")
                     else
                         if [ "${CURRENT_VALUE[0]}" == "true" ]; then
@@ -136,7 +136,7 @@ editOptions() {
                 fi
                 if [ -z "$NEW_VALUE" ]; then
                     tput cnorm
-                    if [ "$TYPE" == "StringArray" ]; then
+                    if [ "$TYPE" == "$STRINGARRAY" ]; then
                         TEMP_FILE="$(mktemp)"
                         printf "%s\n" "${CURRENT_VALUE[@]}" >"$TEMP_FILE"
                         tput cnorm
@@ -181,12 +181,17 @@ editOptions() {
                 if [ "${NEW_VALUE[*]}" == "${CURRENT_VALUE[*]}" ]; then
                     break
                 fi
-                if [[ $TYPE == "Number" && ! "${NEW_VALUE[*]}" =~ ^[0-9]+$ ]]; then
+                if [[ $TYPE == "$NUMBER" && ! "${NEW_VALUE[*]}" =~ ^[0-9]+$ ]]; then
                     notify msg "This field should contain only numbers."
                     continue
                 fi
                 if UPDATED_OPTIONS=$(
-                    jq -e --arg SELECTED_OPTION "$SELECTED_OPTION" --arg TYPE "$TYPE" '
+                    jq -e \
+                        --arg SELECTED_OPTION "$SELECTED_OPTION" \
+                        --arg TYPE "$TYPE" \
+                        --arg STRING "$STRING" \
+                        --arg NUMBER "$NUMBER" \
+                        --arg BOOLEAN "$BOOLEAN" '
                         map(
                             .key as $KEY |
                             .patchName as $PATCH_NAME |
@@ -196,11 +201,11 @@ editOptions() {
                                     if length == 0 then
                                         null
                                     elif length == 1 then
-                                        if $TYPE == "Boolean" then
+                                        if $TYPE == $BOOLEAN then
                                             .[0] | test("true")
-                                        elif $TYPE == "Number" then
+                                        elif $TYPE == $NUMBER then
                                             .[0] | tonumber
-                                        elif $TYPE == "String" then
+                                        elif $TYPE == $STRING then
                                             .[0] | tostring
                                         else
                                             .
