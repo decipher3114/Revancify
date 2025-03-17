@@ -80,7 +80,7 @@ fetchAssetsInfo() {
 
 
 		source <(
-			jq -r --arg  "$SOURCE" '
+			jq -r --arg SOURCE "$SOURCE" '
             .[] | select(.source == $SOURCE) |
             "REPO=\(.repository)",
             (
