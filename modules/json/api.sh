@@ -1,11 +1,11 @@
 #!/usr/bin/bash
 
 parseJsonFromAPI() {
-	local RESPONSE
+    local RESPONSE
 
-	notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
+    notify info "Please Wait!!\nParsing JSON file for $SOURCE patches from API."
 
-	if ! AVAILABLE_PATCHES=$("${CURL[@]}" "$JSON_URL" | jq -c '
+    if ! AVAILABLE_PATCHES=$("${CURL[@]}" "$JSON_URL" | jq -c '
             reduce .[] as {
                 name: $PATCH,
                 use: $USE,
@@ -84,10 +84,10 @@ parseJsonFromAPI() {
                     )
                 )
             )' \
-		2>/dev/null); then
-		unset JSON_URL AVAILABLE_PATCHES
-		return 1
-	fi
+        2>/dev/null); then
+        unset JSON_URL AVAILABLE_PATCHES
+        return 1
+    fi
 
-	echo "$AVAILABLE_PATCHES" >"assets/$SOURCE/Patches-$PATCHES_VERSION.json"
+    echo "$AVAILABLE_PATCHES" >"assets/$SOURCE/Patches-$PATCHES_VERSION.json"
 }
