@@ -23,7 +23,7 @@ main() {
                 --ok-label 'Select' \
                 --cancel-label 'Exit' \
                 --menu "$NAVIGATION_HINT" -1 -1 0 1 "Patch App" 2 "Update Assets" 3 "Change Source" 4 "Configure" 5 "Delete Assets" 6 "Delete Apps" "${MENU_ENTRY[@]}" \
-                2>&1 >/dev/tty
+                2>&1 > /dev/tty
         ) || break
         case "$MAIN" in
             1)

@@ -8,9 +8,9 @@ scrapeAppInfo() {
     )
     unset APP_DL_URL
 
-    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<<" $PAGE1" 2>/dev/null)
+    CANONICAL_URL=$(pup -p --charset utf-8 'link[rel="canonical"] attr{href}' <<< " $PAGE1" 2> /dev/null)
 
-    if grep -q "apk-download" <<<"$CANONICAL_URL"; then
+    if grep -q "apk-download" <<< "$CANONICAL_URL"; then
         URL1="${CANONICAL_URL/"https://www.apkmirror.com/"//}"
     else
         if [ "$PREFER_SPLIT_APK" == "on" ]; then
@@ -20,41 +20,46 @@ scrapeAppInfo() {
         fi
 
         readarray -t VARIANT_INFO < <(
-            pup -p --charset utf-8 'div.variants-table json{}' <<<"$PAGE1" | jq -r --arg ARCH "$ARCH" --arg DPI "$DPI" --arg APP_FORMAT "$APP_FORMAT" '
-            [
-                .[].children[1:][].children |
-                if (.[1].text | test("universal|noarch|\($ARCH)")) and
-                    (
-                        .[3].text |
-                        test("nodpi") or
-                        (
-                            capture("(?<low>\\d+)-(?<high>\\d+)dpi") |
-                            (($DPI | tonumber) <= (.high | tonumber)) and (($DPI | tonumber) >= (.low | tonumber))
-                        )
-                    )
-                then
-                    .[0].children
-                else
-                    empty
-                end
-            ] |
-            if length != 0 then
-                [
-                    if any(.[]; .[1].text == $APP_FORMAT) then
-                        .[] |
-                        if (.[1].text == $APP_FORMAT) then
-                            [.[1].text, .[0].href]
+            pup -p --charset utf-8 'div.variants-table json{}' <<< "$PAGE1" |
+                jq -r \
+                    --arg ARCH "$ARCH" \
+                    --arg DPI "$DPI" \
+                    --arg APP_FORMAT "$APP_FORMAT" '
+                    [
+                        .[].children[1:][].children |
+                        if (.[1].text | test("universal|noarch|\($ARCH)")) and
+                            (
+                                .[3].text |
+                                test("nodpi") or
+                                (
+                                    capture("(?<low>\\d+)-(?<high>\\d+)dpi") |
+                                    (($DPI | tonumber) <= (.high | tonumber)) and (($DPI | tonumber) >= (.low | tonumber))
+                                )
+                            )
+                        then
+                            .[0].children
                         else
                             empty
                         end
+                    ] |
+                    if length != 0 then
+                        [
+                            if any(.[]; .[1].text == $APP_FORMAT) then
+                                .[] |
+                                if (.[1].text == $APP_FORMAT) then
+                                    [.[1].text, .[0].href]
+                                else
+                                    empty
+                                end
+                            else
+                                .[] | 
+                                [.[1].text, .[0].href]
+                            end
+                        ][-1][]
                     else
-                        .[] | 
-                        [.[1].text, .[0].href]
+                        empty
                     end
-                ][-1][]
-            else
-                empty
-            end'
+                '
         )
 
         [ "${#VARIANT_INFO[@]}" -eq 0 ] && echo 1 >&2 && exit
@@ -65,7 +70,7 @@ scrapeAppInfo() {
     echo 33
 
     PAGE2=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL1")
-    readarray -t DL_URLS < <(pup -p --charset utf-8 'a.downloadButton attr{href}' <<<"$PAGE2" 2>/dev/null)
+    readarray -t DL_URLS < <(pup -p --charset utf-8 'a.downloadButton attr{href}' <<< "$PAGE2" 2> /dev/null)
 
     if [ "$APP_FORMAT" == "APK" ]; then
         URL2="${DL_URLS[0]}"
@@ -73,11 +78,11 @@ scrapeAppInfo() {
         URL2="${DL_URLS[-1]}"
     fi
 
-    APP_SIZE=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<<"$PAGE2" 2>/dev/null | sed -n 's/.*(//;s/ bytes.*//;s/,//gp' 2>/dev/null)
+    APP_SIZE=$(pup -p --charset utf-8 ':parent-of(:parent-of(svg[alt="APK file size"])) div text{}' <<< "$PAGE2" 2> /dev/null | sed -n 's/.*(//;s/ bytes.*//;s/,//gp' 2> /dev/null)
     [ "$URL2" == "" ] && echo 2 >&2 && exit
     echo 66
 
-    URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2>/dev/null | head -n 1)
+    URL3=$("${CURL[@]}" -A "$USER_AGENT" "https://www.apkmirror.com$URL2" | pup -p --charset UTF-8 'a:contains("here") attr{href}' 2> /dev/null | head -n 1)
     [ "$URL3" == "" ] && echo 2 >&2 && exit
 
     APP_URL="https://www.apkmirror.com$URL3"
@@ -93,7 +98,7 @@ fetchDownloadURL() {
     internet || return 1
 
     mkdir -p "apps/$APP_NAME"
-    if [ $((($(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2>/dev/null || echo 0)) / 60)) -le 5 ]; then
+    if [ $((($(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2> /dev/null || echo 0)) / 60)) -le 5 ]; then
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
             export APP_EXT="apkm"
         else
@@ -105,10 +110,10 @@ fetchDownloadURL() {
     EXIT_CODE=$(
         {
             scrapeAppInfo 2>&3 |
-                "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 >/dev/tty
+                "${DIALOG[@]}" --gauge "App    : $APP_NAME\nVersion: $APP_VER\n\nScraping Download Link..." -1 -1 0 2>&1 > /dev/tty
         } 3>&1
     )
-    if [ $(($(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2>/dev/null || echo 0))) -le 5 ]; then
+    if [ $(($(date +%s) - $(stat -c %Y "apps/$APP_NAME/.data" 2> /dev/null || echo 0))) -le 5 ]; then
         source "apps/$APP_NAME/.data"
         if [ "$APP_FORMAT" == "BUNDLE" ]; then
             export APP_EXT="apkm"
@@ -155,13 +160,13 @@ downloadApp() {
     if [[ "$APP_FORMAT" == "BUNDLE" && "$PREFER_SPLIT_APK" == "off" ]] ||
         [[ "$APP_FORMAT" == "APK" && "$PREFER_SPLIT_APK" == "on" ]]; then
 
-        rm -rf "apps/$APP_NAME" &>/dev/null
-    elif [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2>/dev/null || echo 0)" == "$APP_SIZE" ]; then
+        rm -rf "apps/$APP_NAME" &> /dev/null
+    elif [ "$(stat -c %s "apps/$APP_NAME/$APP_VER.apk" 2> /dev/null || echo 0)" == "$APP_SIZE" ]; then
         if "${DIALOG[@]}" \
             --title '| App Found |' \
             --defaultno \
             --yesno "Apk file already exists!!\nDo you want to download again?" -1 -1; then
-            rm -rf "apps/$APP_NAME" &>/dev/null
+            rm -rf "apps/$APP_NAME" &> /dev/null
         else
             return 0
         fi

@@ -13,10 +13,10 @@ Options:
 -v:  Print current version
 -h:  Print help statement"
 
-while getopts ":furvh" OPT 2>/dev/null; do
+while getopts ":furvh" OPT 2> /dev/null; do
     case $OPT in
         f)
-            rm "$SRC/.info" &>/dev/null
+            rm "$SRC/.info" &> /dev/null
             ;;
         u)
             INTERNET_ACCESS=false
@@ -46,8 +46,8 @@ while getopts ":furvh" OPT 2>/dev/null; do
 done
 
 terminate() {
-    killall -9 curl &>/dev/null
-    killall -9 wget &>/dev/null
+    killall -9 curl &> /dev/null
+    killall -9 wget &> /dev/null
     clear
     echo "Script terminated !!"
     exit 1
@@ -61,13 +61,13 @@ installDependencies() {
     [ -e "$HOME/storage" ] || termux-setup-storage
 
     BINS=$(ls "$PREFIX/bin")
-    grep -q java <<<"$BINS" || PKGS+=("openjdk-21")
-    grep -q wget <<<"$BINS" || PKGS+=("wget")
-    grep -q tput <<<"$BINS" || PKGS+=("ncurses-utils")
-    grep -q dialog <<<"$BINS" || PKGS+=("dialog")
-    grep -q pup <<<"$BINS" || PKGS+=("pup")
-    grep -q jq <<<"$BINS" || PKGS+=("jq")
-    grep -q unzip <<<"$BINS" || PKGS+=("unzip")
+    grep -q java <<< "$BINS" || PKGS+=("openjdk-21")
+    grep -q wget <<< "$BINS" || PKGS+=("wget")
+    grep -q tput <<< "$BINS" || PKGS+=("ncurses-utils")
+    grep -q dialog <<< "$BINS" || PKGS+=("dialog")
+    grep -q pup <<< "$BINS" || PKGS+=("pup")
+    grep -q jq <<< "$BINS" || PKGS+=("jq")
+    grep -q unzip <<< "$BINS" || PKGS+=("unzip")
 
     if [ "${#PKGS[@]}" -ne 0 ]; then
         pkg update || return 1
@@ -84,11 +84,11 @@ installDependencies() {
     CTR=0 && while [ ! -e "$AAPT2" ]; do
         [ $CTR -gt 2 ] && return 1
         echo -e "\nDownloading aapt2...\n"
-        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2>/dev/null)
+        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/decipher3114/binaries/releases/latest" | jq -r --arg ARCH "$(getprop ro.product.cpu.abi)" '.assets[] | if (.name | test($ARCH)) then (.browser_download_url, .size) else empty end' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$AAPT2"
         chmod +x "$AAPT2"
-        if [ "${RESPONSE[1]}" == "$(stat -c %s "$AAPT2" 2>/dev/null)" ]; then
+        if [ "${RESPONSE[1]}" == "$(stat -c %s "$AAPT2" 2> /dev/null)" ]; then
             break
         else
             rm "$AAPT2"
@@ -99,10 +99,10 @@ installDependencies() {
     CTR=0 && while [ ! -e "$APK_EDITOR" ]; do
         [ $CTR -gt 2 ] && return 1
         echo -e "\nDownloading APKEditor...\n"
-        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2>/dev/null)
+        readarray -t RESPONSE < <(curl -s "https://api.github.com/repos/REAndroid/APKEditor/releases/latest" | jq -r '.assets[0] | .browser_download_url, .size' 2> /dev/null)
         [ "${#RESPONSE[@]}" -eq 0 ] && return 1
         wget -q --show-progress "${RESPONSE[0]}" -O "$APK_EDITOR"
-        if [ "${RESPONSE[1]}" == "$(stat -c %s "$APK_EDITOR" 2>/dev/null)" ]; then
+        if [ "${RESPONSE[1]}" == "$(stat -c %s "$APK_EDITOR" 2> /dev/null)" ]; then
             break
         else
             rm "$APK_EDITOR"
@@ -120,11 +120,11 @@ fetchSrc() {
 
     [ "$INTERNET_ACCESS" == false ] && return
 
-    ping -c 1 google.com &>/dev/null || return
+    ping -c 1 google.com &> /dev/null || return
 
     echo "Checking Latest Release..."
 
-    TAG=$(curl -s 'https://api.github.com/repos/decipher3114/Revancify/releases/latest' 2>/dev/null | jq -r '.tag_name')
+    TAG=$(curl -s 'https://api.github.com/repos/decipher3114/Revancify/releases/latest' 2> /dev/null | jq -r '.tag_name')
 
     [ "$TAG" == "$VERSION" ] && return
 
@@ -140,7 +140,7 @@ fetchSrc() {
             rm -rf "${SRC:?}/$(basename "$CONTENT")"
             mv "$CONTENT" "$SRC/"
         done
-        rm -rf Revancify-* &>/dev/null
+        rm -rf Revancify-* &> /dev/null
         cp -f "$SRC/revancify" "$PREFIX/bin/revancify"
         chmod +x "$PREFIX/bin/revancify"
         echo -e "Revancify $TAG is now installed.\nRun 'revancify -h' for help."
@@ -160,13 +160,13 @@ fi
 
 fetchSrc
 
-if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &>/dev/null; then
+if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &> /dev/null; then
     ROOT_ACCESS=true
 else
     ROOT_ACCESS=false
 fi
 
-cd "$SRC" &>/dev/null || terminate
+cd "$SRC" &> /dev/null || terminate
 
 bash main.sh "$ROOT_ACCESS"
 EXIT_CODE=$?

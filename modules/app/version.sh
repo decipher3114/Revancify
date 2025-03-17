@@ -11,66 +11,66 @@ scrapeVersionsList() {
     fi
 
     readarray -t VERSIONS_LIST < <(
-        pup -c 'div.widget_appmanager_recentpostswidget div.listWidget div:not([class]) json{}' <<<"$PAGE" |
+        pup -c 'div.widget_appmanager_recentpostswidget div.listWidget div:not([class]) json{}' <<< "$PAGE" |
             jq -rc \
                 --arg PKG_NAME "$PKG_NAME" \
                 --arg INSTALLED_VERSION "$INSTALLED_VERSION" \
                 --arg ALLOW_APP_VERSION_DOWNGRADE "$ALLOW_APP_VERSION_DOWNGRADE" \
                 --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
-            (
-                $AVAILABLE_PATCHES[] |
-                select(.pkgName == $PKG_NAME) |
-                .versions
-            ) as $SUPPORTED_VERSIONS |
-            [
-                .[].children |
-                .[1].children.[0].children.[1].text as $VERSION |
-                .[0].children.[0].children.[1].children.[0].children.[0].children.[0] as $INFO |
-                {
-                    "version": ($VERSION),
-                    "tag": (
-                        if ($SUPPORTED_VERSIONS | index($VERSION)) != null then
-                            "[RECOMMENDED]"
-                        else
-                            (
-                                $INFO.text |
-                                if test("beta"; "i") then
-                                    "[BETA]"
-                                elif test("alpha"; "i") then
-                                    "[ALPHA]"
-                                else
-                                    "[STABLE]"
-                                end
-                            )
-                        end
-                    ),
-                    "url": $INFO.href
-                }
-            ] |
-            if $INSTALLED_VERSION != "" then
-                if ($ALLOW_APP_VERSION_DOWNGRADE | test("off")) then
-                    .[0:(map(.version == $INSTALLED_VERSION) | index(true) + 1)]
-                end |
-                map(
-                    if .version == $INSTALLED_VERSION then
-                        .tag |= "[INSTALLED]"
-                    end
-                )
-            end |
-            (
-                if any(.[]; .tag == "[RECOMMENDED]") then
-                    (first(.[] | select(.tag == "[RECOMMENDED]"))), "Auto Select|[RECOMMENDED]"
-                elif $INSTALLED_VERSION != "" then
-                    .[-1], "Auto Select|[INSTALLED]"
-                else
-                    empty
-                end,
                 (
-                    .[] |
-                    ., "\(.version)|\(.tag)"
+                    $AVAILABLE_PATCHES[] |
+                    select(.pkgName == $PKG_NAME) |
+                    .versions
+                ) as $SUPPORTED_VERSIONS |
+                [
+                    .[].children |
+                    .[1].children.[0].children.[1].text as $VERSION |
+                    .[0].children.[0].children.[1].children.[0].children.[0].children.[0] as $INFO |
+                    {
+                        "version": ($VERSION),
+                        "tag": (
+                            if ($SUPPORTED_VERSIONS | index($VERSION)) != null then
+                                "[RECOMMENDED]"
+                            else
+                                (
+                                    $INFO.text |
+                                    if test("beta"; "i") then
+                                        "[BETA]"
+                                    elif test("alpha"; "i") then
+                                        "[ALPHA]"
+                                    else
+                                        "[STABLE]"
+                                    end
+                                )
+                            end
+                        ),
+                        "url": $INFO.href
+                    }
+                ] |
+                if $INSTALLED_VERSION != "" then
+                    if ($ALLOW_APP_VERSION_DOWNGRADE | test("off")) then
+                        .[0:(map(.version == $INSTALLED_VERSION) | index(true) + 1)]
+                    end |
+                    map(
+                        if .version == $INSTALLED_VERSION then
+                            .tag |= "[INSTALLED]"
+                        end
+                    )
+                end |
+                (
+                    if any(.[]; .tag == "[RECOMMENDED]") then
+                        (first(.[] | select(.tag == "[RECOMMENDED]"))), "Auto Select|[RECOMMENDED]"
+                    elif $INSTALLED_VERSION != "" then
+                        .[-1], "Auto Select|[INSTALLED]"
+                    else
+                        empty
+                    end,
+                    (
+                        .[] |
+                        ., "\(.version)|\(.tag)"
+                    )
                 )
-            )
-        '
+            '
     )
 }
 
@@ -93,7 +93,7 @@ chooseVersion() {
             --cancel-label 'Back' \
             --menu "$NAVIGATION_HINT" -1 -1 0 \
             "${VERSIONS_LIST[@]}" \
-            2>&1 >/dev/tty
+            2>&1 > /dev/tty
     ); then
         TASK="CHOOSE_APP"
         return 1

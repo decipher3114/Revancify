@@ -15,17 +15,17 @@ antisplitApp() {
             "split_config.${ARCH//-/_}.apk" \
             "split_config.${LOCALE}.apk" \
             split_config.*dpi.apk \
-            -d "$APP_DIR" 2>/dev/null
+            -d "$APP_DIR" 2> /dev/null
     fi
 
-    java -jar bin/APKEditor.jar m -i "$APP_DIR" -o "apps/$APP_NAME/$APP_VER.apk" &>/dev/null
+    java -jar bin/APKEditor.jar m -i "$APP_DIR" -o "apps/$APP_NAME/$APP_VER.apk" &> /dev/null
 
     if [ ! -e "apps/$APP_NAME/$APP_VER.apk" ]; then
-        rm -rf "$APP_DIR" &>/dev/null
+        rm -rf "$APP_DIR" &> /dev/null
         notify msg "Unable to run merge splits!!\nApkEditor is not working properly."
         return 1
     fi
-    rm "apps/$APP_NAME/$APP_VER.apkm" &>/dev/null
+    rm "apps/$APP_NAME/$APP_VER.apkm" &> /dev/null
 
     if [ "$ROOT_ACCESS" == false ]; then
         rm -rf "apps/$APP_NAME/$APP_VER"

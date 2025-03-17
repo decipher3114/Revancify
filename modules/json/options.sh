@@ -2,13 +2,34 @@
 
 editOptions() {
     local OPTIONS_JSON OPTIONS_LIST CURRENT_VALUE TYPE DESCRIPTION VALUE ALLOWED_VALUES NEW_VALUE EXIT_CODE TEMP_FILE UPDATED_OPTIONS UPDATED_PATCHES
-    OPTIONS_JSON=$(jq -nc --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '$ENABLED_PATCHES[] | select(.pkgName == $PKG_NAME) | .options')
+
+    OPTIONS_JSON=$(
+        jq -nc \
+            --arg PKG_NAME "$PKG_NAME" \
+            --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '
+            $ENABLED_PATCHES[] | select(.pkgName == $PKG_NAME) | .options
+        '
+    )
 
     [ "$OPTIONS_JSON" == '[]' ] && return
 
-    readarray -t OPTIONS_LIST < <(jq -r '.[] | ({"key": .key, "patchName": .patchName} | tostring), .title' <<<"$OPTIONS_JSON")
+    readarray -t OPTIONS_LIST < <(
+        jq -r '
+            .[] |
+            (
+                {
+                    "key": .key,
+                    "patchName": .patchName
+                } |
+                tostring
+            ),
+            .title
+        ' <<< "$OPTIONS_JSON"
+    )
     while true; do
+
         unset EXIT_CODE
+
         if [ -z "$SELECTED_OPTION" ]; then
             SELECTED_OPTION="$(
                 "${DIALOG[@]}" \
@@ -19,7 +40,7 @@ editOptions() {
                     --help-button \
                     --help-label 'Back' \
                     --menu "$NAVIGATION_HINT" -1 -1 0 \
-                    "${OPTIONS_LIST[@]}" 2>&1 >/dev/tty
+                    "${OPTIONS_LIST[@]}" 2>&1 > /dev/tty
             )"
             case "$?" in
                 1)
@@ -32,70 +53,79 @@ editOptions() {
                     ;;
             esac
         else
+
             readarray -t CURRENT_VALUE < <(
                 jq -r --arg SELECTED_OPTION "$SELECTED_OPTION" '
-                .[] |
-                select(
-                    .key as $KEY |
-                    .patchName as $PATCH_NAME |
-                    $SELECTED_OPTION |
-                    fromjson |
-                    .key == $KEY and .patchName == $PATCH_NAME
-                ) |
-                .value |
-                if (. | type) == "array" then
-                    .[]
-                else
-                    .
-                end |
-                if . != null then
-                    .
-                else
-                    empty
-                end' <<<"$OPTIONS_JSON"
+                    .[] |
+                    select(
+                        .key as $KEY |
+                        .patchName as $PATCH_NAME |
+                        $SELECTED_OPTION |
+                        fromjson |
+                        .key == $KEY and .patchName == $PATCH_NAME
+                    ) |
+                    .value |
+                    if (. | type) == "array" then
+                        .[]
+                    else
+                        .
+                    end |
+                    if . != null then
+                        .
+                    else
+                        empty
+                    end
+                ' <<< "$OPTIONS_JSON"
             )
+
             source <(
-                jq -nrc --arg PKG_NAME "$PKG_NAME" --arg SELECTED_OPTION "$SELECTED_OPTION" --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
-                $AVAILABLE_PATCHES[] |
-                select(.pkgName == $PKG_NAME or .pkgName == null) |
-                .options[] |
-                select(
-                    .key as $KEY |
-                    .patchName as $PATCH_NAME |
-                    $SELECTED_OPTION |
-                    fromjson |
-                    .key == $KEY and .patchName == $PATCH_NAME
-                ) |
-                "TYPE=\(.type)",
-                "DESCRIPTION=\"\(.description | gsub("\n"; "\\n") | gsub("\""; "\\\""))\"",
-                "VALUES=(
-                    \(
-                        [
-                            .values |
-                            if (length != 0) then (
-                                if any(.[]; match(".*?(?= \\()").string == $CURRENT_VALUE) then
-                                (
-                                    .[] |
-                                    if match(".*?(?= \\()").string == $CURRENT_VALUE then
-                                        ., "on"
-                                    else
-                                        ., "off"
-                                    end
-                                ) else (
-                                    (.[] | ., "off"), "\($CURRENT_VALUE) (Custom)", "on"
-                                ) end
-                            ) else
-                                empty
-                            end
-                        ] |
-                        map("\"\(.)\"") |
-                        join(" ")
-                    )
-                )"'
+                jq -nrc \
+                    --arg PKG_NAME "$PKG_NAME" \
+                    --arg SELECTED_OPTION "$SELECTED_OPTION" \
+                    --arg CURRENT_VALUE "${CURRENT_VALUE[0]}" \
+                    --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" '
+                    $AVAILABLE_PATCHES[] |
+                    select(.pkgName == $PKG_NAME or .pkgName == null) |
+                    .options[] |
+                    select(
+                        .key as $KEY |
+                        .patchName as $PATCH_NAME |
+                        $SELECTED_OPTION |
+                        fromjson |
+                        .key == $KEY and .patchName == $PATCH_NAME
+                    ) |
+                    "TYPE=\(.type)",
+                    "DESCRIPTION=\"\(.description | gsub("\n"; "\\n") | gsub("\""; "\\\""))\"",
+                    "VALUES=(
+                        \(
+                            [
+                                .values |
+                                if (length != 0) then (
+                                    if any(.[]; match(".*?(?= \\()").string == $CURRENT_VALUE) then
+                                    (
+                                        .[] |
+                                        if match(".*?(?= \\()").string == $CURRENT_VALUE then
+                                            ., "on"
+                                        else
+                                            ., "off"
+                                        end
+                                    ) else (
+                                        (.[] | ., "off"), "\($CURRENT_VALUE) (Custom)", "on"
+                                    ) end
+                                ) else
+                                    empty
+                                end
+                            ] |
+                            map("\"\(.)\"") |
+                            join(" ")
+                        )
+                    )"
+                '
             )
+
             while true; do
-                if [ "$TYPE" == $BOOLEAN ] || [ "${VALUES[0]}" != "" ]; then
-                    if [ "$TYPE" != $BOOLEAN ]; then
+                if [ "$TYPE" == "$BOOLEAN" ] || [ "${VALUES[0]}" != "" ]; then
+                    if [ "$TYPE" != "$BOOLEAN" ]; then
                         ALLOWED_VALUES=("${VALUES[@]}" "Custom Value" "off")
                     else
                         if [ "${CURRENT_VALUE[0]}" == "true" ]; then
@@ -113,10 +143,11 @@ editOptions() {
                             --help-button \
                             --help-label 'Description' \
                             --radiolist "$NAVIGATION_HINT\n$SELECTION_HINT" -1 -1 0 \
-                            "${ALLOWED_VALUES[@]}" 2>&1 >/dev/tty
+                            "${ALLOWED_VALUES[@]}" 2>&1 > /dev/tty
                     )
                     EXIT_CODE=$?
                     unset ALLOWED_VALUES
+
                     case "$EXIT_CODE" in
                         1)
                             unset NEW_VALUE
@@ -134,11 +165,12 @@ editOptions() {
                         unset NEW_VALUE
                     fi
                 fi
+
                 if [ -z "$NEW_VALUE" ]; then
                     tput cnorm
                     if [ "$TYPE" == "$STRINGARRAY" ]; then
                         TEMP_FILE="$(mktemp)"
-                        printf "%s\n" "${CURRENT_VALUE[@]}" >"$TEMP_FILE"
+                        printf "%s\n" "${CURRENT_VALUE[@]}" > "$TEMP_FILE"
                         tput cnorm
                         NEW_VALUE=$(
                             "${DIALOG[@]}" \
@@ -146,11 +178,11 @@ editOptions() {
                                 --help-button \
                                 --help-label "Description" \
                                 --editbox "$TEMP_FILE" -1 -1 \
-                                2>&1 1>&2 1>/dev/tty
+                                2>&1 1>&2 1> /dev/tty
                         )
                         EXIT_CODE=$?
                         rm "$TEMP_FILE"
-                        readarray -t NEW_VALUE <<<"$NEW_VALUE"
+                        readarray -t NEW_VALUE <<< "$NEW_VALUE"
                     else
                         NEW_VALUE=$(
                             "${DIALOG[@]}" \
@@ -160,10 +192,11 @@ editOptions() {
                                 "Description" \
                                 --inputbox "Enter $TYPE\nLeave empty to set as null" -1 -1 \
                                 "${CURRENT_VALUE[@]}" \
-                                2>&1 1>&2 1>/dev/tty
+                                2>&1 1>&2 1> /dev/tty
                         )
                         EXIT_CODE=$?
                     fi
+
                     tput civis
                     case "$EXIT_CODE" in
                         1)
@@ -178,13 +211,16 @@ editOptions() {
                             ;;
                     esac
                 fi
+
                 if [ "${NEW_VALUE[*]}" == "${CURRENT_VALUE[*]}" ]; then
                     break
                 fi
+
                 if [[ $TYPE == "$NUMBER" && ! "${NEW_VALUE[*]}" =~ ^[0-9]+$ ]]; then
                     notify msg "This field should contain only numbers."
                     continue
                 fi
+
                 if UPDATED_OPTIONS=$(
                     jq -e \
                         --arg SELECTED_OPTION "$SELECTED_OPTION" \
@@ -217,7 +253,8 @@ editOptions() {
                             else
                                 .
                             end
-                        )' --args "${NEW_VALUE[@]}" <<<"$OPTIONS_JSON" 2>/dev/null
+                        )
+                    ' --args "${NEW_VALUE[@]}" <<< "$OPTIONS_JSON" 2> /dev/null
                 ); then
                     OPTIONS_JSON="$UPDATED_OPTIONS"
                 fi
@@ -226,7 +263,22 @@ editOptions() {
             unset CURRENT_VALUE TYPE DESCRIPTION VALUES ALLOWED_VALUES SELECTED_OPTION NEW_VALUE UPDATED_OPTIONS
         fi
     done
-    UPDATED_PATCHES=$(jq -c --arg PKG_NAME "$PKG_NAME" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '. as $OPTIONS_JSON | $ENABLED_PATCHES | map(if .pkgName == $PKG_NAME then .options |= $OPTIONS_JSON else . end)' <<<"$OPTIONS_JSON")
-    echo "$UPDATED_PATCHES" >"$STORAGE/$SOURCE-patches.json"
+
+    UPDATED_PATCHES=$(jq -c \
+        --arg PKG_NAME "$PKG_NAME" \
+        --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '
+            . as $OPTIONS_JSON |
+            $ENABLED_PATCHES |
+            map(
+                if .pkgName == $PKG_NAME then
+                    .options |= $OPTIONS_JSON
+                else
+                    .
+                end
+            )
+        ' <<< "$OPTIONS_JSON")
+
+    echo "$UPDATED_PATCHES" > "$STORAGE/$SOURCE-patches.json"
+
     ENABLED_PATCHES="$UPDATED_PATCHES"
 }

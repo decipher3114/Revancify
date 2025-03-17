@@ -8,7 +8,7 @@ getInstalledVersion() {
 
 mountApp() {
     notify info "Please Wait !!\nMounting $APP_NAME..."
-    if su -mm -c "/system/bin/sh root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &>/dev/null; then
+    if su -mm -c "/system/bin/sh root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
         notify msg "$APP_NAME Mounted Successfully !!"
     else
         notify msg "Installation Failed !!\nShare logs to developer."
@@ -16,7 +16,7 @@ mountApp() {
         return 0
     fi
     if [ "$LAUNCH_APP_AFTER_MOUNT" == "on" ]; then
-        su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $PKG_NAME | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &>/dev/null
+        su -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs pidof | xargs kill -9 && pm resolve-activity --brief $PKG_NAME | tail -n 1 | xargs am start -n && pidof com.termux | xargs kill -9" &> /dev/null
     fi
 }
 
@@ -35,11 +35,11 @@ umountApp() {
             --cancel-label 'Back' \
             --menu "$NAVIGATION_HINT" -1 -1 0 \
             "${MOUNTED_PKGS[@]}" \
-            2>&1 >/dev/tty
+            2>&1 > /dev/tty
     ); then
         return
     fi
-    su -mm -c "/system/bin/sh root/umount.sh $PKG_NAME" &>/dev/null
+    su -mm -c "/system/bin/sh root/umount.sh $PKG_NAME" &> /dev/null
     notify msg "Unmount Successful !!"
     unset MOUNTED_PKGS PKG_NAME
 }

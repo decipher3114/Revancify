@@ -10,7 +10,7 @@ changeSource() {
             --no-items \
             --ok-label 'Done' \
             --radiolist "$NAVIGATION_HINT\n$SELECTION_HINT" -1 -1 0 \
-            "${SOURCES_INFO[@]}" 2>&1 >/dev/tty
+            "${SOURCES_INFO[@]}" 2>&1 > /dev/tty
     )
 
     [ "$SOURCE" == "$SELECTED_SOURCE" ] && return

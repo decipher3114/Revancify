@@ -16,7 +16,7 @@ chooseApp() {
             --default-item "$SELECTED_APP" \
             --menu "$NAVIGATION_HINT" -1 -1 0 \
             "${APPS_LIST[@]}" \
-            2>&1 >/dev/tty
+            2>&1 > /dev/tty
     )
     EXIT_CODE=$?
     case "$EXIT_CODE" in

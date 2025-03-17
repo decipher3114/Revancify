@@ -6,7 +6,7 @@ APP_VER="$3"
 SOURCE="$4"
 
 log() {
-    echo "- $1" >>"/storage/emulated/0/Revancify/mount_log.txt"
+    echo "- $1" >> "/storage/emulated/0/Revancify/mount_log.txt"
 }
 
 rm "/storage/emulated/0/Revancify/mount_log.txt"
@@ -86,7 +86,7 @@ log "Clearing cache..."
 pm clear --cache-only "$PKG_NAME"
 
 log "Creating boot scripts..."
-cat <<EOF >"/data/adb/service.d/mount_$PKG_NAME.sh"
+cat << EOF > "/data/adb/service.d/mount_$PKG_NAME.sh"
 #!/system/bin/sh
 while [ "\$(getprop sys.boot_completed | tr -d '\r')" != "1" ]; do sleep 5; done
 
@@ -98,7 +98,7 @@ chcon u:object_r:apk_data_file:s0 "\$BASE_PATH"
 am force-stop "$PKG_NAME"
 EOF
 
-cat <<EOF >"/data/adb/post-fs-data.d/umount_$PKG_NAME.sh"
+cat << EOF > "/data/adb/post-fs-data.d/umount_$PKG_NAME.sh"
 #!/system/bin/sh
 STOCK_PATH="\$(pm path "$PKG_NAME" | sed -n '/base/s/package://p')"
 [ ! -z "\$STOCK_PATH" ] && umount -l "\$STOCK_PATH"

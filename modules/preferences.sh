@@ -13,7 +13,7 @@ configure() {
             --ok-label 'Save' \
             --checklist "$NAVIGATION_HINT\n$SELECTION_HINT" -1 -1 -1 \
             "${CONFIG_OPTS[@]}" \
-            2>&1 >/dev/tty
+            2>&1 > /dev/tty
     )
 
     sed -i "s|='on'|='off'|" .config
