@@ -6,6 +6,7 @@ antisplitApp() {
     notify info "Please Wait !!\nReducing app size..."
 
     APP_DIR="apps/$APP_NAME/$APP_VER"
+
     if [ ! -e "$APP_DIR" ]; then
         LOCALE=$(getprop persist.sys.locale | sed 's/-.*//g')
         unzip -qqo \
@@ -15,13 +16,17 @@ antisplitApp() {
             "split_config.${LOCALE}.apk" \
             split_config.*dpi.apk \
             -d "$APP_DIR" 2>/dev/null
-        rm "apps/$APP_NAME/$APP_VER.apkm"
     fi
+
     java -jar bin/APKEditor.jar m -i "$APP_DIR" -o "apps/$APP_NAME/$APP_VER.apk" &>/dev/null
+
     if [ ! -e "apps/$APP_NAME/$APP_VER.apk" ]; then
+        rm -rf "$APP_DIR" &>/dev/null
         notify msg "Unable to run merge splits!!\nApkEditor is not working properly."
         return 1
     fi
+    rm "apps/$APP_NAME/$APP_VER.apkm" &>/dev/null
+
     if [ "$ROOT_ACCESS" == false ]; then
         rm -rf "apps/$APP_NAME/$APP_VER"
     fi
