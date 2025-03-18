@@ -124,7 +124,7 @@ fetchSrc() {
 
 echo "Checking Latest Release..."
 
-if [ "$USE_PRE_RELEASE" == "on" ]; then
+if [ "$REVANCIFY_XISR_BETA" == "on" ]; then
     TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases' 2>/dev/null | jq -r 'if type=="array" then .[0].tag_name else .tag_name end')
 else
     TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases/latest' 2>/dev/null | jq -r '.tag_name')
