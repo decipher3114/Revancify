@@ -1,1 +1,2 @@
-VERSION='v19.beta'
+VERSION_STABLE='v19.beta'
+VERSION_BETA=
