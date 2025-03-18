@@ -8,6 +8,7 @@ main() {
         setEnv USE_PRE_RELEASE "on" init .config
 	setEnv LAUNCH_APP_AFTER_MOUNT "on" init .config
 	setEnv ALLOW_APP_VERSION_DOWNGRADE "off" init .config
+        setEnv REVANCIFY_XISR_BETA "off" init .config
 	source .config
 
 	mkdir -p "assets" "apps" "$STORAGE" "$STORAGE/Patched" "$STORAGE/Stock"
