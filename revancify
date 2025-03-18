@@ -118,6 +118,12 @@ installDependencies() {
 fetchSrc() {
 	[ -e "$SRC/.info" ] && source "$SRC/.info"
 
+        if [ "$REVANCIFY_XISR_BETA" == "on" ]; then
+            CURRENT_VERSION="$VERSION_BETA"
+        else
+            CURRENT_VERSION="$VERSION_STABLE"
+        fi
+
 	[ "$INTERNET_ACCESS" == false ] && return
 
 	ping -c 1 google.com &>/dev/null || return
@@ -130,7 +136,7 @@ else
     TAG=$(curl -s 'https://api.github.com/repos/Xisrr1/Revancify/releases/latest' 2>/dev/null | jq -r '.tag_name')
 fi
 
-	[ "$TAG" == "$VERSION" ] && return
+	[ "$TAG" == "$CURRENT_VERSION" ] && return
 
 	echo "Revancify $TAG is available..."
 
