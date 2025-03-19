@@ -118,7 +118,6 @@ installDependencies() {
 fetchSrc() {
 	[ -e "$SRC/.info" ] && source "$SRC/.info"
 
-        [ -e "$SRC/.config" ] && source "$SRC/.config"
 
         if [ "$REVANCIFY_XISR_BETA" == "on" ]; then
             CURRENT_VERSION="$VERSION_BETA"
