@@ -1,1 +1,2 @@
-VERSION='v8.beta'
+VERSION_STABLE='v26.beta'
+VERSION_BETA='v22.alpha'
