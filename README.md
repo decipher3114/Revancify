@@ -10,12 +10,10 @@
     <td colspan="2">Download Link</td>
   </tr>
   <tr>
-    <td><a href="https://github.com/termux/termux-app/releases/latest">Termux Official</a></td>
+    <td><a href="https://github.com/termux/termux-app/releases/latest">Termux Official (Recommended)</a></td>
     <td><a href="https://github.com/Termux-Monet/termux-monet/releases/latest">Termux Monet (Deprecated)</a></td>
   </tr>
 </table>
-
-> Termux Monet is deprecated, still works better than Official one.
 
 
 # Features
