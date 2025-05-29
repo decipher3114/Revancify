@@ -10,10 +10,11 @@ Options:
 -f:  Force re-install Revancify
 -u:  Disable Update Check
 -r:  Disable Root access
+-R:  Disable Rish access
 -v:  Print current version
 -h:  Print help statement"
 
-while getopts ":furvh" OPT 2> /dev/null; do
+while getopts ":furRvh" OPT 2> /dev/null; do
     case $OPT in
         f)
             rm "$SRC/.info" &> /dev/null
@@ -23,6 +24,9 @@ while getopts ":furvh" OPT 2> /dev/null; do
             ;;
         r)
             ROOT_ACCESS=false
+            ;;
+        R)
+            RISH_ACCESS=false
             ;;
         v)
             if [ -e "$SRC" ]; then
@@ -162,13 +166,17 @@ fetchSrc
 
 if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &> /dev/null; then
     ROOT_ACCESS=true
+elif [ "$RISH_ACCESS" != false ] && rish -c 'exit' &> /dev/null; then
+    ROOT_ACCESS=false
+    RISH_ACCESS=true
 else
     ROOT_ACCESS=false
+    RISH_ACCESS=false
 fi
 
 cd "$SRC" &> /dev/null || terminate
 
-bash main.sh "$ROOT_ACCESS"
+bash main.sh "$ROOT_ACCESS" "$RISH_ACCESS"
 EXIT_CODE=$?
 
 exit "$EXIT_CODE"
