@@ -172,7 +172,7 @@ installAppRish() {
     log "Installation of $APP_NAME $APP_VER completed successfully, finalized code."
     if [ "$LAUNCH_APP_AFTER_MOUNT" == "on" ]; then
         # The su version used kill -9, I replaced it with the adb command 'am force-stop' avaliable in rish
-        rish -c "settings list secure | sed -n -e 's/\\/.*//' -e 's/default_input_method=//p' | xargs am force-stop && pm resolve-activity --brief $PKG_NAME | tail -n 1 | xargs am start -n && am force-stop com.termux"
+        rish -c "settings list secure | sed -n -e 's/\/.*//' -e 's/default_input_method=//p' | xargs am force-stop && pm resolve-activity --brief $PKG_NAME | tail -n 1 | xargs am start -n && am force-stop com.termux"  &> /dev/null
     fi
     return 0
 }
