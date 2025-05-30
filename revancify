@@ -166,6 +166,7 @@ fetchSrc
 
 if [ "$ROOT_ACCESS" != false ] && su -c 'exit' &> /dev/null; then
     ROOT_ACCESS=true
+    RISH_ACCESS=false
 elif [ "$RISH_ACCESS" != false ] && rish -c 'exit' &> /dev/null; then
     ROOT_ACCESS=false
     RISH_ACCESS=true

@@ -10,7 +10,7 @@ getInstalledVersion() {
 
 mountApp() {
     notify info "Please Wait !!\nMounting $APP_NAME..."
-    if su -mm -c "/system/bin/sh root/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
+    if su -mm -c "/system/bin/sh system/mount.sh $PKG_NAME $APP_NAME $APP_VER $SOURCE" &> /dev/null; then
         notify msg "$APP_NAME Mounted Successfully !!"
     else
         notify msg "Installation Failed !!\nShare logs to developer."
@@ -41,7 +41,7 @@ umountApp() {
     ); then
         return
     fi
-    su -mm -c "/system/bin/sh root/umount.sh $PKG_NAME" &> /dev/null
+    su -mm -c "/system/bin/sh system/umount.sh $PKG_NAME" &> /dev/null
     notify msg "Unmount Successful !!"
     unset MOUNTED_PKGS PKG_NAME
 }
