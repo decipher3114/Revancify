@@ -3,8 +3,9 @@
 getInstalledVersion() {
     if [ "$ROOT_ACCESS" == true ] && su -c "pm list packages | grep -q $PKG_NAME"; then
         INSTALLED_VERSION=$(su -c dumpsys package "$PKG_NAME" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
-    elif [ "$RISH_ACCESS" == true ] && rish -c "pm list packages --user 0 | grep -q $PKG_NAME"; then
-        INSTALLED_VERSION=$(rish -c 'dumpsys package "'"$PKG_NAME"'"' | sed -n '/versionName/s/.*=//p' | sed -n '1p')
+    # We use pm list and dumpsys as fallback.
+    elif [ "$RISH_ACCESS" = true ] && ( rish -c "pm list packages --user current | grep -q $PKG_NAME" || ! rish -c "dumpsys package $PKG_NAME" 2>&1 | grep -q "Unable to find package:" ); then
+        INSTALLED_VERSION=$(rish -c "dumpsys package $PKG_NAME" | sed -n '/versionName/s/.*=//p' | sed -n '1p')
     fi
 }
 

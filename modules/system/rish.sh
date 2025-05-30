@@ -30,12 +30,12 @@ installAppRish() {
         log "Installed version of $APP_NAME is $INSTALLED_VERSION"
         log "Verifying signatures..."
         local STOCK_APP_PATH
-        if [ "$(rish -c 'pm list packages --user current | grep -q "'"$PKG_NAME"'" && echo Installed')" == "Installed" ]; then
-            STOCK_APP_PATH=$(rish -c 'pm path --user current "'"$PKG_NAME"'" | sed -n "/base/s/package://p"')
+        if [ "$(rish -c "pm list packages --user current | grep -q $PKG_NAME && echo Installed")" == "Installed" ]; then
+            STOCK_APP_PATH=$(rish -c "pm path --user current $PKG_NAME | sed -n '/base/s/package://p'")
         else
             # If the app is not installed in the current user, we try to get the stock app path from dumpsys
             # This means the app is installed in a different user
-            STOCK_APP_PATH=$(rish -c 'dumpsys package "'"$PKG_NAME"'" | sed -n "s/^[[:space:]]*path: \(.*base\.apk\)/\1/p"')
+            STOCK_APP_PATH=$(rish -c "dumpsys package $PKG_NAME | sed -n 's/^[[:space:]]*path: \(.*base\.apk\)/\1/p'")
             log "Dumpsys used to get stock app path, that means the app is installed but in a different user."
             HIDDEN_APP_INSTALL=true
         fi
@@ -107,7 +107,7 @@ installAppRish() {
         notify info "Please Wait !!\nUninstalling $APP_NAME $APP_VER using Rish..."
         if uninstallAppRish false true "$STORAGE"; then
             log "Uninstallation successful, proceeding with installation."
-            if ! rish -c 'dumpsys package "'"$PKG_NAME"'"' 2>&1 | grep -q "Unable to find package"; then
+            if ! rish -c "dumpsys package $PKG_NAME" 2>&1 | grep -q "Unable to find package"; then
                 log "Found hidden installation post uninstallation. This might be a different user."
                 HIDDEN_APP_INSTALL=true
             fi
@@ -172,7 +172,7 @@ installAppRish() {
     log "Installation of $APP_NAME $APP_VER completed successfully, finalized code."
     if [ "$LAUNCH_APP_AFTER_MOUNT" == "on" ]; then
         # The su version used kill -9, I replaced it with the adb command 'am force-stop' avaliable in rish
-        rish -c 'settings list secure | sed -n -e "s/\/.*//" -e "s/default_input_method=//p" | xargs am force-stop && pm resolve-activity --brief '"$PKG_NAME"' | tail -n 1 | xargs am start -n && am force-stop com.termux'
+        rish -c "settings list secure | sed -n -e 's/\\/.*//' -e 's/default_input_method=//p' | xargs am force-stop && pm resolve-activity --brief $PKG_NAME | tail -n 1 | xargs am start -n && am force-stop com.termux"
     fi
     return 0
 }
