@@ -5,4 +5,4 @@
 !install.sh
 !sources.json
 !modules/**
-!root/**
+!system/**

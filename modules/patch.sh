@@ -62,7 +62,7 @@ patchApp() {
         '
     )
 
-    echo -e "Root Access: $ROOT_ACCESS\nArchitecture: $ARCH\nApp: $APP_NAME v$APP_VER\nCLI: $CLI_FILE\nPatches: $PATCHES_FILE\nArguments: ${ARGUMENTS[*]}\n\nLogs:\n" > "$STORAGE/patch_log.txt"
+    echo -e "Root Access: $ROOT_ACCESS\n Rish Access: $RISH_ACCESS\nArchitecture: $ARCH\nApp: $APP_NAME v$APP_VER\nCLI: $CLI_FILE\nPatches: $PATCHES_FILE\nArguments: ${ARGUMENTS[*]}\n\nLogs:\n" > "$STORAGE/patch_log.txt"
 
     java -jar "$CLI_FILE" patch \
         --force --exclusive --purge --patches="$PATCHES_FILE" \
