@@ -54,7 +54,6 @@ main() {
 
 tput civis
 ROOT_ACCESS="$1"
-RISH_ACCESS="$2"
 
 for MODULE in $(find modules -type f -name "*.sh"); do
     source "$MODULE"
