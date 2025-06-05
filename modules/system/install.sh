@@ -4,8 +4,6 @@ installApp() {
     local CANONICAL_VER
     if [ "$ROOT_ACCESS" == true ]; then
         mountApp
-    elif [ "$RISH_ACCESS" == true ]; then
-        installAppRish
     else
         notify info "Copying patched $APP_NAME apk to Internal Storage..."
         CANONICAL_VER=${APP_VER//:/}
