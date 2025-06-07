@@ -12,7 +12,7 @@ parsePatchesJson() {
 
     [ -n "$AVAILABLE_PATCHES" ] || AVAILABLE_PATCHES=$(jq -rc '.' "assets/$SOURCE/Patches-$PATCHES_VERSION.json")
 
-    [ -n "$ENABLED_PATCHES" ] || ENABLED_PATCHES=$(jq -rc '.' "$STORAGE/$SOURCE-patches.json" 2> /dev/null || echo '[]')
+    [ -n "$ENABLED_PATCHES" ] || ENABLED_PATCHES=$(jq -erc '.' "$STORAGE/$SOURCE-patches.json" 2> /dev/null || echo '[]')
 
     while [ -z "$APPS_LIST" ]; do
         if [ -e "assets/$SOURCE/Apps-$PATCHES_VERSION.json" ]; then
