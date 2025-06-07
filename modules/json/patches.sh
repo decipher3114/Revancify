@@ -75,6 +75,8 @@ managePatches() {
         esac
     done
 
+    clear
+
     UPDATED_PATCHES=$(
         jq -nc --arg PKG_NAME "$PKG_NAME" --argjson AVAILABLE_PATCHES "$AVAILABLE_PATCHES" --argjson ENABLED_PATCHES "$ENABLED_PATCHES" '
             [
@@ -91,30 +93,33 @@ managePatches() {
             map(
                 if .pkgName == $PKG_NAME then
                     .patches |= [$ARGS.positional | if (.[0] == "") then empty else .[] end] |
-                    .options |= . as $SAVED_OPTIONS | [
-                        $AVAILABLE_OPTIONS[] |
-                        . as $OPTION |
-                        .patchName as $PATCH_NAME |
-                        if ($ARGS.positional | index($PATCH_NAME)) != null then
-                            .title as $TITLE |
-                            .key as $KEY |
-                            .default as $DEFAULT |
-                            {
-                                "title": $TITLE,
-                                "patchName": $PATCH_NAME,
-                                "key": $KEY,
-                                "value": (($SAVED_OPTIONS[]? | select(.key == $KEY and .patchName == $PATCH_NAME) | .value) // $DEFAULT)
-                            }
-                        else
-                            empty
-                        end
-                    ]
+                    .options |= (
+                        . as $SAVED_OPTIONS | [
+                            $AVAILABLE_OPTIONS[] |
+                            . as $OPTION |
+                            .patchName as $PATCH_NAME |
+                            if ($ARGS.positional | index($PATCH_NAME)) != null then
+                                .title as $TITLE |
+                                .key as $KEY |
+                                .default as $DEFAULT |
+                                {
+                                    "title": $TITLE,
+                                    "patchName": $PATCH_NAME,
+                                    "key": $KEY,
+                                    "value": (($SAVED_OPTIONS[]? | select(.key == $KEY and .patchName == $PATCH_NAME) | .value) // $DEFAULT)
+                                }
+                            else
+                                empty
+                            end
+                        ]
+                    )
                 else
                     .
                 end
             )
         ' --args "${ENABLED_PATCHES_LIST[@]}"
     )
+
     echo "$UPDATED_PATCHES" > "$STORAGE/$SOURCE-patches.json"
     ENABLED_PATCHES="$UPDATED_PATCHES"
 }

@@ -128,7 +128,7 @@ parseJsonFromCLI() {
                                     elif $TYPE == $NUMBER then
                                         tonumber
                                     elif $TYPE == $BOOLEAN then
-                                        test("true")
+                                        toboolean
                                     elif $TYPE == $STRINGARRAY then
                                         (gsub("(?<a>([^,\\[\\] ]+))" ; "\"" + .a + "\"") | fromjson)
                                     end
@@ -142,7 +142,7 @@ parseJsonFromCLI() {
                             "key": $KEY,
                             "title": $TITLE,
                             "description": $DESCRIPTION,
-                            "required": ($REQUIRED | test("true")),
+                            "required": ($REQUIRED | toboolean),
                             "type": $TYPE,
                             "default": $DEFAULT,
                             "values": $ARGS.positional
@@ -163,7 +163,7 @@ parseJsonFromCLI() {
                     map(
                         if .pkgName == $PKG_NAME then
                             .patches |= (
-                                if ($USE | test("true")) then
+                                if ($USE | toboolean) then
                                     .recommended += [$PATCH_NAME]
                                 else
                                     .optional += [$PATCH_NAME]
