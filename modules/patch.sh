@@ -9,7 +9,7 @@ findPatchedApp() {
             --no-label 'Install' \
             --help-button \
             --help-label 'Back' \
-            --yesno "Current directory already contains Patched $APP_NAME version $SELECTED_VERSION.\n\n\nDo you want to patch $APP_NAME again?" -1 -1
+            --yesno "Current directory already contains Patched $APP_NAME version $APP_VER.\n\n\nDo you want to patch $APP_NAME again?" -1 -1
         case "$?" in
             0)
                 rm "apps/$APP_NAME/$APP_VER-$SOURCE.apk"
