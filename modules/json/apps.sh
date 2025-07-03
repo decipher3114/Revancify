@@ -56,8 +56,20 @@ fetchAppsInfo() {
                     [];
                     . += [{
                         "pkgName": $PKG_NAME,
-                        "appName": ($APP_NAME | sub("( -)|( &amp;)|:"; ""; "g") | sub("[()\\|]"; ""; "g") | sub(" *[-, ] *"; "-"; "g") | sub("-Wear-OS"; ""; "g")) | split("-")[:4] | join("-"),
-                        "apkmirrorAppName": ($APP_URL | sub("-wear-os"; "") | match("(?<=\\/)(((?!\\/).)*)(?=\\/$)").string),
+                        "appName": (
+                                $APP_NAME |
+                                sub("( -)|( &amp;)|:"; ""; "g") |
+                                sub("[()\\|]"; ""; "g") |
+                                sub(" *[-, ] *"; "-"; "g") |
+                                sub("-Wear-OS|-Android-Automotive"; ""; "g")
+                            ) |
+                            split("-")[:4] |
+                            join("-"),
+                        "apkmirrorAppName": (
+                                $APP_URL |
+                                sub("-wear-os|-android-automotive"; "") |
+                                match("(?<=\\/)(((?!\\/).)*)(?=\\/$)").string
+                            ),
                     }]
                 )
             ' > "assets/$SOURCE/Apps-$PATCHES_VERSION.json" \
